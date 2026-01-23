@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, X, Loader2, ChevronDown, ChevronRight, Terminal } from 'lucide-react';
 import type { Step } from './ChatInterface';
 
 interface ExecutionTimelineProps {
@@ -26,29 +26,32 @@ export function ExecutionTimeline({ steps }: ExecutionTimelineProps) {
       case 'completed':
         return (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 scale-fade-in"
             style={{ backgroundColor: 'var(--color-success)' }}
           >
-            <Check className="w-3 h-3 text-white" strokeWidth={3} />
+            <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
           </div>
         );
       case 'failed':
         return (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 scale-fade-in"
             style={{ backgroundColor: 'var(--color-error)' }}
           >
-            <X className="w-3 h-3 text-white" strokeWidth={3} />
+            <X className="w-3.5 h-3.5 text-white" strokeWidth={3} />
           </div>
         );
       case 'running':
         return (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border-2"
-            style={{ borderColor: 'var(--color-accent)' }}
+            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              border: '2px solid var(--color-accent)',
+            }}
           >
             <Loader2
-              className="w-3 h-3 animate-spin"
+              className="w-3.5 h-3.5 spinner"
               style={{ color: 'var(--color-accent)' }}
             />
           </div>
@@ -56,11 +59,41 @@ export function ExecutionTimeline({ steps }: ExecutionTimelineProps) {
       default:
         return (
           <div
-            className="w-5 h-5 rounded-full flex-shrink-0 border-2"
-            style={{ borderColor: 'var(--color-border)' }}
-          />
+            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{
+              backgroundColor: 'var(--color-backgroundSecondary)',
+              border: '2px solid var(--color-border)',
+            }}
+          >
+            <span
+              className="text-[10px] font-medium"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              {steps.findIndex(s => s.status === undefined || s.status === 'pending') + 1 || ''}
+            </span>
+          </div>
         );
     }
+  };
+
+  const getRiskBadge = (risk: Step['risk']) => {
+    const colors = {
+      safe: 'var(--color-success)',
+      moderate: 'var(--color-warning)',
+      dangerous: 'var(--color-error)',
+    };
+
+    return (
+      <span
+        className="text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-medium"
+        style={{
+          backgroundColor: `${colors[risk]}15`,
+          color: colors[risk],
+        }}
+      >
+        {risk}
+      </span>
+    );
   };
 
   return (
@@ -79,12 +112,15 @@ export function ExecutionTimeline({ steps }: ExecutionTimelineProps) {
         return (
           <div
             key={step.id}
-            className={!isLast ? 'border-b' : ''}
-            style={{ borderColor: 'var(--color-border)' }}
+            className={`transition-all duration-200 ${!isLast ? 'border-b' : ''}`}
+            style={{
+              borderColor: 'var(--color-border)',
+              animationDelay: `${index * 50}ms`,
+            }}
           >
             <button
               onClick={() => hasOutput && toggleStep(step.id)}
-              className="w-full px-4 py-3 flex items-start gap-3 text-left transition-colors"
+              className="w-full px-4 py-3 flex items-start gap-3 text-left transition-all duration-150"
               style={{ cursor: hasOutput ? 'pointer' : 'default' }}
               onMouseEnter={e => {
                 if (hasOutput) {
@@ -95,20 +131,29 @@ export function ExecutionTimeline({ steps }: ExecutionTimelineProps) {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
-              {/* Status Icon */}
+              {/* status icon */}
               <div className="pt-0.5">{getStatusIcon(step.status)}</div>
 
-              {/* Content */}
+              {/* content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: 'var(--color-text)' }}
-                  >
-                    {step.description}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text)' }}
+                    >
+                      {step.description.toLowerCase()}
+                    </p>
+                    {getRiskBadge(step.risk)}
+                  </div>
                   {hasOutput && (
-                    <span style={{ color: 'var(--color-textMuted)' }}>
+                    <span
+                      className="transition-transform duration-200"
+                      style={{
+                        color: 'var(--color-textMuted)',
+                        transform: isExpanded ? 'rotate(0deg)' : 'rotate(0deg)',
+                      }}
+                    >
                       {isExpanded ? (
                         <ChevronDown className="w-4 h-4" />
                       ) : (
@@ -118,18 +163,24 @@ export function ExecutionTimeline({ steps }: ExecutionTimelineProps) {
                   )}
                 </div>
 
-                <code
-                  className="text-xs font-mono mt-1 block truncate"
-                  style={{ color: 'var(--color-textMuted)' }}
-                >
-                  $ {step.command}
-                </code>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <Terminal className="w-3 h-3" style={{ color: 'var(--color-textMuted)' }} />
+                  <code
+                    className="text-xs font-mono truncate"
+                    style={{ color: 'var(--color-textMuted)' }}
+                  >
+                    {step.command}
+                  </code>
+                </div>
               </div>
             </button>
 
-            {/* Expanded output */}
+            {/* expanded output */}
             {isExpanded && hasOutput && (
-              <div className="px-4 pb-3" style={{ marginLeft: '32px' }}>
+              <div
+                className="px-4 pb-3 slide-in-up"
+                style={{ marginLeft: '36px' }}
+              >
                 <div
                   className="rounded-lg p-3 font-mono text-xs overflow-x-auto"
                   style={{

@@ -192,6 +192,32 @@ def get_execution_env(command: str) -> dict:
     return env
 
 
+def get_timeout_for_command(command: str, default_timeout: int = 300) -> int:
+    """
+    Determine appropriate timeout based on command type.
+    Homebrew cask installs can take 10+ minutes for large apps.
+    """
+    command_lower = command.lower()
+
+    # Long-running operations - 15 minutes
+    long_patterns = [
+        "brew install --cask",
+        "brew cask install",
+        "brew upgrade",
+        "npm install",
+        "pip install",
+        "cargo install",
+        "docker pull",
+        "git clone",
+    ]
+
+    for pattern in long_patterns:
+        if pattern in command_lower:
+            return 900  # 15 minutes
+
+    return default_timeout
+
+
 def execute_command(
     command: str,
     timeout: int = 300,
@@ -205,12 +231,14 @@ def execute_command(
 
     Args:
         command: Shell command to execute
-        timeout: Max execution time in seconds (default 5 minutes)
+        timeout: Max execution time in seconds (default 5 minutes, auto-extended for installs)
         require_sudo: Force sudo access request
 
     Returns:
         Tuple of (success: bool, stdout: str, stderr: str)
     """
+    # Auto-adjust timeout for long-running commands
+    timeout = get_timeout_for_command(command, timeout)
     # Validate command safety first
     is_safe, reason = validate_command_safety(command)
     if not is_safe:
