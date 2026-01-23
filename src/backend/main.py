@@ -106,53 +106,38 @@ CONTEXT:
 
 TASK: convert the user request into executable shell commands.
 
-CAPABILITIES YOU SUPPORT:
-1. INSTALL APPS: Use brew install --cask for GUI apps (figma, slack, discord, spotify, chrome, vscode, cursor, etc.)
-2. UNINSTALL APPS: Use brew uninstall --cask app-name && rm -rf /Applications/App.app
-3. SETUP ENVIRONMENTS:
-   - Python: brew install python, python3 -m venv venv, source venv/bin/activate, pip install requirements
-   - Node: brew install node, npm install
-   - For IDEs: open the IDE after installing with "open -a AppName" on macOS
-4. CHECK STATUS: which, --version, ls, docker ps, etc.
+CRITICAL RULE - ONE COMMAND PER STEP:
+- Each step must contain exactly ONE command
+- DO NOT chain commands with && or || in a single step
+- Split into separate steps instead
+
+EXAMPLE - CORRECT:
+{{"id": 1, "command": "brew install --cask figma", "description": "install figma"}}
+{{"id": 2, "command": "brew list --cask | grep figma", "description": "verify installation"}}
+
+EXAMPLE - WRONG (DO NOT DO THIS):
+{{"id": 1, "command": "brew install --cask figma && brew list --cask | grep figma", ...}}
+
+CAPABILITIES:
+1. INSTALL APPS: brew install --cask for GUI apps
+2. UNINSTALL APPS: brew uninstall --cask app-name
+3. SETUP ENVIRONMENTS: python3 -m venv, pip install, npm install
+4. CHECK STATUS: which, --version, brew list
 
 RULES:
-1. generate atomic, directly-executable shell commands
-2. risk levels: "safe" (read-only), "moderate" (installs), "dangerous" (sudo/delete/uninstall)
-3. ALWAYS verify installations using "command -v appname" or "brew list --cask | grep appname" - NOT ls on /Applications (unreliable)
-4. use the appropriate package manager for the os
-5. for uninstalls, mark as "dangerous" risk level
+1. ONE command per step (no && chaining)
+2. risk levels: "safe" (read-only), "moderate" (installs), "dangerous" (sudo/delete)
+3. verify installations with: brew list --cask | grep appname
+4. use appropriate package manager for the os
 
-MACOS APP NAMES (brew cask names):
-- Figma: figma (installs to /Applications/Figma.app)
-- Slack: slack
-- Discord: discord
-- Spotify: spotify
-- Chrome: google-chrome
-- VS Code: visual-studio-code
-- Cursor: cursor
-- Notion: notion
-- Zoom: zoom
-- Docker: docker
-
-VERIFICATION - CRITICAL (do NOT use "ls /Applications"):
-✓ CORRECT: brew list --cask | grep -q "appname" && echo "installed" || echo "not found"
-✓ CORRECT: command -v appname
-✓ CORRECT: mdfind "kMDItemCFBundleIdentifier == 'com.app.id'" | head -1
-✗ WRONG: ls -la /Applications/App.app (fails if path differs)
-
-COMMAND SYNTAX - CRITICAL:
-✓ CORRECT: curl -fsSL https://example.com/install.sh | bash
-✗ WRONG: /bin/bash -c '$(curl -fsSL https://example.com/install.sh)'
-✗ WRONG: $(curl ...) or backtick command substitution
-
-ALWAYS use -y or equivalent for package installs (non-interactive).
-NEVER use interactive flags like -i, --interactive, or expect user input.
+MACOS CASK NAMES:
+figma, slack, discord, spotify, google-chrome, visual-studio-code, cursor, notion, zoom, docker, postman, iterm2, onedrive, microsoft-teams, microsoft-outlook, microsoft-word, microsoft-excel, whatsapp, telegram, signal, arc, firefox, brave-browser, raycast, rectangle, alfred
 
 respond with JSON only:
 {{
   "task_id": "unique_id",
   "steps": [
-    {{"id": 1, "description": "what this does", "command": "shell command", "risk": "safe|moderate|dangerous"}}
+    {{"id": 1, "description": "what this does", "command": "single shell command", "risk": "safe|moderate|dangerous"}}
   ],
   "requires_confirmation": true,
   "estimated_time": "time estimate"
@@ -214,19 +199,46 @@ def parse_command_hardcoded(command: str, os_type: str) -> ExecuteResponse:
     # common macOS apps mapping (app keyword -> cask name)
     macos_apps = {
         "chrome": ("google-chrome", "Google Chrome"),
+        "google chrome": ("google-chrome", "Google Chrome"),
         "vscode": ("visual-studio-code", "Visual Studio Code"),
         "visual studio code": ("visual-studio-code", "Visual Studio Code"),
+        "vs code": ("visual-studio-code", "Visual Studio Code"),
         "slack": ("slack", "Slack"),
         "figma": ("figma", "Figma"),
         "discord": ("discord", "Discord"),
         "spotify": ("spotify", "Spotify"),
         "notion": ("notion", "Notion"),
-        "zoom": ("zoom.us", "zoom.us"),
+        "zoom": ("zoom", "Zoom"),
         "cursor": ("cursor", "Cursor"),
         "docker": ("docker", "Docker"),
         "postman": ("postman", "Postman"),
-        "iterm": ("iterm2", "iTerm"),
-        "iterm2": ("iterm2", "iTerm"),
+        "iterm": ("iterm2", "iTerm2"),
+        "iterm2": ("iterm2", "iTerm2"),
+        "onedrive": ("onedrive", "OneDrive"),
+        "microsoft onedrive": ("onedrive", "OneDrive"),
+        "teams": ("microsoft-teams", "Microsoft Teams"),
+        "microsoft teams": ("microsoft-teams", "Microsoft Teams"),
+        "outlook": ("microsoft-outlook", "Microsoft Outlook"),
+        "microsoft outlook": ("microsoft-outlook", "Microsoft Outlook"),
+        "word": ("microsoft-word", "Microsoft Word"),
+        "microsoft word": ("microsoft-word", "Microsoft Word"),
+        "excel": ("microsoft-excel", "Microsoft Excel"),
+        "microsoft excel": ("microsoft-excel", "Microsoft Excel"),
+        "whatsapp": ("whatsapp", "WhatsApp"),
+        "telegram": ("telegram", "Telegram"),
+        "signal": ("signal", "Signal"),
+        "arc": ("arc", "Arc"),
+        "firefox": ("firefox", "Firefox"),
+        "brave": ("brave-browser", "Brave"),
+        "raycast": ("raycast", "Raycast"),
+        "rectangle": ("rectangle", "Rectangle"),
+        "alfred": ("alfred", "Alfred"),
+        "1password": ("1password", "1Password"),
+        "bitwarden": ("bitwarden", "Bitwarden"),
+        "vlc": ("vlc", "VLC"),
+        "obs": ("obs", "OBS"),
+        "gimp": ("gimp", "GIMP"),
+        "inkscape": ("inkscape", "Inkscape"),
     }
 
     # detect install commands

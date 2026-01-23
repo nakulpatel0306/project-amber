@@ -1,136 +1,150 @@
-import { useState, useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Terminal, Package, Settings, Zap } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onSuggestionClick: (suggestion: string) => void;
 }
 
-const taglines = [
-  'Local development agent',
-  'Manage environments',
-  'Automate workflows',
-  'Install and configure apps',
-  'Setup dev tools instantly',
-];
-
 const suggestions = [
-  { text: 'Install Figma', description: 'Download and install Figma' },
-  { text: 'Install VS Code', description: 'Setup Visual Studio Code' },
-  { text: 'Install Slack', description: 'Get Slack for team communication' },
-  { text: 'Setup Python environment', description: 'Create a virtual environment' },
+  {
+    text: 'install figma',
+    description: 'download and install figma',
+    icon: Package,
+  },
+  {
+    text: 'install vscode',
+    description: 'setup visual studio code',
+    icon: Terminal,
+  },
+  {
+    text: 'setup python environment',
+    description: 'create a virtual environment',
+    icon: Settings,
+  },
+  {
+    text: 'check docker status',
+    description: 'verify docker is running',
+    icon: Zap,
+  },
 ];
 
 export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
-  const [currentTagline, setCurrentTagline] = useState(0);
-  const [displayText, setDisplayText] = useState('');
-  const [isTyping, setIsTyping] = useState(true);
-
-  useEffect(() => {
-    const tagline = taglines[currentTagline];
-
-    if (isTyping) {
-      if (displayText.length < tagline.length) {
-        const timeout = setTimeout(() => {
-          setDisplayText(tagline.slice(0, displayText.length + 1));
-        }, 50);
-        return () => clearTimeout(timeout);
-      } else {
-        const timeout = setTimeout(() => {
-          setIsTyping(false);
-        }, 2000);
-        return () => clearTimeout(timeout);
-      }
-    } else {
-      if (displayText.length > 0) {
-        const timeout = setTimeout(() => {
-          setDisplayText(displayText.slice(0, -1));
-        }, 30);
-        return () => clearTimeout(timeout);
-      } else {
-        setCurrentTagline((prev) => (prev + 1) % taglines.length);
-        setIsTyping(true);
-      }
-    }
-  }, [displayText, isTyping, currentTagline]);
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-full px-6 py-16">
-      {/* Hero Section */}
-      <div className="text-center mb-16">
+    <div className="flex flex-col items-center justify-center min-h-full px-6 py-12">
+      {/* hero section */}
+      <div className="text-center mb-12">
+        {/* logo and brand */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+              boxShadow: '0 8px 24px rgba(139, 92, 246, 0.25)',
+            }}
+          >
+            <span className="text-2xl">🌙</span>
+          </div>
+        </div>
+
         <h1
-          className="text-4xl font-semibold mb-4 tracking-tight"
+          className="text-2xl font-semibold mb-2 tracking-tight"
           style={{ color: 'var(--color-text)' }}
         >
-          Hello, I'm Luna
+          hello, i'm luna
         </h1>
 
-        <div className="h-8 flex items-center justify-center">
-          <p
-            className="text-lg"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            {displayText}
-            <span
-              className="inline-block w-0.5 h-5 ml-0.5 animate-pulse"
-              style={{ backgroundColor: 'var(--color-accent)' }}
-            />
-          </p>
-        </div>
+        <p
+          className="text-base"
+          style={{ color: 'var(--color-textSecondary)' }}
+        >
+          your local development agent
+        </p>
       </div>
 
-      {/* Suggestions */}
+      {/* quick actions */}
       <div className="w-full max-w-lg">
-        <div className="space-y-2">
-          {suggestions.map(({ text, description }) => (
+        <p
+          className="text-xs uppercase tracking-wider mb-3 text-center"
+          style={{ color: 'var(--color-textMuted)' }}
+        >
+          quick actions
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          {suggestions.map(({ text, description, icon: Icon }, index) => (
             <button
               key={text}
               onClick={() => onSuggestionClick(text)}
-              className="group w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200"
+              className="group flex flex-col items-start p-4 rounded-xl border btn-smooth"
               style={{
                 backgroundColor: 'var(--color-surface)',
                 borderColor: 'var(--color-border)',
+                animationDelay: `${index * 50}ms`,
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.backgroundColor = 'var(--color-surfaceHover)';
-                e.currentTarget.style.borderColor = 'var(--color-borderHover)';
-                e.currentTarget.style.transform = 'translateX(4px)';
+                e.currentTarget.style.borderColor = 'var(--color-accent)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.backgroundColor = 'var(--color-surface)';
                 e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.transform = 'translateX(0)';
               }}
             >
-              <div className="text-left">
-                <p
-                  className="font-medium text-sm"
-                  style={{ color: 'var(--color-text)' }}
-                >
-                  {text}
-                </p>
-                <p
-                  className="text-xs mt-0.5"
+              <div className="flex items-center justify-between w-full mb-2">
+                <Icon
+                  className="w-4 h-4 transition-colors"
                   style={{ color: 'var(--color-textMuted)' }}
-                >
-                  {description}
-                </p>
+                />
+                <ArrowRight
+                  className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform group-hover:translate-x-0.5"
+                  style={{ color: 'var(--color-accent)' }}
+                />
               </div>
-              <ArrowRight
-                className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ color: 'var(--color-textSecondary)' }}
-              />
+              <p
+                className="font-medium text-sm text-left"
+                style={{ color: 'var(--color-text)' }}
+              >
+                {text}
+              </p>
+              <p
+                className="text-xs mt-0.5 text-left"
+                style={{ color: 'var(--color-textMuted)' }}
+              >
+                {description}
+              </p>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="mt-16">
+      {/* keyboard hint */}
+      <div className="mt-10">
         <p
-          className="text-xs text-center"
+          className="text-xs text-center flex items-center gap-2"
           style={{ color: 'var(--color-textMuted)' }}
         >
-          Type a command or select a suggestion to get started
+          <span>type a command below to get started</span>
+          <span className="opacity-50">·</span>
+          <span className="flex items-center gap-1">
+            <kbd
+              className="px-1.5 py-0.5 rounded text-[10px]"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              ⌘
+            </kbd>
+            <kbd
+              className="px-1.5 py-0.5 rounded text-[10px]"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              K
+            </kbd>
+            <span className="ml-1">for commands</span>
+          </span>
         </p>
       </div>
     </div>
