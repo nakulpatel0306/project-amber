@@ -13,6 +13,7 @@ import {
   Ghost,
   User,
   MessageCircle,
+  Check,
 } from 'lucide-react';
 import { WelcomeScreen } from './WelcomeScreen';
 import { ExecutionTimeline } from './ExecutionTimeline';
@@ -52,6 +53,16 @@ interface CommandHistoryItem {
   timestamp: Date;
 }
 
+// Chat data stored per chat
+interface ChatData {
+  id: string;
+  title: string;
+  messages: Message[];
+  currentPlan: ExecuteCommandResponse | null;
+  currentSteps: Step[];
+  createdAt: Date;
+}
+
 const placeholderPrompts = [
   'install figma',
   'install chrome',
@@ -68,16 +79,23 @@ interface Tab {
   title: string;
 }
 
+// Helper to generate chat title from first message or default
+const generateChatTitle = (messages: Message[], index: number): string => {
+  const firstUserMessage = messages.find(m => m.type === 'user');
+  if (firstUserMessage) {
+    const content = firstUserMessage.content.toLowerCase();
+    return content.length > 20 ? content.slice(0, 20) + '...' : content;
+  }
+  return `chat ${index}`;
+};
+
 export function ChatInterface() {
   const navigate = useNavigate();
   const { user, signOut, isAuthEnabled } = useAuth();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>('none');
-  const [currentPlan, setCurrentPlan] = useState<ExecuteCommandResponse | null>(null);
-  const [currentSteps, setCurrentSteps] = useState<Step[]>([]);
   const [commandHistory, setCommandHistory] = useState<CommandHistoryItem[]>(() => {
     const saved = localStorage.getItem('luna-command-history');
     return saved ? JSON.parse(saved) : [];
@@ -86,14 +104,92 @@ export function ChatInterface() {
   const [placeholderText, setPlaceholderText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [isIncognito, setIsIncognito] = useState(false);
-  const [tabs, setTabs] = useState<Tab[]>([{ id: 'chat-1', type: 'chat', title: 'chat' }]);
-  const [activeTabId, setActiveTabId] = useState('chat-1');
+
+  // Multi-chat state
+  const [chats, setChats] = useState<Record<string, ChatData>>(() => {
+    const saved = localStorage.getItem('luna-chats');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Convert date strings back to Date objects
+        Object.values(parsed).forEach((chat: any) => {
+          chat.createdAt = new Date(chat.createdAt);
+          chat.messages.forEach((m: any) => {
+            m.timestamp = new Date(m.timestamp);
+          });
+        });
+        return parsed;
+      } catch {
+        return { 'chat-1': { id: 'chat-1', title: 'chat', messages: [], currentPlan: null, currentSteps: [], createdAt: new Date() } };
+      }
+    }
+    return { 'chat-1': { id: 'chat-1', title: 'chat', messages: [], currentPlan: null, currentSteps: [], createdAt: new Date() } };
+  });
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const saved = localStorage.getItem('luna-tabs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [{ id: 'chat-1', type: 'chat', title: 'chat' }];
+      }
+    }
+    return [{ id: 'chat-1', type: 'chat', title: 'chat' }];
+  });
+  const [activeTabId, setActiveTabId] = useState<string>(() => {
+    const saved = localStorage.getItem('luna-active-tab');
+    return saved || 'chat-1';
+  });
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Get current chat data
+  const currentChat = chats[activeTabId];
+  const messages = currentChat?.messages || [];
+  const currentPlan = currentChat?.currentPlan || null;
+  const currentSteps = currentChat?.currentSteps || [];
+
+  // Helper to update current chat
+  const updateCurrentChat = useCallback((updates: Partial<ChatData>) => {
+    setChats(prev => ({
+      ...prev,
+      [activeTabId]: { ...prev[activeTabId], ...updates }
+    }));
+  }, [activeTabId]);
+
+  // Save chats to localStorage
+  useEffect(() => {
+    localStorage.setItem('luna-chats', JSON.stringify(chats));
+  }, [chats]);
+
+  // Save tabs to localStorage
+  useEffect(() => {
+    localStorage.setItem('luna-tabs', JSON.stringify(tabs));
+  }, [tabs]);
+
+  // Save active tab to localStorage
+  useEffect(() => {
+    localStorage.setItem('luna-active-tab', activeTabId);
+  }, [activeTabId]);
+
+  // Focus edit input when editing
+  useEffect(() => {
+    if (editingTabId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingTabId]);
+
+  // Get activeTab for use throughout component
+  const activeTab = tabs.find(t => t.id === activeTabId);
 
   // typing and backspace animation for placeholder
   useEffect(() => {
-    if (messages.length > 0) return;
+    if (messages.length > 0 || activeTab?.type !== 'chat') return;
 
     const currentPrompt = placeholderPrompts[placeholderIndex];
 
@@ -120,7 +216,7 @@ export function ChatInterface() {
         setIsTyping(true);
       }
     }
-  }, [placeholderText, isTyping, placeholderIndex, messages.length]);
+  }, [placeholderText, isTyping, placeholderIndex, messages.length, activeTab?.type]);
 
   // save command history
   useEffect(() => {
@@ -158,7 +254,7 @@ export function ChatInterface() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isProcessing) return;
+    if (!input.trim() || isProcessing || !currentChat) return;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -167,7 +263,17 @@ export function ChatInterface() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Update messages and auto-generate title if this is first message
+    const newMessages = [...messages, userMessage];
+    const newTitle = messages.length === 0 ? generateChatTitle(newMessages, Object.keys(chats).length) : currentChat.title;
+
+    updateCurrentChat({ messages: newMessages, title: newTitle });
+
+    // Also update tab title
+    if (messages.length === 0) {
+      setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, title: newTitle } : t));
+    }
+
     setInput('');
 
     // check if auth is required and user is not logged in
@@ -178,7 +284,7 @@ export function ChatInterface() {
         content: 'please sign up or log in to your existing account to use luna.',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, authRequiredMessage]);
+      updateCurrentChat({ messages: [...newMessages, authRequiredMessage] });
       return;
     }
 
@@ -201,9 +307,6 @@ export function ChatInterface() {
         },
       });
 
-      setCurrentPlan(response);
-      setCurrentSteps(response.steps);
-
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         type: 'execution',
@@ -214,7 +317,11 @@ export function ChatInterface() {
         awaitingConfirmation: true,
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      updateCurrentChat({
+        messages: [...newMessages, assistantMessage],
+        currentPlan: response,
+        currentSteps: response.steps
+      });
     } catch {
       const errorMessage: Message = {
         id: crypto.randomUUID(),
@@ -222,25 +329,24 @@ export function ChatInterface() {
         content: `couldn't connect to the backend. make sure it's running on localhost:8000.`,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      updateCurrentChat({ messages: [...newMessages, errorMessage] });
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleConfirm = async () => {
-    if (!currentPlan) return;
+    if (!currentPlan || !currentChat) return;
 
     setIsExecuting(true);
 
     const runningSteps = currentSteps.map(s => ({ ...s, status: 'running' as const }));
-    setCurrentSteps(runningSteps);
 
-    setMessages(prev =>
-      prev.map(m =>
-        m.awaitingConfirmation ? { ...m, awaitingConfirmation: false, steps: runningSteps } : m
-      )
+    const updatedMessages = messages.map(m =>
+      m.awaitingConfirmation ? { ...m, awaitingConfirmation: false, steps: runningSteps } : m
     );
+
+    updateCurrentChat({ currentSteps: runningSteps, messages: updatedMessages });
 
     try {
       const response = await executeAllSteps({
@@ -265,14 +371,10 @@ export function ChatInterface() {
         return step;
       });
 
-      setCurrentSteps(updatedSteps);
-
-      setMessages(prev =>
-        prev.map(m =>
-          m.executionPlan?.task_id === currentPlan.task_id
-            ? { ...m, steps: updatedSteps, awaitingConfirmation: false }
-            : m
-        )
+      const messagesWithUpdatedSteps = updatedMessages.map(m =>
+        m.executionPlan?.task_id === currentPlan.task_id
+          ? { ...m, steps: updatedSteps, awaitingConfirmation: false }
+          : m
       );
 
       const allCompleted = updatedSteps.every(s => s.status === 'completed');
@@ -292,7 +394,11 @@ export function ChatInterface() {
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, completionMessage]);
+      updateCurrentChat({
+        currentSteps: updatedSteps,
+        messages: [...messagesWithUpdatedSteps, completionMessage],
+        currentPlan: null
+      });
     } catch (err) {
       const failedSteps = currentSteps.map(s => ({
         ...s,
@@ -300,13 +406,10 @@ export function ChatInterface() {
         error: err instanceof Error ? err.message : 'execution failed',
       }));
 
-      setCurrentSteps(failedSteps);
-      setMessages(prev =>
-        prev.map(m =>
-          m.executionPlan?.task_id === currentPlan.task_id
-            ? { ...m, steps: failedSteps, awaitingConfirmation: false }
-            : m
-        )
+      const messagesWithFailedSteps = updatedMessages.map(m =>
+        m.executionPlan?.task_id === currentPlan.task_id
+          ? { ...m, steps: failedSteps, awaitingConfirmation: false }
+          : m
       );
 
       const errorMessage: Message = {
@@ -315,16 +418,22 @@ export function ChatInterface() {
         content: `something went wrong: ${err instanceof Error ? err.message.toLowerCase() : 'unknown error'}.`,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+
+      updateCurrentChat({
+        currentSteps: failedSteps,
+        messages: [...messagesWithFailedSteps, errorMessage],
+        currentPlan: null
+      });
     } finally {
       setIsExecuting(false);
-      setCurrentPlan(null);
     }
   };
 
   const handleDecline = () => {
-    setMessages(prev =>
-      prev.map(m => (m.awaitingConfirmation ? { ...m, awaitingConfirmation: false } : m))
+    if (!currentChat) return;
+
+    const updatedMessages = messages.map(m =>
+      m.awaitingConfirmation ? { ...m, awaitingConfirmation: false } : m
     );
 
     const declineMessage: Message = {
@@ -334,9 +443,11 @@ export function ChatInterface() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, declineMessage]);
-    setCurrentPlan(null);
-    setCurrentSteps([]);
+    updateCurrentChat({
+      messages: [...updatedMessages, declineMessage],
+      currentPlan: null,
+      currentSteps: []
+    });
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -352,9 +463,21 @@ export function ChatInterface() {
   };
 
   const handleNewChat = () => {
-    setMessages([]);
-    setCurrentPlan(null);
-    setCurrentSteps([]);
+    const chatId = `chat-${Date.now()}`;
+    const chatCount = Object.keys(chats).length + 1;
+    const newChat: ChatData = {
+      id: chatId,
+      title: `chat ${chatCount}`,
+      messages: [],
+      currentPlan: null,
+      currentSteps: [],
+      createdAt: new Date()
+    };
+    const newTab: Tab = { id: chatId, type: 'chat', title: `chat ${chatCount}` };
+
+    setChats(prev => ({ ...prev, [chatId]: newChat }));
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(chatId);
     setInput('');
     setPlaceholderIndex(0);
     setPlaceholderText('');
@@ -362,9 +485,22 @@ export function ChatInterface() {
   };
 
   const handleClearHistory = () => {
-    handleNewChat();
+    // Clear all chats and reset to single new chat
+    const chatId = 'chat-1';
+    const newChat: ChatData = {
+      id: chatId,
+      title: 'chat',
+      messages: [],
+      currentPlan: null,
+      currentSteps: [],
+      createdAt: new Date()
+    };
+    setChats({ [chatId]: newChat });
+    setTabs([{ id: chatId, type: 'chat', title: 'chat' }]);
+    setActiveTabId(chatId);
     setCommandHistory([]);
     setSidebarView('none');
+    setInput('');
   };
 
   const handleHistoryClick = (command: string) => {
@@ -385,17 +521,59 @@ export function ChatInterface() {
   };
 
   const closeTab = (tabId: string) => {
-    if (tabs.length === 1) return;
+    const tab = tabs.find(t => t.id === tabId);
+
+    // Don't close if it's the only chat tab
+    const chatTabs = tabs.filter(t => t.type === 'chat');
+    if (tab?.type === 'chat' && chatTabs.length === 1) return;
+
     const tabIndex = tabs.findIndex(t => t.id === tabId);
     const newTabs = tabs.filter(t => t.id !== tabId);
     setTabs(newTabs);
+
+    // Delete chat data if it's a chat tab
+    if (tab?.type === 'chat') {
+      setChats(prev => {
+        const newChats = { ...prev };
+        delete newChats[tabId];
+        return newChats;
+      });
+    }
+
+    // Switch to another tab if closing the active one
     if (activeTabId === tabId) {
       const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
       setActiveTabId(newTabs[newActiveIndex].id);
     }
   };
 
-  const activeTab = tabs.find(t => t.id === activeTabId);
+  const startEditingTab = (tabId: string, currentTitle: string) => {
+    setEditingTabId(tabId);
+    setEditingTitle(currentTitle);
+  };
+
+  const finishEditingTab = () => {
+    if (editingTabId && editingTitle.trim()) {
+      // Update tab title
+      setTabs(prev => prev.map(t =>
+        t.id === editingTabId ? { ...t, title: editingTitle.trim() } : t
+      ));
+      // Update chat title if it's a chat
+      if (chats[editingTabId]) {
+        setChats(prev => ({
+          ...prev,
+          [editingTabId]: { ...prev[editingTabId], title: editingTitle.trim() }
+        }));
+      }
+    }
+    setEditingTabId(null);
+    setEditingTitle('');
+  };
+
+  const cancelEditingTab = () => {
+    setEditingTabId(null);
+    setEditingTitle('');
+  };
   const awaitingConfirmation = messages.some(m => m.awaitingConfirmation);
 
   return (
@@ -595,7 +773,7 @@ export function ChatInterface() {
           </div>
         </header>
 
-        {/* tab bar */}
+        {/* tab bar - always show when more than one tab */}
         {tabs.length > 1 && (
           <div
             className="flex items-center px-2 border-b"
@@ -604,47 +782,86 @@ export function ChatInterface() {
               borderColor: 'var(--color-border)',
             }}
           >
-            {tabs.map(tab => (
-              <div
-                key={tab.id}
-                className="group flex items-center"
-              >
-                <button
-                  onClick={() => setActiveTabId(tab.id)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-medium transition-all border-b-2"
-                  style={{
-                    color: activeTabId === tab.id ? 'var(--color-text)' : 'var(--color-textMuted)',
-                    borderColor: activeTabId === tab.id ? 'var(--color-accent)' : 'transparent',
-                    backgroundColor: activeTabId === tab.id ? 'var(--color-background)' : 'transparent',
-                  }}
+            {tabs.map(tab => {
+              const isEditing = editingTabId === tab.id;
+              const canClose = tab.type === 'account' || tabs.filter(t => t.type === 'chat').length > 1;
+
+              return (
+                <div
+                  key={tab.id}
+                  className="group flex items-center"
                 >
-                  {tab.type === 'chat' ? (
-                    <MessageCircle className="w-3 h-3" />
+                  {isEditing ? (
+                    <div className="flex items-center gap-1 px-2 py-1.5">
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editingTitle}
+                        onChange={e => setEditingTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') finishEditingTab();
+                          if (e.key === 'Escape') cancelEditingTab();
+                        }}
+                        onBlur={finishEditingTab}
+                        className="w-24 px-1.5 py-0.5 text-xs rounded border focus:outline-none focus:ring-1"
+                        style={{
+                          backgroundColor: 'var(--color-background)',
+                          borderColor: 'var(--color-accent)',
+                          color: 'var(--color-text)',
+                        }}
+                      />
+                      <button
+                        onClick={finishEditingTab}
+                        className="p-0.5 rounded"
+                        style={{ color: 'var(--color-success)' }}
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                    </div>
                   ) : (
-                    <User className="w-3 h-3" />
+                    <button
+                      onClick={() => setActiveTabId(tab.id)}
+                      onDoubleClick={() => tab.type === 'chat' && startEditingTab(tab.id, tab.title)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium transition-all border-b-2"
+                      style={{
+                        color: activeTabId === tab.id ? 'var(--color-text)' : 'var(--color-textMuted)',
+                        borderColor: activeTabId === tab.id ? 'var(--color-accent)' : 'transparent',
+                        backgroundColor: activeTabId === tab.id ? 'var(--color-background)' : 'transparent',
+                      }}
+                      title={tab.type === 'chat' ? 'double-click to rename' : ''}
+                    >
+                      {tab.type === 'chat' ? (
+                        <MessageCircle className="w-3 h-3" />
+                      ) : (
+                        <User className="w-3 h-3" />
+                      )}
+                      {tab.title}
+                    </button>
                   )}
-                  {tab.title}
-                </button>
-                {tabs.length > 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeTab(tab.id);
-                    }}
-                    className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--color-textMuted)' }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.backgroundColor = 'var(--color-surface)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-            ))}
+                  {canClose && !isEditing && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: 'var(--color-textMuted)' }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+                        e.currentTarget.style.color = 'var(--color-error)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--color-textMuted)';
+                      }}
+                      title="close tab"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
