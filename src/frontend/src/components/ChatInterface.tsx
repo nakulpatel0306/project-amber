@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Settings, Loader2, Sparkles } from 'lucide-react';
+import { Send, Settings, Loader2, Sparkles, LogOut, ChevronDown } from 'lucide-react';
 import { WelcomeScreen } from './WelcomeScreen';
 import { ExecutionTimeline } from './ExecutionTimeline';
 import { ConfirmationPrompt } from './ConfirmationPrompt';
 import { ThemeSelector } from './ThemeSelector';
+import { useAuth } from '../contexts/AuthContext';
 import {
   executeAllSteps,
   executeCommand,
@@ -33,7 +34,9 @@ interface Message {
 
 export function ChatInterface() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [input, setInput] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -246,16 +249,54 @@ export function ChatInterface() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/signup')}
-            className="px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-150"
-            style={{
-              backgroundColor: 'var(--color-accent)',
-              color: 'var(--color-accentText)',
-            }}
-          >
-            Sign up
-          </button>
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-150"
+                style={{ color: 'var(--color-text)' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-surface)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                Hello, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                <ChevronDown className="w-3.5 h-3.5" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
+              {showUserMenu && (
+                <div
+                  className="absolute right-0 mt-1 py-1 w-36 rounded-lg border shadow-lg z-50"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors"
+                    style={{ color: 'var(--color-text)' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-border)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-150"
+              style={{
+                backgroundColor: 'var(--color-accent)',
+                color: 'var(--color-accentText)',
+              }}
+            >
+              Sign up
+            </button>
+          )}
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="p-2 rounded-lg transition-all duration-150"
