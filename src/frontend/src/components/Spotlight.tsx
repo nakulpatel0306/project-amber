@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   executeAllSteps,
   executeCommand,
@@ -27,6 +28,7 @@ interface Step {
 }
 
 export function Spotlight() {
+  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -167,6 +169,14 @@ export function Spotlight() {
 
       {/* glow effect */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary-500/20 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* sign up button */}
+      <button
+        onClick={() => navigate("/signup")}
+        className="absolute top-6 right-6 px-4 py-2 text-sm text-slate-300 bg-slate-800/50 backdrop-blur-xl hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600/50 rounded-xl font-medium transition-all z-10"
+      >
+        Sign up
+      </button>
 
       {/* content */}
       <div className="relative flex flex-col items-center justify-start pt-24 px-4 h-full overflow-y-auto">
