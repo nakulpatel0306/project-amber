@@ -96,7 +96,7 @@ def parse_command_with_llm(command: str, os_type: str) -> ExecuteResponse:
     if check_tool_installed("pip"):
         available_package_managers.append("pip")
     
-    system_prompt = f"""you are luna, an AI agent that generates shell commands for development workflows.
+    system_prompt = f"""you are luna, an AI agent that generates shell commands for development workflows on macOS/Linux/Windows.
 
 CONTEXT:
 - os: {os_type}
@@ -106,24 +106,47 @@ CONTEXT:
 
 TASK: convert the user request into executable shell commands.
 
+CAPABILITIES YOU SUPPORT:
+1. INSTALL APPS: Use brew install --cask for GUI apps (figma, slack, discord, spotify, chrome, vscode, cursor, etc.)
+2. UNINSTALL APPS: Use brew uninstall --cask app-name && rm -rf /Applications/App.app
+3. SETUP ENVIRONMENTS:
+   - Python: brew install python, python3 -m venv venv, source venv/bin/activate, pip install requirements
+   - Node: brew install node, npm install
+   - For IDEs: open the IDE after installing with "open -a AppName" on macOS
+4. CHECK STATUS: which, --version, ls, docker ps, etc.
+
 RULES:
 1. generate atomic, directly-executable shell commands
-2. risk levels: "safe" (read-only), "moderate" (installs), "dangerous" (sudo/delete)
-3. add verification steps when useful (e.g., check if installed after install)
+2. risk levels: "safe" (read-only), "moderate" (installs), "dangerous" (sudo/delete/uninstall)
+3. ALWAYS verify installations using "command -v appname" or "brew list --cask | grep appname" - NOT ls on /Applications (unreliable)
 4. use the appropriate package manager for the os
+5. for uninstalls, mark as "dangerous" risk level
+
+MACOS APP NAMES (brew cask names):
+- Figma: figma (installs to /Applications/Figma.app)
+- Slack: slack
+- Discord: discord
+- Spotify: spotify
+- Chrome: google-chrome
+- VS Code: visual-studio-code
+- Cursor: cursor
+- Notion: notion
+- Zoom: zoom
+- Docker: docker
+
+VERIFICATION - CRITICAL (do NOT use "ls /Applications"):
+✓ CORRECT: brew list --cask | grep -q "appname" && echo "installed" || echo "not found"
+✓ CORRECT: command -v appname
+✓ CORRECT: mdfind "kMDItemCFBundleIdentifier == 'com.app.id'" | head -1
+✗ WRONG: ls -la /Applications/App.app (fails if path differs)
 
 COMMAND SYNTAX - CRITICAL:
 ✓ CORRECT: curl -fsSL https://example.com/install.sh | bash
 ✗ WRONG: /bin/bash -c '$(curl -fsSL https://example.com/install.sh)'
 ✗ WRONG: $(curl ...) or backtick command substitution
 
-✓ CORRECT: brew install package
-✓ CORRECT: which brew
-✓ CORRECT: sudo apt-get install -y package
-
 ALWAYS use -y or equivalent for package installs (non-interactive).
 NEVER use interactive flags like -i, --interactive, or expect user input.
-pipe to bash directly for install scripts: curl url | bash
 
 respond with JSON only:
 {{
@@ -184,88 +207,110 @@ respond with JSON only:
 
 def parse_command_hardcoded(command: str, os_type: str) -> ExecuteResponse:
     """
-    fallback hardcoded parser
+    fallback hardcoded parser with improved verification
     """
     command_lower = command.lower().strip()
-    
-    # detect "install chrome" command
-    if "install" in command_lower and "chrome" in command_lower:
-        if os_type == "darwin":
-            return ExecuteResponse(
-                task_id="task_001",
-                steps=[
-                    ExecuteStep(
-                        id=1,
-                        description="check if homebrew is installed",
-                        command="which brew",
-                        risk="safe"
-                    ),
-                    ExecuteStep(
-                        id=2,
-                        description="install google chrome",
-                        command="brew install --cask google-chrome",
-                        risk="moderate"
-                    ),
-                    ExecuteStep(
-                        id=3,
-                        description="verify installation",
-                        command="ls -la /Applications/Google\\ Chrome.app",
-                        risk="safe"
+
+    # common macOS apps mapping (app keyword -> cask name)
+    macos_apps = {
+        "chrome": ("google-chrome", "Google Chrome"),
+        "vscode": ("visual-studio-code", "Visual Studio Code"),
+        "visual studio code": ("visual-studio-code", "Visual Studio Code"),
+        "slack": ("slack", "Slack"),
+        "figma": ("figma", "Figma"),
+        "discord": ("discord", "Discord"),
+        "spotify": ("spotify", "Spotify"),
+        "notion": ("notion", "Notion"),
+        "zoom": ("zoom.us", "zoom.us"),
+        "cursor": ("cursor", "Cursor"),
+        "docker": ("docker", "Docker"),
+        "postman": ("postman", "Postman"),
+        "iterm": ("iterm2", "iTerm"),
+        "iterm2": ("iterm2", "iTerm"),
+    }
+
+    # detect install commands
+    if "install" in command_lower:
+        for app_key, (cask_name, app_display) in macos_apps.items():
+            if app_key in command_lower:
+                if os_type == "darwin":
+                    return ExecuteResponse(
+                        task_id=f"task_install_{cask_name}",
+                        steps=[
+                            ExecuteStep(
+                                id=1,
+                                description="Check if Homebrew is installed",
+                                command="command -v brew",
+                                risk="safe"
+                            ),
+                            ExecuteStep(
+                                id=2,
+                                description=f"Install {app_display}",
+                                command=f"brew install --cask {cask_name}",
+                                risk="moderate"
+                            ),
+                            ExecuteStep(
+                                id=3,
+                                description="Verify installation",
+                                command=f"brew list --cask | grep -q '{cask_name}' && echo '✓ {app_display} installed successfully' || echo '✗ Installation verification failed'",
+                                risk="safe"
+                            )
+                        ],
+                        requires_confirmation=True,
+                        estimated_time="2-3 minutes"
                     )
-                ],
-                requires_confirmation=True,
-                estimated_time="2-3 minutes"
-            )
-    
-    # detect "install vscode" command
-    elif "install" in command_lower and ("vscode" in command_lower or "visual studio code" in command_lower):
-        if os_type == "darwin":
-            return ExecuteResponse(
-                task_id="task_002",
-                steps=[
-                    ExecuteStep(
-                        id=1,
-                        description="check if homebrew is installed",
-                        command="which brew",
-                        risk="safe"
-                    ),
-                    ExecuteStep(
-                        id=2,
-                        description="install visual studio code",
-                        command="brew install --cask visual-studio-code",
-                        risk="moderate"
-                    ),
-                    ExecuteStep(
-                        id=3,
-                        description="verify installation",
-                        command="ls -la /Applications/Visual\\ Studio\\ Code.app",
-                        risk="safe"
+
+    # detect uninstall commands
+    if "uninstall" in command_lower or "remove" in command_lower:
+        for app_key, (cask_name, app_display) in macos_apps.items():
+            if app_key in command_lower:
+                if os_type == "darwin":
+                    return ExecuteResponse(
+                        task_id=f"task_uninstall_{cask_name}",
+                        steps=[
+                            ExecuteStep(
+                                id=1,
+                                description=f"Check if {app_display} is installed",
+                                command=f"brew list --cask | grep -q '{cask_name}' && echo 'Found' || echo 'Not installed via Homebrew'",
+                                risk="safe"
+                            ),
+                            ExecuteStep(
+                                id=2,
+                                description=f"Uninstall {app_display}",
+                                command=f"brew uninstall --cask {cask_name}",
+                                risk="dangerous"
+                            ),
+                            ExecuteStep(
+                                id=3,
+                                description="Verify removal",
+                                command=f"brew list --cask | grep -q '{cask_name}' && echo '✗ Still installed' || echo '✓ {app_display} removed successfully'",
+                                risk="safe"
+                            )
+                        ],
+                        requires_confirmation=True,
+                        estimated_time="1-2 minutes"
                     )
-                ],
-                requires_confirmation=True,
-                estimated_time="2-3 minutes"
-            )
-    
+
     # detect "check docker" command
-    elif "check" in command_lower and "docker" in command_lower:
+    if "check" in command_lower and "docker" in command_lower:
         return ExecuteResponse(
             task_id="task_003",
             steps=[
                 ExecuteStep(
                     id=1,
-                    description="check if docker is installed",
+                    description="Check if Docker is installed",
                     command="docker --version",
                     risk="safe"
                 ),
                 ExecuteStep(
                     id=2,
-                    description="check if docker daemon is running",
+                    description="Check if Docker daemon is running",
                     command="docker ps",
                     risk="safe"
                 ),
                 ExecuteStep(
                     id=3,
-                    description="show docker info",
+                    description="Show Docker info",
                     command="docker info",
                     risk="safe"
                 )
@@ -273,45 +318,44 @@ def parse_command_hardcoded(command: str, os_type: str) -> ExecuteResponse:
             requires_confirmation=False,
             estimated_time="5 seconds"
         )
-        
-    # detect "install slack" command
-    elif "install" in command_lower and "slack" in command_lower:
-        if os_type == "darwin":
-            return ExecuteResponse(
-                task_id="task_slack",
-                steps=[
-                    ExecuteStep(
-                        id=1,
-                        description="check if homebrew is installed",
-                        command="which brew",
-                        risk="safe"
-                    ),
-                    ExecuteStep(
-                        id=2,
-                        description="install slack",
-                        command="brew install --cask slack",
-                        risk="moderate"
-                    ),
-                    ExecuteStep(
-                        id=3,
-                        description="verify installation",
-                        command="ls -la /Applications/Slack.app",
-                        risk="safe"
-                    )
-                ],
-                requires_confirmation=True,
-                estimated_time="2-3 minutes"
-            )
-    
+
+    # detect python environment setup
+    if "python" in command_lower and ("environment" in command_lower or "env" in command_lower or "setup" in command_lower):
+        return ExecuteResponse(
+            task_id="task_python_env",
+            steps=[
+                ExecuteStep(
+                    id=1,
+                    description="Check Python installation",
+                    command="python3 --version",
+                    risk="safe"
+                ),
+                ExecuteStep(
+                    id=2,
+                    description="Create virtual environment",
+                    command="python3 -m venv venv",
+                    risk="moderate"
+                ),
+                ExecuteStep(
+                    id=3,
+                    description="Verify virtual environment created",
+                    command="test -d venv && echo '✓ Virtual environment created' || echo '✗ Failed to create venv'",
+                    risk="safe"
+                )
+            ],
+            requires_confirmation=True,
+            estimated_time="30 seconds"
+        )
+
     # detect "which" or similar check commands
-    elif "which" in command_lower or "where" in command_lower:
+    if "which" in command_lower or "where" in command_lower:
         tool = command_lower.split()[-1] if len(command_lower.split()) > 1 else "unknown"
         return ExecuteResponse(
             task_id="task_check",
             steps=[
                 ExecuteStep(
                     id=1,
-                    description=f"check if {tool} is installed",
+                    description=f"Check if {tool} is installed",
                     command=command,
                     risk="safe"
                 )
@@ -319,15 +363,15 @@ def parse_command_hardcoded(command: str, os_type: str) -> ExecuteResponse:
             requires_confirmation=False,
             estimated_time="1 second"
         )
-    
+
     # default: command not recognized
     return ExecuteResponse(
         task_id="task_unknown",
         steps=[
             ExecuteStep(
                 id=1,
-                description=f"command not recognized: {command}",
-                command="echo 'unknown command - no openai api key configured'",
+                description=f"Command not recognized: {command}",
+                command="echo 'Unknown command - configure OPENAI_API_KEY in .env for natural language parsing'",
                 risk="safe",
                 status="failed"
             )

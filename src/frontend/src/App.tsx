@@ -1,11 +1,12 @@
-import { Spotlight } from "./components/Spotlight";
-import "./App.css";
+import { ThemeProvider } from './contexts/ThemeContext';
+import { ChatInterface } from './components/ChatInterface';
+import './App.css';
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-900">
-      <Spotlight />
-    </div>
+    <ThemeProvider>
+      <ChatInterface />
+    </ThemeProvider>
   );
 }
 
