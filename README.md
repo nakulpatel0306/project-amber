@@ -1,42 +1,23 @@
-# luna
+# luna culturesync
 
-a local-first ai agent for development workflows. type natural language commands and luna executes them safely on your machine.
+a coffee chat matching platform that helps startups find candidates who align with their culture and values.
 
 ## what it does
 
-luna is a desktop app that lets you run development tasks using plain english:
+luna culturesync helps startups find the right culture fit through:
 
-```
-"install chrome"
-"install vscode"
-"install slack"
-"check docker status"
-```
+1. **culture assessment** - candidates answer 10 questions about work style, communication preferences, and values
+2. **personality matching** - our scoring algorithm identifies culture traits and compatibility
+3. **coffee chat scheduling** - easily connect with candidates for informal conversations
 
-it parses your request, shows you the execution plan with risk levels, and runs the commands after confirmation.
+## features
 
-## current status
-
-**working features:**
-
-- spotlight-style ui for entering commands
-- command parsing via openai gpt-4o-mini (with hardcoded fallback)
-- execution plan display with step-by-step breakdown
-- risk level indicators (safe / moderate / dangerous)
-- real command execution via subprocess
-- seamless sudo handling via macos native password dialog
-- output and error display per step
-- command safety validation (blocks destructive patterns)
-
-**supported commands (hardcoded fallback):**
-
-- `install chrome` - installs via homebrew
-- `install vscode` - installs via homebrew
-- `install slack` - installs via homebrew
-- `check docker status` - checks docker installation and status
-- `which <tool>` - checks if a tool is installed
-
-with an openai api key configured, any natural language command is supported.
+- **10-question assessment** covering work style, communication, and values
+- **culture fit scoring** with detailed dimension breakdowns
+- **candidate dashboard** with search, sort, and filter capabilities
+- **one-click coffee chat** scheduling via email
+- **feedback collection** to continuously improve the platform
+- **beautiful theming** with multiple color schemes
 
 ## tech stack
 
@@ -47,14 +28,8 @@ with an openai api key configured, any natural language command is supported.
 | styling | tailwind css |
 | icons | lucide-react |
 | backend | python 3.11+, fastapi |
-| llm | openai gpt-4o-mini |
-
-## prerequisites
-
-- node.js 18+
-- rust / cargo
-- python 3.11+
-- homebrew (for macos package installations)
+| database | sqlite |
+| auth | supabase (optional) |
 
 ## quick start
 
@@ -68,10 +43,7 @@ python3 -m venv venv
 source venv/bin/activate  # windows: venv\Scripts\activate
 
 # install dependencies
-pip install fastapi uvicorn openai python-dotenv pydantic
-
-# create .env file
-echo "OPENAI_API_KEY=your_key_here" > .env
+pip install fastapi uvicorn python-dotenv pydantic
 
 # run backend
 python main.py
@@ -91,12 +63,14 @@ npm install
 npm run tauri dev
 ```
 
-### 3. use luna
+### 3. use culturesync
 
-1. type a command like "install chrome"
-2. review the execution plan
-3. click "execute" to run the steps
-4. view output/errors for each step
+1. click "take the assessment" on the welcome screen
+2. enter your name and email
+3. answer 10 questions about your work style and values
+4. view your culture fit results
+5. browse the candidate dashboard to find matches
+6. schedule coffee chats with potential fits
 
 ## project structure
 
@@ -106,42 +80,61 @@ luma-desktop-agent/
 │   ├── frontend/           # tauri + react app
 │   │   ├── src/
 │   │   │   ├── components/
-│   │   │   │   └── Spotlight.tsx   # main ui component
+│   │   │   │   ├── AssessmentFlow.tsx   # assessment questions
+│   │   │   │   ├── CandidateDashboard.tsx # candidate list
+│   │   │   │   ├── FeedbackWidget.tsx   # feedback collection
+│   │   │   │   ├── WelcomeScreen.tsx    # landing page
+│   │   │   │   └── ChatInterface.tsx    # main layout
 │   │   │   ├── utils/
-│   │   │   │   └── api.ts          # backend api client
-│   │   │   ├── App.tsx
-│   │   │   └── main.tsx
+│   │   │   │   └── api.ts              # backend api client
+│   │   │   └── contexts/
+│   │   │       ├── ThemeContext.tsx    # theme management
+│   │   │       └── AuthContext.tsx     # authentication
 │   │   └── src-tauri/      # rust backend for tauri
 │   └── backend/            # python api server
-│       ├── main.py         # fastapi app + command parsing
-│       └── utils/
-│           └── executor.py # command execution + sudo handling
+│       ├── main.py         # fastapi endpoints
+│       ├── database.py     # sqlite operations
+│       ├── questions.py    # assessment questions
+│       └── scoring.py      # culture fit algorithm
 ├── docs/                   # documentation
 └── package.json            # root workspace config
 ```
 
-## documentation
+## api endpoints
 
-- [architecture](docs/ARCHITECTURE.md) - technical design and data flow
-- [setup guide](docs/SETUP.md) - detailed installation instructions
-- [usage guide](docs/USAGE.md) - how to use luna
-- [api reference](docs/API.md) - backend api documentation
+| method | endpoint | description |
+|--------|----------|-------------|
+| POST | `/api/assessment/start` | start new assessment |
+| POST | `/api/assessment/answer` | submit question answer |
+| GET | `/api/assessment/results/{id}` | get assessment results |
+| GET | `/api/candidates` | list all candidates |
+| POST | `/api/feedback` | submit feedback |
 
-## how it works
+## assessment categories
 
-1. **user input** - you type a natural language command in the spotlight ui
-2. **parsing** - backend sends your command to gpt-4o-mini (or uses hardcoded parser)
-3. **plan generation** - llm returns structured steps with commands and risk levels
-4. **confirmation** - ui displays the plan for your approval
-5. **execution** - steps run sequentially with real-time status updates
-6. **sudo handling** - if needed, macos shows native password dialog (credentials cached for ~5 min)
+the assessment measures three core dimensions:
 
-## limitations
+1. **work style** - how you prefer to work (structured vs flexible, solo vs collaborative)
+2. **communication** - how you prefer to communicate and receive feedback
+3. **values** - what matters most to you in a workplace
 
-- macos only (sudo handling uses osascript)
-- requires homebrew for package installations
-- llm features require openai api key
-- no global hotkey yet (app must be focused)
+## scoring algorithm
+
+the culture fit score (0-100) is calculated from:
+- work style compatibility (33%)
+- communication alignment (33%)
+- values match (33%)
+
+top traits are identified based on the strongest response patterns.
+
+## themes
+
+culturesync includes multiple themes:
+- minimal light / minimal dark
+- lavender / rose / mint
+- mocha / ocean / sunset
+
+access via the settings panel.
 
 ## license
 

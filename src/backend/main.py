@@ -1,36 +1,47 @@
 """
-luna backend - main entry point
+Luna CultureSync - Backend API
+AI-powered coffee chat matching platform for startups and candidates
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional, Literal, Dict, Any
+from typing import List, Optional
 import uvicorn
-import platform
-import os
-import json
-from dotenv import load_dotenv
-from openai import OpenAI
-from utils.executor import execute_command as run_command, check_tool_installed
 
-# load environment variables
-load_dotenv()
+from database import (
+    init_database,
+    create_candidate,
+    get_candidate,
+    get_candidate_by_email,
+    get_all_candidates_with_scores,
+    save_assessment_response,
+    get_assessment_responses,
+    get_assessment_session,
+    complete_assessment,
+    save_scores,
+    get_scores,
+    save_feedback,
+    get_all_feedback,
+)
+from questions import get_question, get_all_questions, get_total_questions
+from scoring import calculate_scores, get_score_explanation
 
-# initialize openai client
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize database
+init_database()
 
 app = FastAPI(
-    title="luna agent api",
-    description="local-first ai agent for development workflows",
-    version="0.1.0"
+    title="Luna CultureSync API",
+    description="AI-powered coffee chat matching platform for startups and candidates",
+    version="1.0.0"
 )
 
-# enable cors for tauri frontend
+# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:1420",
+        "http://localhost:5173",
         "http://tauri.localhost",
         "tauri://localhost"
     ],
@@ -40,487 +51,343 @@ app.add_middleware(
 )
 
 
-class ExecuteStep(BaseModel):
+# ============ Request/Response Models ============
+
+class StartAssessmentRequest(BaseModel):
+    name: str
+    email: str
+
+
+class StartAssessmentResponse(BaseModel):
+    candidate_id: int
+    current_question: int
+    total_questions: int
+    question: dict
+    message: str
+
+
+class SubmitAnswerRequest(BaseModel):
+    candidate_id: int
+    question_id: int
+    answer: str
+
+
+class SubmitAnswerResponse(BaseModel):
+    success: bool
+    next_question: Optional[dict]
+    current_question: int
+    total_questions: int
+    is_complete: bool
+    message: str
+
+
+class AssessmentResultsResponse(BaseModel):
+    candidate_id: int
+    name: str
+    culture_fit_score: int
+    work_style_score: int
+    communication_score: int
+    values_score: int
+    top_traits: List[str]
+    explanation: str
+
+
+class CandidateResponse(BaseModel):
     id: int
-    description: str
-    command: str
-    risk: Literal["safe", "moderate", "dangerous"]
-    status: Optional[Literal["pending", "running", "completed", "failed"]] = "pending"
+    name: str
+    email: str
+    culture_fit_score: Optional[int]
+    work_style_score: Optional[int]
+    communication_score: Optional[int]
+    values_score: Optional[int]
+    top_traits: Optional[List[str]]
+    assessment_status: Optional[str]
 
 
-class ExecuteRequest(BaseModel):
-    command: str
-    context: Optional[dict] = None
+class FeedbackRequest(BaseModel):
+    message: str
+    user_type: Optional[str] = "candidate"
+    page: Optional[str] = "unknown"
 
 
-class ExecuteResponse(BaseModel):
-    task_id: str
-    steps: List[ExecuteStep]
-    requires_confirmation: bool
-    estimated_time: Optional[str] = None
+class FeedbackResponse(BaseModel):
+    success: bool
+    message: str
 
 
-class ExecuteAllRequest(BaseModel):
-    task_id: str
-    steps: List[Dict[str, Any]]
-
-
-class StepResult(BaseModel):
-    step_id: int
-    status: Literal["completed", "failed"]
-    output: str
-    error: Optional[str] = None
-
-
-class ExecuteAllResponse(BaseModel):
-    task_id: str
-    results: List[StepResult]
-    overall_status: Literal["completed", "failed", "partial"]
-
-
-def parse_command_with_llm(command: str, os_type: str) -> ExecuteResponse:
-    """
-    use llm to parse any command and generate execution steps
-    """
-    
-    # detect available package managers
-    available_package_managers = []
-    if check_tool_installed("brew"):
-        available_package_managers.append("homebrew")
-    if check_tool_installed("apt-get"):
-        available_package_managers.append("apt")
-    if check_tool_installed("choco"):
-        available_package_managers.append("chocolatey")
-    if check_tool_installed("npm"):
-        available_package_managers.append("npm")
-    if check_tool_installed("pip"):
-        available_package_managers.append("pip")
-    
-    system_prompt = f"""you are luna, an AI agent that generates shell commands for development workflows on macOS/Linux/Windows.
-
-CONTEXT:
-- os: {os_type}
-- package managers: {', '.join(available_package_managers) if available_package_managers else 'none detected'}
-- sudo is handled automatically via native dialog (no terminal prompts)
-- all commands run non-interactively (no user input required during execution)
-
-TASK: convert the user request into executable shell commands.
-
-CRITICAL RULE - ONE COMMAND PER STEP:
-- Each step must contain exactly ONE command
-- DO NOT chain commands with && or || in a single step
-- Split into separate steps instead
-
-EXAMPLE - CORRECT:
-{{"id": 1, "command": "brew install --cask figma", "description": "install figma"}}
-{{"id": 2, "command": "brew list --cask | grep figma", "description": "verify installation"}}
-
-EXAMPLE - WRONG (DO NOT DO THIS):
-{{"id": 1, "command": "brew install --cask figma && brew list --cask | grep figma", ...}}
-
-CAPABILITIES:
-1. INSTALL APPS: brew install --cask for GUI apps
-2. UNINSTALL APPS: brew uninstall --cask app-name
-3. SETUP ENVIRONMENTS: python3 -m venv, pip install, npm install
-4. CHECK STATUS: which, --version, brew list
-
-RULES:
-1. ONE command per step (no && chaining)
-2. risk levels: "safe" (read-only), "moderate" (installs), "dangerous" (sudo/delete)
-3. verify installations with: brew list --cask | grep appname
-4. use appropriate package manager for the os
-
-MACOS CASK NAMES:
-figma, slack, discord, spotify, google-chrome, visual-studio-code, cursor, notion, zoom, docker, postman, iterm2, onedrive, microsoft-teams, microsoft-outlook, microsoft-word, microsoft-excel, whatsapp, telegram, signal, arc, firefox, brave-browser, raycast, rectangle, alfred
-
-respond with JSON only:
-{{
-  "task_id": "unique_id",
-  "steps": [
-    {{"id": 1, "description": "what this does", "command": "single shell command", "risk": "safe|moderate|dangerous"}}
-  ],
-  "requires_confirmation": true,
-  "estimated_time": "time estimate"
-}}"""
-
-    try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",  # faster and cheaper
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": command}
-            ],
-            temperature=0.3,
-            max_tokens=1000
-        )
-        
-        # parse the response
-        response_text = response.choices[0].message.content.strip()
-        
-        # remove markdown code blocks if present
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-            response_text = response_text.strip()
-        
-        parsed = json.loads(response_text)
-        
-        # convert to our response model
-        steps = [
-            ExecuteStep(
-                id=step["id"],
-                description=step["description"],
-                command=step["command"],
-                risk=step["risk"]
-            )
-            for step in parsed["steps"]
-        ]
-        
-        return ExecuteResponse(
-            task_id=parsed.get("task_id", f"task_{hash(command)}"),
-            steps=steps,
-            requires_confirmation=parsed.get("requires_confirmation", True),
-            estimated_time=parsed.get("estimated_time", "unknown")
-        )
-        
-    except Exception as e:
-        print(f"❌ llm parsing failed: {e}")
-        # fallback to hardcoded parser
-        return parse_command_hardcoded(command, os_type)
-
-
-def parse_command_hardcoded(command: str, os_type: str) -> ExecuteResponse:
-    """
-    fallback hardcoded parser with improved verification
-    """
-    command_lower = command.lower().strip()
-
-    # common macOS apps mapping (app keyword -> cask name)
-    macos_apps = {
-        "chrome": ("google-chrome", "Google Chrome"),
-        "google chrome": ("google-chrome", "Google Chrome"),
-        "vscode": ("visual-studio-code", "Visual Studio Code"),
-        "visual studio code": ("visual-studio-code", "Visual Studio Code"),
-        "vs code": ("visual-studio-code", "Visual Studio Code"),
-        "slack": ("slack", "Slack"),
-        "figma": ("figma", "Figma"),
-        "discord": ("discord", "Discord"),
-        "spotify": ("spotify", "Spotify"),
-        "notion": ("notion", "Notion"),
-        "zoom": ("zoom", "Zoom"),
-        "cursor": ("cursor", "Cursor"),
-        "docker": ("docker", "Docker"),
-        "postman": ("postman", "Postman"),
-        "iterm": ("iterm2", "iTerm2"),
-        "iterm2": ("iterm2", "iTerm2"),
-        "onedrive": ("onedrive", "OneDrive"),
-        "microsoft onedrive": ("onedrive", "OneDrive"),
-        "teams": ("microsoft-teams", "Microsoft Teams"),
-        "microsoft teams": ("microsoft-teams", "Microsoft Teams"),
-        "outlook": ("microsoft-outlook", "Microsoft Outlook"),
-        "microsoft outlook": ("microsoft-outlook", "Microsoft Outlook"),
-        "word": ("microsoft-word", "Microsoft Word"),
-        "microsoft word": ("microsoft-word", "Microsoft Word"),
-        "excel": ("microsoft-excel", "Microsoft Excel"),
-        "microsoft excel": ("microsoft-excel", "Microsoft Excel"),
-        "whatsapp": ("whatsapp", "WhatsApp"),
-        "telegram": ("telegram", "Telegram"),
-        "signal": ("signal", "Signal"),
-        "arc": ("arc", "Arc"),
-        "firefox": ("firefox", "Firefox"),
-        "brave": ("brave-browser", "Brave"),
-        "raycast": ("raycast", "Raycast"),
-        "rectangle": ("rectangle", "Rectangle"),
-        "alfred": ("alfred", "Alfred"),
-        "1password": ("1password", "1Password"),
-        "bitwarden": ("bitwarden", "Bitwarden"),
-        "vlc": ("vlc", "VLC"),
-        "obs": ("obs", "OBS"),
-        "gimp": ("gimp", "GIMP"),
-        "inkscape": ("inkscape", "Inkscape"),
-    }
-
-    # detect install commands
-    if "install" in command_lower:
-        for app_key, (cask_name, app_display) in macos_apps.items():
-            if app_key in command_lower:
-                if os_type == "darwin":
-                    return ExecuteResponse(
-                        task_id=f"task_install_{cask_name}",
-                        steps=[
-                            ExecuteStep(
-                                id=1,
-                                description="Check if Homebrew is installed",
-                                command="command -v brew",
-                                risk="safe"
-                            ),
-                            ExecuteStep(
-                                id=2,
-                                description=f"Install {app_display}",
-                                command=f"brew install --cask {cask_name}",
-                                risk="moderate"
-                            ),
-                            ExecuteStep(
-                                id=3,
-                                description="Verify installation",
-                                command=f"brew list --cask | grep -q '{cask_name}' && echo '✓ {app_display} installed successfully' || echo '✗ Installation verification failed'",
-                                risk="safe"
-                            )
-                        ],
-                        requires_confirmation=True,
-                        estimated_time="2-3 minutes"
-                    )
-
-    # detect uninstall commands
-    if "uninstall" in command_lower or "remove" in command_lower:
-        for app_key, (cask_name, app_display) in macos_apps.items():
-            if app_key in command_lower:
-                if os_type == "darwin":
-                    return ExecuteResponse(
-                        task_id=f"task_uninstall_{cask_name}",
-                        steps=[
-                            ExecuteStep(
-                                id=1,
-                                description=f"Check if {app_display} is installed",
-                                command=f"brew list --cask | grep -q '{cask_name}' && echo 'Found' || echo 'Not installed via Homebrew'",
-                                risk="safe"
-                            ),
-                            ExecuteStep(
-                                id=2,
-                                description=f"Uninstall {app_display}",
-                                command=f"brew uninstall --cask {cask_name}",
-                                risk="dangerous"
-                            ),
-                            ExecuteStep(
-                                id=3,
-                                description="Verify removal",
-                                command=f"brew list --cask | grep -q '{cask_name}' && echo '✗ Still installed' || echo '✓ {app_display} removed successfully'",
-                                risk="safe"
-                            )
-                        ],
-                        requires_confirmation=True,
-                        estimated_time="1-2 minutes"
-                    )
-
-    # detect "check docker" command
-    if "check" in command_lower and "docker" in command_lower:
-        return ExecuteResponse(
-            task_id="task_003",
-            steps=[
-                ExecuteStep(
-                    id=1,
-                    description="Check if Docker is installed",
-                    command="docker --version",
-                    risk="safe"
-                ),
-                ExecuteStep(
-                    id=2,
-                    description="Check if Docker daemon is running",
-                    command="docker ps",
-                    risk="safe"
-                ),
-                ExecuteStep(
-                    id=3,
-                    description="Show Docker info",
-                    command="docker info",
-                    risk="safe"
-                )
-            ],
-            requires_confirmation=False,
-            estimated_time="5 seconds"
-        )
-
-    # detect python environment setup
-    if "python" in command_lower and ("environment" in command_lower or "env" in command_lower or "setup" in command_lower):
-        return ExecuteResponse(
-            task_id="task_python_env",
-            steps=[
-                ExecuteStep(
-                    id=1,
-                    description="Check Python installation",
-                    command="python3 --version",
-                    risk="safe"
-                ),
-                ExecuteStep(
-                    id=2,
-                    description="Create virtual environment",
-                    command="python3 -m venv venv",
-                    risk="moderate"
-                ),
-                ExecuteStep(
-                    id=3,
-                    description="Verify virtual environment created",
-                    command="test -d venv && echo '✓ Virtual environment created' || echo '✗ Failed to create venv'",
-                    risk="safe"
-                )
-            ],
-            requires_confirmation=True,
-            estimated_time="30 seconds"
-        )
-
-    # detect "which" or similar check commands
-    if "which" in command_lower or "where" in command_lower:
-        tool = command_lower.split()[-1] if len(command_lower.split()) > 1 else "unknown"
-        return ExecuteResponse(
-            task_id="task_check",
-            steps=[
-                ExecuteStep(
-                    id=1,
-                    description=f"Check if {tool} is installed",
-                    command=command,
-                    risk="safe"
-                )
-            ],
-            requires_confirmation=False,
-            estimated_time="1 second"
-        )
-
-    # default: command not recognized
-    return ExecuteResponse(
-        task_id="task_unknown",
-        steps=[
-            ExecuteStep(
-                id=1,
-                description=f"Command not recognized: {command}",
-                command="echo 'Unknown command - configure OPENAI_API_KEY in .env for natural language parsing'",
-                risk="safe",
-                status="failed"
-            )
-        ],
-        requires_confirmation=False,
-        estimated_time="0 seconds"
-    )
-
-
-def parse_command(command: str) -> ExecuteResponse:
-    """
-    main entry point - try llm first, fallback to hardcoded
-    """
-    os_type = platform.system().lower()
-    
-    # check if openai api key is available
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key and api_key != "your_openai_api_key_here":
-        try:
-            print(f"🤖 parsing with llm: {command}")
-            return parse_command_with_llm(command, os_type)
-        except Exception as e:
-            print(f"⚠️  llm failed, using fallback: {e}")
-            return parse_command_hardcoded(command, os_type)
-    else:
-        print("⚠️  no openai api key, using hardcoded parser")
-        return parse_command_hardcoded(command, os_type)
-
+# ============ Health Check Endpoints ============
 
 @app.get("/")
 async def root():
-    """root endpoint - health check"""
+    """Root endpoint - health check"""
     return {
         "status": "ok",
-        "message": "luna agent api",
-        "version": "0.1.0"
+        "message": "Luna CultureSync API",
+        "version": "1.0.0"
     }
 
 
 @app.get("/health")
 async def health():
-    """detailed health check"""
-    has_api_key = bool(os.getenv("OPENAI_API_KEY") and os.getenv("OPENAI_API_KEY") != "your_openai_api_key_here")
-    
+    """Detailed health check"""
     return {
         "status": "healthy",
         "services": {
             "api": "ok",
-            "os": platform.system(),
-            "python": platform.python_version(),
-            "llm": "enabled" if has_api_key else "disabled (using fallback parser)"
+            "database": "ok"
         }
     }
 
 
-@app.post("/api/execute", response_model=ExecuteResponse)
-async def execute_command_endpoint(request: ExecuteRequest):
-    """
-    parse and plan command execution
-    """
-    try:
-        response = parse_command(request.command)
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# ============ Assessment Endpoints ============
 
+@app.post("/api/assessment/start", response_model=StartAssessmentResponse)
+async def start_assessment(request: StartAssessmentRequest):
+    """
+    Start a new assessment for a candidate.
+    If the candidate already exists, resume their assessment.
+    """
+    # Check if candidate already exists
+    existing = get_candidate_by_email(request.email)
 
-@app.post("/api/execute/run", response_model=ExecuteAllResponse)
-async def execute_all_steps(request: ExecuteAllRequest):
-    """
-    execute all steps of a task
-    """
-    results = []
-    overall_success = True
-    
-    for step in request.steps:
-        command = step.get("command")
-        step_id = step.get("id")
-        
-        print(f"🔄 executing step {step_id}: {command}")
-        
-        # execute the command (sudo is handled seamlessly via macOS dialog if needed)
-        success, stdout, stderr = run_command(command, timeout=300)
-        
-        print(f"{'✅' if success else '❌'} step {step_id}: {'completed' if success else 'failed'}")
-        if stdout:
-            print(f"   stdout: {stdout[:200]}...")
-        if stderr:
-            print(f"   stderr: {stderr[:200]}...")
-        
-        results.append(
-            StepResult(
-                step_id=step_id,
-                status="completed" if success else "failed",
-                output=stdout,
-                error=stderr if not success else None
+    if existing:
+        candidate_id = existing["id"]
+        session = get_assessment_session(candidate_id)
+        current_q = session["current_question"] if session else 1
+
+        # Check if already completed
+        if session and session["status"] == "completed":
+            raise HTTPException(
+                status_code=400,
+                detail="Assessment already completed. Check your results."
             )
-        )
-        
-        # stop on first failure
-        if not success:
-            overall_success = False
-            break
-    
-    # determine overall status
-    if overall_success:
-        overall_status = "completed"
-    elif len(results) == 0:
-        overall_status = "failed"
-    elif len(results) < len(request.steps):
-        overall_status = "partial"
     else:
-        overall_status = "failed"
-    
-    return ExecuteAllResponse(
-        task_id=request.task_id,
-        results=results,
-        overall_status=overall_status
+        # Create new candidate
+        candidate_id = create_candidate(request.name, request.email)
+        if not candidate_id:
+            raise HTTPException(status_code=500, detail="Failed to create candidate")
+        current_q = 1
+
+    question = get_question(current_q)
+    if not question:
+        raise HTTPException(status_code=500, detail="Failed to get question")
+
+    return StartAssessmentResponse(
+        candidate_id=candidate_id,
+        current_question=current_q,
+        total_questions=get_total_questions(),
+        question=question,
+        message="Let's see if we're a great fit! This assessment takes about 5 minutes."
     )
 
 
+@app.post("/api/assessment/answer", response_model=SubmitAnswerResponse)
+async def submit_answer(request: SubmitAnswerRequest):
+    """Submit an answer to an assessment question."""
+    # Validate candidate exists
+    candidate = get_candidate(request.candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    # Validate question exists
+    question = get_question(request.question_id)
+    if not question:
+        raise HTTPException(status_code=400, detail="Invalid question ID")
+
+    # Validate answer is one of the options
+    if request.answer not in question["options"]:
+        raise HTTPException(status_code=400, detail="Invalid answer option")
+
+    # Save the response
+    success = save_assessment_response(
+        request.candidate_id,
+        request.question_id,
+        request.answer
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save response")
+
+    total = get_total_questions()
+    next_q_id = request.question_id + 1
+
+    # Check if assessment is complete
+    if next_q_id > total:
+        # Calculate and save scores
+        responses = get_assessment_responses(request.candidate_id)
+        scores = calculate_scores(responses)
+
+        save_scores(
+            request.candidate_id,
+            scores["culture_fit_score"],
+            scores["work_style_score"],
+            scores["communication_score"],
+            scores["values_score"],
+            ",".join(scores["top_traits"])
+        )
+
+        complete_assessment(request.candidate_id)
+
+        return SubmitAnswerResponse(
+            success=True,
+            next_question=None,
+            current_question=total,
+            total_questions=total,
+            is_complete=True,
+            message="Assessment complete! Calculating your culture fit score..."
+        )
+
+    next_question = get_question(next_q_id)
+
+    # Check if we're at the halfway point
+    if next_q_id == 6:
+        return SubmitAnswerResponse(
+            success=True,
+            next_question=next_question,
+            current_question=next_q_id,
+            total_questions=total,
+            is_complete=False,
+            message="You're halfway there! Ready to continue?"
+        )
+
+    return SubmitAnswerResponse(
+        success=True,
+        next_question=next_question,
+        current_question=next_q_id,
+        total_questions=total,
+        is_complete=False,
+        message=""
+    )
+
+
+@app.get("/api/assessment/results/{candidate_id}", response_model=AssessmentResultsResponse)
+async def get_assessment_results(candidate_id: int):
+    """Get assessment results for a candidate."""
+    candidate = get_candidate(candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    scores = get_scores(candidate_id)
+    if not scores:
+        raise HTTPException(status_code=404, detail="Assessment not completed")
+
+    top_traits = scores["top_traits"].split(",") if scores["top_traits"] else []
+    explanation = get_score_explanation(scores["culture_fit_score"])
+
+    return AssessmentResultsResponse(
+        candidate_id=candidate_id,
+        name=candidate["name"],
+        culture_fit_score=scores["culture_fit_score"],
+        work_style_score=scores["work_style_score"],
+        communication_score=scores["communication_score"],
+        values_score=scores["values_score"],
+        top_traits=top_traits,
+        explanation=explanation
+    )
+
+
+@app.get("/api/assessment/question/{question_id}")
+async def get_question_by_id(question_id: int):
+    """Get a specific question by ID."""
+    question = get_question(question_id)
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    return question
+
+
+@app.get("/api/assessment/questions")
+async def get_questions():
+    """Get all assessment questions."""
+    return {
+        "questions": get_all_questions(),
+        "total": get_total_questions()
+    }
+
+
+# ============ Candidate Dashboard Endpoints ============
+
+@app.get("/api/candidates", response_model=List[CandidateResponse])
+async def get_candidates():
+    """Get all candidates with their scores (for HR dashboard)."""
+    candidates = get_all_candidates_with_scores()
+
+    return [
+        CandidateResponse(
+            id=c["id"],
+            name=c["name"],
+            email=c["email"],
+            culture_fit_score=c.get("culture_fit_score"),
+            work_style_score=c.get("work_style_score"),
+            communication_score=c.get("communication_score"),
+            values_score=c.get("values_score"),
+            top_traits=c["top_traits"].split(",") if c.get("top_traits") else None,
+            assessment_status=c.get("assessment_status")
+        )
+        for c in candidates
+    ]
+
+
+@app.get("/api/candidates/{candidate_id}", response_model=CandidateResponse)
+async def get_candidate_by_id(candidate_id: int):
+    """Get a specific candidate by ID."""
+    candidate = get_candidate(candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    scores = get_scores(candidate_id)
+
+    return CandidateResponse(
+        id=candidate["id"],
+        name=candidate["name"],
+        email=candidate["email"],
+        culture_fit_score=scores.get("culture_fit_score") if scores else None,
+        work_style_score=scores.get("work_style_score") if scores else None,
+        communication_score=scores.get("communication_score") if scores else None,
+        values_score=scores.get("values_score") if scores else None,
+        top_traits=scores["top_traits"].split(",") if scores and scores.get("top_traits") else None,
+        assessment_status=None
+    )
+
+
+# ============ Feedback Endpoints ============
+
+@app.post("/api/feedback", response_model=FeedbackResponse)
+async def submit_feedback(request: FeedbackRequest):
+    """Submit user feedback."""
+    if not request.message.strip():
+        raise HTTPException(status_code=400, detail="Feedback message cannot be empty")
+
+    success = save_feedback(
+        message=request.message,
+        user_type=request.user_type,
+        page=request.page
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save feedback")
+
+    return FeedbackResponse(
+        success=True,
+        message="Thanks for your feedback!"
+    )
+
+
+@app.get("/api/feedback")
+async def get_feedback():
+    """Get all feedback (admin endpoint)."""
+    return get_all_feedback()
+
+
+# ============ Main Entry Point ============
+
 if __name__ == "__main__":
-    print("🌙 starting luna backend...")
-    print("📍 api docs: http://127.0.0.1:8000/docs")
-    print(f"💻 os: {platform.system()}")
-    
-    # check api key status
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key and api_key != "your_openai_api_key_here":
-        print("🤖 llm: enabled (gpt-4o-mini)")
-    else:
-        print("⚠️  llm: disabled (add OPENAI_API_KEY to .env)")
-    
+    print("starting Luna CultureSync backend...")
+    print("api docs: http://127.0.0.1:8000/docs")
+
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
         port=8000,
         reload=True,
-        reload_excludes=["venv/*", "*.pyc", "__pycache__", ".pytest_cache"]
+        reload_excludes=["venv/*", "*.pyc", "__pycache__", ".pytest_cache", "*.db"]
     )

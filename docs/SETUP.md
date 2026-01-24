@@ -1,6 +1,6 @@
 # setup guide
 
-this guide covers installing and running luna for development.
+this guide covers installing and running luna culturesync for development.
 
 ## prerequisites
 
@@ -12,7 +12,6 @@ this guide covers installing and running luna for development.
 | npm | 9+ | `npm --version` |
 | rust | latest stable | `cargo --version` |
 | python | 3.11+ | `python3 --version` |
-| homebrew | any | `brew --version` |
 
 ### installing prerequisites
 
@@ -30,11 +29,6 @@ brew install node
 **python 3.11+ (via homebrew):**
 ```bash
 brew install python@3.11
-```
-
-**homebrew (if not installed):**
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 ## installation
@@ -59,15 +53,8 @@ source venv/bin/activate  # macos/linux
 # or: venv\Scripts\activate  # windows
 
 # install dependencies
-pip install fastapi uvicorn openai python-dotenv pydantic
-
-# create environment file
-cp .env.example .env  # if .env.example exists
-# or create manually:
-echo "OPENAI_API_KEY=your_api_key_here" > .env
+pip install fastapi uvicorn python-dotenv pydantic
 ```
-
-**note:** the openai api key is optional. without it, luna falls back to hardcoded command parsing for chrome, vscode, slack, and docker commands.
 
 ### 3. frontend setup
 
@@ -78,7 +65,7 @@ cd ../frontend  # or cd src/frontend from root
 npm install
 ```
 
-## running luna
+## running culturesync
 
 ### development mode
 
@@ -91,10 +78,9 @@ python main.py
 
 you should see:
 ```
-🌙 starting luna backend...
+☕ starting luna culturesync backend...
 📍 api docs: http://127.0.0.1:8000/docs
-💻 os: Darwin
-🤖 llm: enabled (gpt-4o-mini)  # or "disabled" if no api key
+💾 database: culturesync.db
 ```
 
 **terminal 2 - frontend:**
@@ -129,9 +115,7 @@ expected response:
   "status": "healthy",
   "services": {
     "api": "ok",
-    "os": "Darwin",
-    "python": "3.11.x",
-    "llm": "enabled"
+    "database": "ok"
   }
 }
 ```
@@ -139,23 +123,38 @@ expected response:
 ### frontend verification
 
 1. the tauri window should open automatically
-2. you should see the luna spotlight interface
-3. try typing "which brew" and pressing enter
-4. the backend should parse the command and show an execution plan
+2. you should see the luna culturesync welcome screen
+3. click "take the assessment" to start
+4. enter a name and email, then answer the questions
+
+## database
+
+culturesync uses sqlite for data storage. the database file is created automatically:
+
+```
+src/backend/culturesync.db
+```
+
+### database tables
+
+| table | purpose |
+|-------|---------|
+| candidates | stores candidate information |
+| assessment_responses | individual question answers |
+| scores | calculated culture fit scores |
+| feedback | user feedback submissions |
+
+### resetting the database
+
+to start fresh, delete the database file:
+
+```bash
+rm src/backend/culturesync.db
+```
+
+the tables will be recreated on next backend startup.
 
 ## configuration
-
-### environment variables
-
-create `src/backend/.env`:
-
-```
-OPENAI_API_KEY=sk-...your-key-here
-```
-
-| variable | required | description |
-|----------|----------|-------------|
-| `OPENAI_API_KEY` | no | enables llm-based command parsing. without it, falls back to hardcoded parser. |
 
 ### backend configuration
 
@@ -181,6 +180,19 @@ const API_BASE_URL = "http://localhost:8000";
 
 change this if your backend runs on a different port.
 
+### supabase auth (optional)
+
+for authentication features, configure supabase:
+
+1. create a project at https://supabase.com
+2. get your project url and anon key
+3. create `src/frontend/.env`:
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
 ## troubleshooting
 
 ### backend won't start
@@ -191,7 +203,7 @@ change this if your backend runs on a different port.
 source venv/bin/activate
 
 # reinstall dependencies
-pip install fastapi uvicorn openai python-dotenv pydantic
+pip install fastapi uvicorn python-dotenv pydantic
 ```
 
 **port already in use:**
@@ -201,6 +213,13 @@ lsof -i :8000
 
 # kill it
 kill -9 <PID>
+```
+
+**database errors:**
+```bash
+# reset the database
+rm src/backend/culturesync.db
+python main.py  # recreates tables
 ```
 
 ### frontend won't compile
@@ -226,14 +245,6 @@ if the frontend shows "connection error":
 2. verify backend is on port 8000
 3. check cors settings in `main.py` allow `http://localhost:1420`
 
-### sudo dialog doesn't appear
-
-the native password dialog uses `osascript`. if it doesn't appear:
-
-1. make sure you're on macos
-2. check system preferences > security & privacy > privacy
-3. the terminal/app may need accessibility permissions
-
 ## development tools
 
 ### api documentation
@@ -247,14 +258,15 @@ with the backend running, visit:
 - **backend:** uvicorn watches for changes automatically
 - **frontend:** vite provides hot module replacement
 
-### code formatting
+### viewing database
+
+use any sqlite client to inspect the database:
 
 ```bash
-# python (from src/backend)
-pip install black ruff
-black .
-ruff check .
+# command line
+sqlite3 src/backend/culturesync.db
+.tables
+SELECT * FROM candidates;
 
-# typescript (from src/frontend)
-npm run format  # if configured
+# or use a gui tool like DB Browser for SQLite
 ```

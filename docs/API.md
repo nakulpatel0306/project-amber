@@ -1,6 +1,6 @@
 # api reference
 
-luna backend api documentation.
+luna culturesync backend api documentation.
 
 **base url:** `http://localhost:8000`
 
@@ -17,7 +17,7 @@ health check endpoint.
 ```json
 {
   "status": "ok",
-  "message": "luna agent api",
+  "message": "luna culturesync api",
   "version": "0.1.0"
 }
 ```
@@ -33,263 +33,346 @@ detailed health check with service status.
   "status": "healthy",
   "services": {
     "api": "ok",
-    "os": "Darwin",
-    "python": "3.11.6",
-    "llm": "enabled"
+    "database": "ok"
   }
 }
 ```
 
-| field | description |
-|-------|-------------|
-| `os` | operating system (Darwin, Linux, Windows) |
-| `python` | python version |
-| `llm` | "enabled" if openai api key is configured, otherwise "disabled (using fallback parser)" |
+---
 
-### POST /api/execute
+## assessment endpoints
 
-parse a natural language command into an execution plan.
+### POST /api/assessment/start
+
+start a new assessment for a candidate.
 
 **request:**
 
 ```json
 {
-  "command": "install chrome",
-  "context": {
-    "os": "MacIntel",
-    "current_dir": "~"
-  }
+  "name": "john doe",
+  "email": "john@example.com"
 }
 ```
 
 | field | type | required | description |
 |-------|------|----------|-------------|
-| `command` | string | yes | natural language command |
-| `context` | object | no | optional context about the environment |
+| `name` | string | yes | candidate's full name |
+| `email` | string | yes | candidate's email (must be unique) |
 
 **response:**
 
 ```json
 {
-  "task_id": "task_001",
-  "steps": [
+  "candidate_id": 1,
+  "total_questions": 10,
+  "questions": [
     {
       "id": 1,
-      "description": "check if homebrew is installed",
-      "command": "which brew",
-      "risk": "safe",
-      "status": "pending"
-    },
-    {
-      "id": 2,
-      "description": "install google chrome",
-      "command": "brew install --cask google-chrome",
-      "risk": "moderate",
-      "status": "pending"
-    },
-    {
-      "id": 3,
-      "description": "verify installation",
-      "command": "ls -la /Applications/Google\\ Chrome.app",
-      "risk": "safe",
-      "status": "pending"
-    }
-  ],
-  "requires_confirmation": true,
-  "estimated_time": "2-3 minutes"
-}
-```
-
-**step object:**
-
-| field | type | description |
-|-------|------|-------------|
-| `id` | integer | step identifier |
-| `description` | string | human-readable description |
-| `command` | string | shell command to execute |
-| `risk` | string | "safe", "moderate", or "dangerous" |
-| `status` | string | "pending", "running", "completed", or "failed" |
-
-**response fields:**
-
-| field | type | description |
-|-------|------|-------------|
-| `task_id` | string | unique identifier for this task |
-| `steps` | array | list of execution steps |
-| `requires_confirmation` | boolean | whether to prompt user before executing |
-| `estimated_time` | string | estimated execution time |
-
-**error response (500):**
-
-```json
-{
-  "detail": "error message"
-}
-```
-
-### POST /api/execute/run
-
-execute all steps of a task.
-
-**request:**
-
-```json
-{
-  "task_id": "task_001",
-  "steps": [
-    {
-      "id": 1,
-      "command": "which brew",
-      "description": "check if homebrew is installed"
-    },
-    {
-      "id": 2,
-      "command": "brew install --cask google-chrome",
-      "description": "install google chrome"
+      "question": "How do you prefer to receive feedback?",
+      "type": "multiple_choice",
+      "category": "communication",
+      "options": [
+        {
+          "key": "a",
+          "text": "Direct and immediate, even if it's critical"
+        },
+        {
+          "key": "b",
+          "text": "Scheduled 1:1s with context and examples"
+        },
+        {
+          "key": "c",
+          "text": "Written feedback I can process on my own time"
+        },
+        {
+          "key": "d",
+          "text": "Informal conversations as things come up"
+        }
+      ]
     }
   ]
 }
 ```
 
+**error response (400):**
+
+```json
+{
+  "detail": "email already exists"
+}
+```
+
+---
+
+### POST /api/assessment/answer
+
+submit an answer for a question.
+
+**request:**
+
+```json
+{
+  "candidate_id": 1,
+  "question_id": 1,
+  "answer": "b"
+}
+```
+
 | field | type | required | description |
 |-------|------|----------|-------------|
-| `task_id` | string | yes | task identifier from /api/execute |
-| `steps` | array | yes | list of steps to execute |
+| `candidate_id` | integer | yes | candidate id from /api/assessment/start |
+| `question_id` | integer | yes | question id (1-10) |
+| `answer` | string | yes | answer key (a, b, c, or d) |
 
 **response:**
 
 ```json
 {
-  "task_id": "task_001",
-  "results": [
-    {
-      "step_id": 1,
-      "status": "completed",
-      "output": "/opt/homebrew/bin/brew\n",
-      "error": null
-    },
-    {
-      "step_id": 2,
-      "status": "completed",
-      "output": "==> Downloading https://dl.google.com/...\n==> Installing Cask google-chrome\n",
-      "error": null
-    }
-  ],
-  "overall_status": "completed"
+  "success": true,
+  "next_question_id": 2
 }
 ```
 
-**result object:**
+**final question response:**
 
-| field | type | description |
-|-------|------|-------------|
-| `step_id` | integer | step identifier |
-| `status` | string | "completed" or "failed" |
-| `output` | string | stdout from the command |
-| `error` | string or null | stderr if failed, null if succeeded |
+```json
+{
+  "success": true,
+  "next_question_id": null,
+  "assessment_complete": true
+}
+```
 
-**overall_status values:**
+---
 
-| value | meaning |
-|-------|---------|
-| `completed` | all steps succeeded |
-| `partial` | some steps succeeded, execution stopped at failure |
-| `failed` | first step failed |
+### GET /api/assessment/results/{candidate_id}
 
-**execution behavior:**
+get assessment results for a candidate.
 
-- steps execute sequentially
-- execution stops at the first failure
-- each step has a 5-minute timeout
-- sudo commands trigger macos password dialog if needed
+**path parameters:**
+
+| parameter | type | description |
+|-----------|------|-------------|
+| `candidate_id` | integer | candidate id |
+
+**response:**
+
+```json
+{
+  "candidate_id": 1,
+  "name": "john doe",
+  "email": "john@example.com",
+  "culture_fit_score": 78,
+  "work_style_score": 82,
+  "communication_score": 75,
+  "values_score": 77,
+  "top_traits": ["collaborative", "growth-oriented", "adaptable"],
+  "assessment_status": "completed"
+}
+```
+
+**error response (404):**
+
+```json
+{
+  "detail": "candidate not found"
+}
+```
+
+---
+
+## candidate endpoints
+
+### GET /api/candidates
+
+get all candidates with completed assessments.
+
+**query parameters:**
+
+| parameter | type | default | description |
+|-----------|------|---------|-------------|
+| `status` | string | all | filter by status: "completed", "in_progress", "all" |
+| `min_score` | integer | 0 | minimum culture fit score |
+| `limit` | integer | 100 | max results to return |
+| `offset` | integer | 0 | pagination offset |
+
+**response:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "john doe",
+    "email": "john@example.com",
+    "assessment_status": "completed",
+    "culture_fit_score": 78,
+    "top_traits": ["collaborative", "growth-oriented", "adaptable"],
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "name": "jane smith",
+    "email": "jane@example.com",
+    "assessment_status": "completed",
+    "culture_fit_score": 85,
+    "top_traits": ["autonomous", "structured", "direct communicator"],
+    "created_at": "2024-01-16T14:20:00Z"
+  }
+]
+```
+
+---
+
+## feedback endpoints
+
+### POST /api/feedback
+
+submit user feedback.
+
+**request:**
+
+```json
+{
+  "message": "the assessment was great!",
+  "user_type": "candidate",
+  "page": "assessment"
+}
+```
+
+| field | type | required | description |
+|-------|------|----------|-------------|
+| `message` | string | yes | feedback message |
+| `user_type` | string | no | "candidate" or "employer" |
+| `page` | string | no | page where feedback was submitted |
+
+**response:**
+
+```json
+{
+  "success": true,
+  "message": "feedback submitted"
+}
+```
+
+---
 
 ## data types
 
-### ExecuteRequest
+### StartAssessmentRequest
 
 ```typescript
-interface ExecuteRequest {
-  command: string;
-  context?: {
-    os?: string;
-    current_dir?: string;
-    project_type?: string;
-  };
+interface StartAssessmentRequest {
+  name: string;
+  email: string;
 }
 ```
 
-### ExecuteResponse
+### StartAssessmentResponse
 
 ```typescript
-interface ExecuteResponse {
-  task_id: string;
-  steps: ExecuteStep[];
-  requires_confirmation: boolean;
-  estimated_time?: string;
+interface StartAssessmentResponse {
+  candidate_id: number;
+  total_questions: number;
+  questions: Question[];
 }
 
-interface ExecuteStep {
+interface Question {
   id: number;
-  description: string;
-  command: string;
-  risk: "safe" | "moderate" | "dangerous";
-  status?: "pending" | "running" | "completed" | "failed";
+  question: string;
+  type: "multiple_choice";
+  category: "work_style" | "communication" | "values";
+  options: Option[];
+}
+
+interface Option {
+  key: string;
+  text: string;
 }
 ```
 
-### ExecuteAllRequest
+### SubmitAnswerRequest
 
 ```typescript
-interface ExecuteAllRequest {
-  task_id: string;
-  steps: Array<{
-    id: number;
-    command: string;
-    description: string;
-  }>;
+interface SubmitAnswerRequest {
+  candidate_id: number;
+  question_id: number;
+  answer: string;
 }
 ```
 
-### ExecuteAllResponse
+### SubmitAnswerResponse
 
 ```typescript
-interface ExecuteAllResponse {
-  task_id: string;
-  results: StepResult[];
-  overall_status: "completed" | "failed" | "partial";
-}
-
-interface StepResult {
-  step_id: number;
-  status: "completed" | "failed";
-  output: string;
-  error: string | null;
+interface SubmitAnswerResponse {
+  success: boolean;
+  next_question_id: number | null;
+  assessment_complete?: boolean;
 }
 ```
 
-## risk levels
+### AssessmentResults
 
-the backend assigns risk levels to commands:
+```typescript
+interface AssessmentResults {
+  candidate_id: number;
+  name: string;
+  email: string;
+  culture_fit_score: number;
+  work_style_score: number;
+  communication_score: number;
+  values_score: number;
+  top_traits: string[];
+  assessment_status: "completed" | "in_progress";
+}
+```
 
-| level | criteria | examples |
-|-------|----------|----------|
-| safe | read-only operations | `which`, `ls`, `cat`, `--version`, `git status` |
-| moderate | installations, file writes | `brew install`, `npm install`, `pip install` |
-| dangerous | sudo, deletions, system changes | `sudo`, `rm`, `chmod`, `systemctl` |
+### Candidate
 
-## safety validation
+```typescript
+interface Candidate {
+  id: number;
+  name: string;
+  email: string;
+  assessment_status: "completed" | "in_progress";
+  culture_fit_score: number | null;
+  top_traits: string[] | null;
+  created_at: string;
+}
+```
 
-the backend blocks dangerous commands before execution:
+### FeedbackRequest
 
-**blocked patterns:**
-- `rm -rf /` - root filesystem deletion
-- `rm -rf ~` - home directory deletion
-- `dd if=` - raw disk writes
-- `mkfs` - filesystem formatting
-- fork bombs
-- `nc -e` - potential reverse shells
+```typescript
+interface FeedbackRequest {
+  message: string;
+  user_type?: string;
+  page?: string;
+}
+```
 
-if a command is blocked, execution returns an error without running the command.
+### FeedbackResponse
+
+```typescript
+interface FeedbackResponse {
+  success: boolean;
+  message: string;
+}
+```
+
+---
+
+## question categories
+
+assessment questions are divided into three categories:
+
+| category | questions | description |
+|----------|-----------|-------------|
+| work_style | 1, 4, 7, 10 | how you prefer to work |
+| communication | 2, 5, 8 | how you communicate and receive feedback |
+| values | 3, 6, 9 | what matters most to you |
+
+---
 
 ## cors
 
@@ -298,56 +381,78 @@ the backend allows requests from:
 - `http://tauri.localhost`
 - `tauri://localhost`
 
+---
+
 ## examples
 
-### curl: parse a command
+### curl: start assessment
 
 ```bash
-curl -X POST http://localhost:8000/api/execute \
+curl -X POST http://localhost:8000/api/assessment/start \
   -H "Content-Type: application/json" \
-  -d '{"command": "install chrome"}'
+  -d '{"name": "john doe", "email": "john@example.com"}'
 ```
 
-### curl: execute steps
+### curl: submit answer
 
 ```bash
-curl -X POST http://localhost:8000/api/execute/run \
+curl -X POST http://localhost:8000/api/assessment/answer \
   -H "Content-Type: application/json" \
-  -d '{
-    "task_id": "task_001",
-    "steps": [
-      {"id": 1, "command": "which brew", "description": "check brew"}
-    ]
-  }'
+  -d '{"candidate_id": 1, "question_id": 1, "answer": "b"}'
 ```
 
-### javascript: full workflow
+### curl: get results
+
+```bash
+curl http://localhost:8000/api/assessment/results/1
+```
+
+### curl: get candidates
+
+```bash
+curl "http://localhost:8000/api/candidates?status=completed&min_score=70"
+```
+
+### curl: submit feedback
+
+```bash
+curl -X POST http://localhost:8000/api/feedback \
+  -H "Content-Type: application/json" \
+  -d '{"message": "great app!", "user_type": "candidate", "page": "results"}'
+```
+
+### javascript: full assessment flow
 
 ```javascript
 const API = "http://localhost:8000";
 
-// step 1: parse command
-const planResponse = await fetch(`${API}/api/execute`, {
+// step 1: start assessment
+const startResponse = await fetch(`${API}/api/assessment/start`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ command: "install chrome" })
+  body: JSON.stringify({ name: "john doe", email: "john@example.com" })
 });
-const plan = await planResponse.json();
+const { candidate_id, questions } = await startResponse.json();
 
-// step 2: execute steps
-const execResponse = await fetch(`${API}/api/execute/run`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    task_id: plan.task_id,
-    steps: plan.steps.map(s => ({
-      id: s.id,
-      command: s.command,
-      description: s.description
-    }))
-  })
-});
-const results = await execResponse.json();
+// step 2: answer questions
+for (const question of questions) {
+  const answer = getUserAnswer(question); // your ui logic
 
-console.log(results.overall_status);
+  await fetch(`${API}/api/assessment/answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      candidate_id,
+      question_id: question.id,
+      answer
+    })
+  });
+}
+
+// step 3: get results
+const resultsResponse = await fetch(`${API}/api/assessment/results/${candidate_id}`);
+const results = await resultsResponse.json();
+
+console.log(`culture fit score: ${results.culture_fit_score}`);
+console.log(`top traits: ${results.top_traits.join(", ")}`);
 ```

@@ -1,226 +1,215 @@
 # usage guide
 
-how to use luna to run development commands.
+how to use luna culturesync for culture assessment and candidate matching.
 
-## basic workflow
+## for candidates
 
-1. **start luna** - run backend and frontend (see [setup guide](SETUP.md))
-2. **enter command** - type what you want to do in plain english
-3. **review plan** - luna shows you the execution steps
-4. **execute** - click the button to run the commands
-5. **view results** - see output and errors for each step
+### taking the assessment
 
-## entering commands
+1. **start culturesync** - run backend and frontend (see [setup guide](SETUP.md))
+2. **click "take the assessment"** on the welcome screen
+3. **enter your details** - name and email
+4. **answer 10 questions** - choose the option that best describes you
+5. **view your results** - see your culture fit score and traits
 
-type your command in the spotlight input and press enter.
-
-**example commands:**
+### assessment flow
 
 ```
-install chrome
-install vscode
-install slack
-check docker status
-which brew
-which node
+welcome → info form → questions 1-5 → halfway pause → questions 6-10 → results
 ```
 
-### with openai api key
+### question types
 
-when an api key is configured, you can use any natural language:
+all questions are multiple choice with 4 options (a, b, c, d). there are no right or wrong answers - just pick what feels most natural to you.
+
+**categories:**
+
+| category | what it measures |
+|----------|------------------|
+| work style | how you prefer to work (structured vs flexible, solo vs collaborative) |
+| communication | how you communicate and receive feedback |
+| values | what matters most to you in a workplace |
+
+### understanding your results
+
+after completing all 10 questions, you'll see:
+
+- **culture fit score** (0-100) - overall compatibility score
+- **dimension scores** - breakdown by work style, communication, and values
+- **top traits** - your 3 strongest characteristics
+
+**score interpretation:**
+
+| score | meaning |
+|-------|---------|
+| 80+ | strong culture alignment |
+| 60-79 | good culture fit |
+| 40-59 | moderate fit |
+| below 40 | potential misalignment |
+
+### example traits
+
+- **collaborative** - thrives in team environments
+- **autonomous** - prefers independent work
+- **structured** - likes clear processes and plans
+- **adaptable** - comfortable with change
+- **growth-oriented** - prioritizes learning
+- **direct communicator** - values clear, honest feedback
+
+## for employers / recruiters
+
+### viewing candidates
+
+1. click the **dashboard** icon in the sidebar (users icon)
+2. view all candidates who have completed assessments
+3. use filters to narrow results
+
+### dashboard features
+
+**search:**
+- search by name or email
+- instant filtering as you type
+
+**sort:**
+- by culture fit score (highest first)
+- by name (alphabetically)
+
+**filter:**
+- show only completed assessments
+- filter by minimum score (via api)
+
+### candidate cards
+
+each candidate card shows:
+- name and email
+- culture fit score with color coding
+- top traits as tags
+- "coffee chat" button
+
+### scheduling coffee chats
+
+click the "coffee chat" button on any candidate card:
+
+1. opens your default email client
+2. pre-filled subject line
+3. pre-filled email body with introduction
+4. just add your availability and send
+
+**email template:**
 
 ```
-setup python with pip and virtualenv
-install node version manager
-create a react project with typescript
-check if git is configured
-install the latest java development kit
+Subject: Coffee Chat - [Candidate Name]
+
+Hi [Candidate Name],
+
+I'd love to schedule a coffee chat to learn more about your
+background and interests.
+
+Would you be available sometime this week?
+
+Best regards
 ```
 
-### without api key (fallback mode)
+## submitting feedback
 
-these specific commands work without an api key:
+### using the feedback widget
 
-| command | what it does |
-|---------|--------------|
-| `install chrome` | `brew install --cask google-chrome` |
-| `install vscode` | `brew install --cask visual-studio-code` |
-| `install slack` | `brew install --cask slack` |
-| `check docker status` | checks docker version and daemon |
-| `which <tool>` | checks if a tool is installed |
+1. click the **message bubble** in the bottom-right corner
+2. write your feedback in the text area
+3. click "submit"
+4. see confirmation when submitted
 
-## understanding the execution plan
+### what to share
 
-after entering a command, luna displays a plan:
+- bugs or issues you encounter
+- feature suggestions
+- ui/ux improvements
+- general thoughts on the assessment
 
-```
-┌─────────────────────────────────────────────────┐
-│  execution plan                                 │
-│  install chrome                     [2-3 min]  │
-├─────────────────────────────────────────────────┤
-│  ○  check if homebrew is installed    [safe]   │
-│     $ which brew                               │
-│                                                │
-│  ○  install google chrome          [moderate]  │
-│     $ brew install --cask google-chrome        │
-│                                                │
-│  ○  verify installation               [safe]   │
-│     $ ls -la /Applications/Google\ Chrome.app  │
-├─────────────────────────────────────────────────┤
-│  [execute 3 steps]                             │
-└─────────────────────────────────────────────────┘
-```
+## themes
 
-### risk levels
+### changing themes
 
-each step has a risk indicator:
+1. click the **settings** icon in the sidebar (gear icon)
+2. select the "theme" tab
+3. click on any theme to apply it instantly
 
-| level | color | meaning |
-|-------|-------|---------|
-| safe | green | read-only operations, version checks, listing files |
-| moderate | amber | installations, file writes, network operations |
-| dangerous | red | sudo commands, deletions, system modifications |
+### available themes
 
-### viewing commands
-
-click on any step to see the exact shell command that will run.
-
-## executing commands
-
-### confirmation
-
-click "execute N steps" to run the plan. steps run sequentially.
-
-### status indicators
-
-during execution, each step shows its status:
-
-| icon | status | meaning |
-|------|--------|---------|
-| ○ | pending | not started |
-| ⟳ | running | currently executing |
-| ✓ | completed | finished successfully |
-| ✗ | failed | error occurred |
-
-### viewing output
-
-after execution, click on a step to expand and see:
-- **output:** stdout from the command
-- **error:** stderr if the command failed
-
-## sudo commands
-
-when a command requires administrator privileges:
-
-1. luna detects the need for sudo
-2. macos shows its native password dialog
-3. you enter your password once
-4. credentials are cached for ~5 minutes
-5. subsequent sudo commands run automatically
-
-**important:** you never type your password in the terminal or luna. always use the native macos dialog.
-
-## canceling
-
-- click "done" after execution completes
-- this clears the plan and returns to the input
-- there's no way to cancel mid-execution (commands run to completion or timeout)
+| theme | style |
+|-------|-------|
+| minimal light | clean white background |
+| minimal dark | dark mode |
+| lavender | soft purple tones |
+| rose | warm pink accents |
+| mint | fresh green palette |
+| mocha | warm brown tones |
+| ocean | blue color scheme |
+| sunset | orange/coral accents |
 
 ## keyboard shortcuts
 
 | shortcut | action |
 |----------|--------|
-| `enter` | submit command / confirm |
-| `esc` | clear input |
-| `cmd+k` | open luna (future feature) |
+| `enter` | submit answer / confirm |
+| `⌘ + ,` | toggle settings panel |
+| `esc` | close settings panel |
 
 ## tips
 
-### be specific
+### for candidates
 
-more specific commands give better results:
+**be honest:**
+- answer based on your actual preferences
+- don't try to guess what employers want
+- authentic answers lead to better matches
 
-```
-# vague
-setup python
+**take your time:**
+- there's no time limit
+- read each question carefully
+- consider all options before choosing
 
-# specific
-install python 3.11 using homebrew
-```
+### for employers
 
-### check before installing
+**look beyond the score:**
+- high scores indicate potential alignment
+- read the traits for more context
+- use scores as a starting point, not final verdict
 
-use "which" or "check" commands to see what's already installed:
+**schedule chats:**
+- coffee chats reveal more than scores
+- discuss values and work style in person
+- look for mutual fit
 
-```
-which python
-which node
-check docker status
-```
+## faq
 
-### review dangerous operations
+### can i retake the assessment?
 
-always review steps marked as "dangerous" before executing:
-- sudo commands
-- deletion operations
-- system modifications
+currently, each email can only take the assessment once. use a different email if you need to retake.
 
-### handling failures
+### how is the score calculated?
 
-if a step fails:
-1. execution stops at that step
-2. click the step to see the error
-3. fix the underlying issue
-4. try the command again
+the score is calculated from your answers across three dimensions:
+- work style (33%)
+- communication (33%)
+- values (34%)
 
-## limitations
+each answer has a profile that contributes to these dimensions.
 
-### macos only
+### is my data saved?
 
-the current sudo handling uses `osascript`, which is macos-specific. windows and linux are not supported yet.
+yes, your responses are saved in a local sqlite database. the database is stored on your machine - no data is sent to external servers.
 
-### homebrew required
+### can employers see my individual answers?
 
-package installation commands use homebrew. make sure it's installed:
+employers see:
+- your name and email
+- culture fit score
+- dimension scores
+- top traits
 
-```bash
-brew --version
-```
+they do not see your individual answers to each question.
 
-### no global hotkey
+### how do traits get assigned?
 
-luna must be focused to receive input. the global hotkey feature (cmd+k from anywhere) is not yet implemented.
-
-### 5-minute timeout
-
-commands have a 5-minute timeout. long-running operations may fail.
-
-## examples
-
-### setting up a new machine
-
-```
-install chrome
-install vscode
-install slack
-install docker
-```
-
-### checking development tools
-
-```
-which brew
-which node
-which python
-which git
-check docker status
-```
-
-### with llm (requires api key)
-
-```
-install the latest version of node using nvm
-setup a python virtual environment
-install postgresql and start it
-configure git with my email john@example.com
-```
+traits are identified based on patterns in your answers. the top 3 strongest traits are displayed on your results.
