@@ -1,6 +1,6 @@
 # architecture
 
-luna is a desktop application with a tauri/react frontend and a python backend. the two communicate over http.
+luna culturesync is a desktop application with a tauri/react frontend and a python backend. the two communicate over http.
 
 ## system overview
 
@@ -10,8 +10,8 @@ luna is a desktop application with a tauri/react frontend and a python backend. 
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                    react frontend                         │  │
 │  │  ┌─────────────┐    ┌─────────────┐    ┌──────────────┐   │  │
-│  │  │  Spotlight  │───▶│   api.ts    │───▶│   display    │   │  │
-│  │  │   input     │    │   client    │    │   results    │   │  │
+│  │  │  welcome    │───▶│   api.ts    │───▶│  dashboard   │   │  │
+│  │  │  assessment │    │   client    │    │   results    │   │  │
 │  │  └─────────────┘    └─────────────┘    └──────────────┘   │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
@@ -21,15 +21,15 @@ luna is a desktop application with a tauri/react frontend and a python backend. 
 ┌─────────────────────────────────────────────────────────────────┐
 │                       python backend                            │
 │  ┌─────────────┐    ┌─────────────┐    ┌──────────────────┐    │
-│  │   fastapi   │───▶│  llm parser │───▶│    executor      │    │
-│  │   routes    │    │  (openai)   │    │  (subprocess)    │    │
+│  │   fastapi   │───▶│  questions  │───▶│    scoring       │    │
+│  │   routes    │    │   module    │    │   algorithm      │    │
 │  └─────────────┘    └─────────────┘    └──────────────────┘    │
 │                              │                    │             │
 │                              ▼                    ▼             │
-│                     ┌─────────────┐    ┌──────────────────┐    │
-│                     │  hardcoded  │    │   sudo handler   │    │
-│                     │  fallback   │    │   (osascript)    │    │
-│                     └─────────────┘    └──────────────────┘    │
+│                     ┌─────────────────────────────────────┐    │
+│                     │         sqlite database             │    │
+│                     │  candidates | responses | scores    │    │
+│                     └─────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,175 +43,251 @@ luna is a desktop application with a tauri/react frontend and a python backend. 
 
 | file | purpose |
 |------|---------|
-| `src/components/Spotlight.tsx` | main ui component - input, plan display, execution status |
+| `src/components/ChatInterface.tsx` | main layout with navigation |
+| `src/components/WelcomeScreen.tsx` | landing page with cta buttons |
+| `src/components/AssessmentFlow.tsx` | 10-question assessment flow |
+| `src/components/CandidateDashboard.tsx` | candidate list with filtering |
+| `src/components/FeedbackWidget.tsx` | floating feedback button |
 | `src/utils/api.ts` | http client for backend communication |
-| `src/App.tsx` | root component |
-| `src/App.css` | tailwind configuration and custom styles |
+| `src/contexts/ThemeContext.tsx` | theme management |
 
 **data flow:**
 
-1. user types command in spotlight input
-2. `executeCommand()` sends POST to `/api/execute`
-3. response contains execution plan (steps with commands and risk levels)
-4. user reviews plan and clicks "execute"
-5. `executeAllSteps()` sends POST to `/api/execute/run`
-6. ui updates status for each step as results arrive
+1. user clicks "take the assessment" on welcome screen
+2. enters name and email, `startAssessment()` creates candidate record
+3. answers 10 questions, each calls `submitAnswer()` to save response
+4. after question 10, frontend calculates scores via `calculateScores()`
+5. results displayed with culture fit score and top traits
+6. dashboard fetches all candidates via `getCandidates()`
 
 ### backend (src/backend/)
 
-**technology:** python 3.11+, fastapi, uvicorn, openai
+**technology:** python 3.11+, fastapi, sqlite
 
 **key files:**
 
 | file | purpose |
 |------|---------|
-| `main.py` | fastapi app, routes, command parsing logic |
-| `utils/executor.py` | command execution, sudo handling, safety validation |
+| `main.py` | fastapi app and api routes |
+| `database.py` | sqlite operations and crud functions |
+| `questions.py` | assessment question definitions |
+| `scoring.py` | culture fit scoring algorithm |
 
-**command parsing:**
+**database schema:**
 
-the backend uses a two-tier parsing strategy:
+```sql
+-- candidates table
+candidates (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  assessment_status TEXT DEFAULT 'in_progress',
+  culture_fit_score REAL,
+  top_traits TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 
-1. **llm parsing (primary)** - sends command to gpt-4o-mini with system prompt
-   - detects os and available package managers
-   - generates appropriate shell commands
-   - assigns risk levels
-   - returns structured json
+-- assessment responses
+assessment_responses (
+  id INTEGER PRIMARY KEY,
+  candidate_id INTEGER REFERENCES candidates(id),
+  question_id INTEGER NOT NULL,
+  answer TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 
-2. **hardcoded fallback** - if no api key or llm fails
-   - supports: install chrome, install vscode, install slack, check docker
-   - pattern matching on command string
+-- scores breakdown
+scores (
+  id INTEGER PRIMARY KEY,
+  candidate_id INTEGER REFERENCES candidates(id),
+  culture_fit_score REAL,
+  work_style_score REAL,
+  communication_score REAL,
+  values_score REAL,
+  top_traits TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 
-**execution:**
-
-commands run via `subprocess.run()` with:
-- 5 minute default timeout
-- shell mode via `/bin/bash`
-- environment variables for non-interactive mode
-- safety validation before execution
-
-### sudo handling (macos)
-
-luna uses a seamless sudo approach that avoids terminal password prompts:
-
-```
-┌────────────────────────────────────────────────────┐
-│  command needs sudo?                               │
-│         │                                          │
-│         ▼                                          │
-│  ┌─────────────────┐                               │
-│  │ check cached    │ ───yes──▶ execute directly   │
-│  │ credentials     │                               │
-│  └─────────────────┘                               │
-│         │ no                                       │
-│         ▼                                          │
-│  ┌─────────────────┐                               │
-│  │ osascript:      │                               │
-│  │ "do shell       │ ◀──── native macos           │
-│  │ script with     │       password dialog         │
-│  │ administrator   │                               │
-│  │ privileges"     │                               │
-│  └─────────────────┘                               │
-│         │                                          │
-│         ▼                                          │
-│  credentials cached (~5 min)                       │
-└────────────────────────────────────────────────────┘
+-- user feedback
+feedback (
+  id INTEGER PRIMARY KEY,
+  message TEXT NOT NULL,
+  user_type TEXT,
+  page TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 ```
 
-key points:
-- uses `osascript` to trigger macos native password dialog
-- credentials cached for ~5 minutes (macos default)
-- subsequent sudo commands use cached credentials automatically
-- no terminal interaction required
+### assessment flow
 
-### safety validation
+```
+┌────────────────────────────────────────────────────────────┐
+│                    assessment flow                          │
+│                                                             │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐              │
+│  │ welcome  │───▶│ question │───▶│ question │───▶ ...      │
+│  │  form    │    │    1     │    │    2     │              │
+│  └──────────┘    └──────────┘    └──────────┘              │
+│       │                                  │                  │
+│       │                                  ▼                  │
+│       │              ┌──────────────────────┐              │
+│       │              │   halfway pause      │              │
+│       │              │   (question 5)       │              │
+│       │              └──────────────────────┘              │
+│       │                         │                          │
+│       │                         ▼                          │
+│       │              ┌──────────────────────┐              │
+│       │              │  questions 6-10      │              │
+│       │              └──────────────────────┘              │
+│       │                         │                          │
+│       ▼                         ▼                          │
+│  ┌──────────────────────────────────────────┐              │
+│  │              results screen              │              │
+│  │  - culture fit score (0-100)            │              │
+│  │  - dimension breakdown                   │              │
+│  │  - top 3 traits                         │              │
+│  └──────────────────────────────────────────┘              │
+└────────────────────────────────────────────────────────────┘
+```
 
-commands are validated before execution:
+### scoring algorithm
 
-**blocked patterns:**
-- `rm -rf /` - filesystem destruction
-- `dd if=` - direct disk writes
-- `mkfs` - filesystem formatting
-- fork bombs
-- reverse shells
+the scoring algorithm evaluates three dimensions:
 
-**risk levels:**
-- `safe` - read-only operations (ls, cat, which, version checks)
-- `moderate` - installations, file writes
-- `dangerous` - sudo, deletions, system modifications
+**1. work style (33%)**
+- questions about structure vs flexibility
+- solo work vs collaboration preferences
+- planning vs spontaneity
+
+**2. communication (33%)**
+- feedback preferences
+- meeting style
+- conflict resolution
+
+**3. values (33%)**
+- what matters in a workplace
+- work-life balance views
+- growth priorities
+
+**score calculation:**
+
+```python
+# each answer has a profile with dimension scores
+answer_profiles = {
+    "q1_a": {"work_style": 0.8, "communication": 0.6, "values": 0.5},
+    "q1_b": {"work_style": 0.5, "communication": 0.8, "values": 0.7},
+    # ...
+}
+
+# aggregate across all answers
+work_style_score = average(answer.work_style for answer in responses)
+communication_score = average(answer.communication for answer in responses)
+values_score = average(answer.values for answer in responses)
+
+# final score is weighted average
+culture_fit_score = (work_style * 33 + communication * 33 + values * 33)
+```
+
+**trait identification:**
+
+top 3 traits are identified from the strongest response patterns:
+- "collaborative" - prefers team environments
+- "structured" - likes clear processes
+- "growth-oriented" - prioritizes learning
+- "autonomous" - prefers independence
+- "direct communicator" - values clarity
+- "adaptable" - comfortable with change
 
 ## data models
 
-### ExecuteResponse
+### StartAssessmentResponse
 
 ```json
 {
-  "task_id": "task_001",
-  "steps": [
+  "candidate_id": 1,
+  "total_questions": 10,
+  "questions": [
     {
       "id": 1,
-      "description": "check if homebrew is installed",
-      "command": "which brew",
-      "risk": "safe"
-    },
-    {
-      "id": 2,
-      "description": "install google chrome",
-      "command": "brew install --cask google-chrome",
-      "risk": "moderate"
+      "question": "How do you prefer to receive feedback?",
+      "type": "multiple_choice",
+      "category": "communication",
+      "options": ["a", "b", "c", "d"]
     }
-  ],
-  "requires_confirmation": true,
-  "estimated_time": "2-3 minutes"
+  ]
 }
 ```
 
-### ExecuteAllResponse
+### AssessmentResults
 
 ```json
 {
-  "task_id": "task_001",
-  "results": [
-    {
-      "step_id": 1,
-      "status": "completed",
-      "output": "/opt/homebrew/bin/brew",
-      "error": null
-    },
-    {
-      "step_id": 2,
-      "status": "completed",
-      "output": "==> Installing Cask google-chrome...",
-      "error": null
-    }
-  ],
-  "overall_status": "completed"
+  "candidate_id": 1,
+  "culture_fit_score": 78,
+  "work_style_score": 82,
+  "communication_score": 75,
+  "values_score": 77,
+  "top_traits": ["collaborative", "growth-oriented", "adaptable"]
 }
 ```
 
-## llm integration
+### Candidate
 
-the system prompt instructs gpt-4o-mini to:
+```json
+{
+  "id": 1,
+  "name": "john doe",
+  "email": "john@example.com",
+  "assessment_status": "completed",
+  "culture_fit_score": 78,
+  "top_traits": ["collaborative", "growth-oriented", "adaptable"],
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
 
-1. generate atomic, directly-executable shell commands
-2. use correct package manager for detected os
-3. assign appropriate risk levels
-4. add verification steps when useful
-5. avoid interactive flags (-i, --interactive)
-6. use -y or equivalent for package managers
+## theming system
 
-**context provided to llm:**
-- operating system (darwin/linux/windows)
-- available package managers (brew, apt, npm, pip, etc.)
-- sudo handling note (native dialog, no terminal prompts)
+culturesync includes a comprehensive theming system:
+
+**available themes:**
+- minimal-light / minimal-dark
+- lavender / rose / mint
+- mocha / ocean / sunset
+
+**implementation:**
+- themes defined in `ThemeContext.tsx`
+- css custom properties for colors
+- persisted to localStorage
+- real-time switching without reload
+
+**theme structure:**
+
+```typescript
+interface Theme {
+  id: string;
+  name: string;
+  colors: {
+    background: string;
+    backgroundSecondary: string;
+    surface: string;
+    text: string;
+    textSecondary: string;
+    textMuted: string;
+    accent: string;
+    accentHover: string;
+    border: string;
+    // ...
+  };
+}
+```
 
 ## future considerations
 
-areas not yet implemented:
+areas for potential expansion:
 
-- global hotkey activation (app must be focused)
-- windows/linux sudo handling
-- persistent command history
-- context awareness (project detection)
-- task decomposition (breaking complex tasks into subtasks)
-- learning from user corrections
+- company profiles (matching candidates to specific companies)
+- more sophisticated matching algorithms
+- assessment analytics and insights
+- interview scheduling integration
+- candidate comparison tools
+- batch assessment invitations

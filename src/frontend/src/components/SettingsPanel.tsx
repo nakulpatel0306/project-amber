@@ -134,9 +134,7 @@ export function SettingsPanel({ onClearHistory }: SettingsPanelProps) {
             keyboard shortcuts for quick actions
           </p>
           <div className="space-y-1">
-            <ShortcutRow keys={['enter']} action="send message" />
-            <ShortcutRow keys={['shift', 'enter']} action="new line" />
-            <ShortcutRow keys={['⌘', 'K']} action="new chat" />
+            <ShortcutRow keys={['enter']} action="submit answer" />
             <ShortcutRow keys={['⌘', ',']} action="toggle settings" />
             <ShortcutRow keys={['esc']} action="close panel" />
           </div>
@@ -149,19 +147,19 @@ export function SettingsPanel({ onClearHistory }: SettingsPanelProps) {
           <div className="space-y-3">
             <HelpCard
               title="getting started"
-              content="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation."
+              content="Take our quick 10-question assessment to discover your work style and values. We'll match you with startups that align with your culture preferences."
             />
             <HelpCard
-              title="installing apps"
-              content="Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident."
+              title="culture assessment"
+              content="Answer questions about how you prefer to work, communicate, and what values matter most to you. Each question helps build your culture profile."
             />
             <HelpCard
-              title="managing environments"
-              content="Sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium."
+              title="candidate dashboard"
+              content="View all candidates who have completed assessments. Filter by score, search by name or email, and schedule coffee chats with potential matches."
             />
             <HelpCard
-              title="troubleshooting"
-              content="Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione."
+              title="coffee chats"
+              content="Once you find a candidate that looks like a good fit, schedule a coffee chat to get to know them better and discuss potential opportunities."
             />
           </div>
 
