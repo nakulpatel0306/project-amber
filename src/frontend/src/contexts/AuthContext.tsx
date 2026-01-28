@@ -1,58 +1,282 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import { supabase, getCurrentUserWithProfile, isSupabaseConfigured } from '../lib/supabase';
+import type { User, Session, AuthError } from '@supabase/supabase-js';
+import type { Profile, UserRole } from '../types/auth.types';
 
-interface AuthContextType {
+interface AuthState {
   user: User | null;
+  profile: Profile | null;
+  session: Session | null;
   isLoading: boolean;
-  signOut: () => Promise<void>;
+  error: AuthError | null;
+}
+
+interface AuthContextType extends AuthState {
+  // Auth status
+  isAuthenticated: boolean;
+  isCandidate: boolean;
+  isEmployer: boolean;
   isAuthEnabled: boolean;
+
+  // Auth methods
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    role: UserRole,
+    metadata?: Record<string, unknown>
+  ) => Promise<void>;
+  signInWithOAuth: (provider: 'google' | 'github', role?: UserRole) => Promise<void>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+
+  // Profile methods
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    isLoading: true,
+    error: null,
+  });
 
+  // Initialize auth state
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setIsLoading(false);
+      setState(prev => ({ ...prev, isLoading: false }));
       return;
     }
 
-    // get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    }).catch(() => {
-      setIsLoading(false);
-    });
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-    // listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+        if (session?.user) {
+          const result = await getCurrentUserWithProfile();
+          setState({
+            user: session.user,
+            profile: result?.profile as Profile | null,
+            session,
+            isLoading: false,
+            error: null,
+          });
+        } else {
+          setState(prev => ({ ...prev, isLoading: false }));
+        }
+      } catch (error) {
+        console.error('Auth init error:', error);
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error as AuthError,
+        }));
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event);
+
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Small delay to allow database trigger to create profile
+          setTimeout(async () => {
+            const result = await getCurrentUserWithProfile();
+            setState({
+              user: session.user,
+              profile: result?.profile as Profile | null,
+              session,
+              isLoading: false,
+              error: null,
+            });
+          }, 500);
+        } else if (event === 'SIGNED_OUT') {
+          setState({
+            user: null,
+            profile: null,
+            session: null,
+            isLoading: false,
+            error: null,
+          });
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          setState(prev => ({ ...prev, session }));
+        } else if (event === 'PASSWORD_RECOVERY') {
+          // Handle password recovery - user clicked reset link
+          setState(prev => ({ ...prev, session }));
+        }
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
+  // Sign in with email
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setState(prev => ({ ...prev, isLoading: false, error }));
+      throw error;
     }
+  }, []);
+
+  // Sign up with email
+  const signUpWithEmail = useCallback(
+    async (
+      email: string,
+      password: string,
+      role: UserRole,
+      metadata?: Record<string, unknown>
+    ) => {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role,
+            ...metadata,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        setState(prev => ({ ...prev, isLoading: false, error }));
+        throw error;
+      }
+    },
+    []
+  );
+
+  // Sign in with OAuth
+  const signInWithOAuth = useCallback(
+    async (provider: 'google' | 'github', role: UserRole = 'candidate') => {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        setState(prev => ({ ...prev, isLoading: false, error }));
+        throw error;
+      }
+
+      // Store role for after OAuth callback
+      localStorage.setItem('amber-signup-role', role);
+    },
+    []
+  );
+
+  // Sign out
+  const signOut = useCallback(async () => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Sign out error:', error);
+    }
+  }, []);
+
+  // Reset password
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    if (error) throw error;
+  }, []);
+
+  // Update password
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) throw error;
+  }, []);
+
+  // Update profile
+  const updateProfile = useCallback(
+    async (updates: Partial<Profile>) => {
+      if (!state.user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', state.user.id);
+
+      if (error) throw error;
+
+      setState(prev => ({
+        ...prev,
+        profile: prev.profile ? { ...prev.profile, ...updates } : null,
+      }));
+    },
+    [state.user]
+  );
+
+  // Refresh profile
+  const refreshProfile = useCallback(async () => {
+    if (!state.user) return;
+
+    const result = await getCurrentUserWithProfile();
+    if (result?.profile) {
+      setState(prev => ({ ...prev, profile: (result.profile ?? null) as Profile | null }));
+    }
+  }, [state.user]);
+
+  const value: AuthContextType = {
+    ...state,
+    isAuthenticated: !!state.user,
+    isCandidate: state.profile?.role === 'candidate',
+    isEmployer: state.profile?.role === 'employer',
+    isAuthEnabled: isSupabaseConfigured,
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithOAuth,
+    signOut,
+    resetPassword,
+    updatePassword,
+    updateProfile,
+    refreshProfile,
   };
 
-  return (
-    <AuthContext.Provider value={{ user, isLoading, signOut, isAuthEnabled: isSupabaseConfigured }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

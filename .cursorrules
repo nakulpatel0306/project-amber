@@ -1,4 +1,4 @@
-this is the luna desktop agent project.
+this is the amber platform project - a culture-first job matching platform.
 
 code style:
 - use lowercase for all ui text
@@ -8,21 +8,29 @@ code style:
 - add comments for complex logic
 
 architecture:
-- frontend: tauri + react + typescript
+- frontend: react 19 + typescript + vite
+- styling: tailwind css with amber design system
 - backend: python + fastapi
-- communication: ipc/http
-- local-first philosophy
+- database: supabase (postgresql + auth + storage)
+- state: react context + zustand
 
 when writing code:
-- follow the project structure in README.md
-- reference project_luna_notion_structure.md for specs
-- write tests for new features
+- follow the component patterns in src/frontend/src/components/ui/
+- use css variables for theming (see globals.css)
+- implement role-based access (candidate vs employer)
+- write type-safe code with typescript
 - keep functions small and focused
-- prioritize safety and user control
-- always validate commands before execution
+
+design system:
+- primary accent: amber-600 (#D97706)
+- muted text: stone-500 (#78716C)
+- background: cream-100 (#F5F3EF)
+- always use css variables for colors
+- follow the Button, Input, Card patterns
 
 project values:
-- privacy first (local execution by default)
-- transparency (show what will be executed)
-- safety (confirm dangerous operations)
+- culture-first matching (personality + values)
+- beautiful, accessible ui
+- type safety throughout
+- privacy conscious (rls policies)
 - simplicity (lowercase aesthetic, minimal ui)

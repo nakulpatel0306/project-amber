@@ -57,14 +57,14 @@ export function AccountPage() {
   });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [avatar, setAvatar] = useState<AvatarConfig>(() => {
-    const saved = localStorage.getItem('luna-user-avatar');
+    const saved = localStorage.getItem('amber-user-avatar');
     return saved ? JSON.parse(saved) : { type: 'default', value: '' };
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Save avatar to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('luna-user-avatar', JSON.stringify(avatar));
+    localStorage.setItem('amber-user-avatar', JSON.stringify(avatar));
   }, [avatar]);
 
   const memberSince = user?.created_at
@@ -75,7 +75,7 @@ export function AccountPage() {
     : 'January 2024';
 
   const userEmail = user?.email || 'user@example.com';
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Luna User';
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Amber User';
   const userAvatar = user?.user_metadata?.avatar_url;
 
   const handleAvatarSelect = (avatarOption: AvatarOption) => {
@@ -371,7 +371,7 @@ export function AccountPage() {
                 className="font-medium"
                 style={{ color: 'var(--color-text)' }}
               >
-                luna free
+                amber free
               </span>
             </div>
             <span
@@ -388,7 +388,7 @@ export function AccountPage() {
             className="text-sm mb-4"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            basic access to luna with limited executions per day.
+            basic access to amber with limited features.
           </p>
           <button
             className="w-full py-2.5 rounded-lg text-sm font-medium btn-smooth"
