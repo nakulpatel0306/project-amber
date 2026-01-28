@@ -1,5 +1,5 @@
 """
-Luna CultureSync - Scoring Algorithm
+Amber - Scoring Algorithm
 
 Simple scoring system based on answer patterns.
 Each answer option is assigned a score profile that contributes to different dimensions.

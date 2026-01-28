@@ -1,9 +1,10 @@
 """
-Luna CultureSync - Backend API
-AI-powered coffee chat matching platform for startups and candidates
+Amber - Backend API
+Culture-first job matching platform
 """
 
-from fastapi import FastAPI, HTTPException
+import os
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -26,13 +27,21 @@ from database import (
 )
 from questions import get_question, get_all_questions, get_total_questions
 from scoring import calculate_scores, get_score_explanation
+from auth import (
+    AuthMiddleware,
+    require_auth,
+    require_role,
+    AuthUser,
+    get_current_user_dependency,
+)
+from auth.supabase_auth import is_auth_configured
 
 # Initialize database
 init_database()
 
 app = FastAPI(
-    title="Luna CultureSync API",
-    description="AI-powered coffee chat matching platform for startups and candidates",
+    title="Amber API",
+    description="Culture-first job matching platform",
     version="1.0.0"
 )
 
@@ -42,12 +51,21 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:1420",
         "http://localhost:5173",
+        "http://localhost:3000",
         "http://tauri.localhost",
         "tauri://localhost"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add authentication middleware (optional - only active when SUPABASE_JWT_SECRET is set)
+# Protected routes require valid JWT token in Authorization header
+app.add_middleware(
+    AuthMiddleware,
+    exclude_paths=["/", "/health", "/docs", "/redoc", "/openapi.json"],
+    exclude_prefixes=["/api/assessment/"],  # Assessment endpoints are public
 )
 
 
@@ -122,8 +140,9 @@ async def root():
     """Root endpoint - health check"""
     return {
         "status": "ok",
-        "message": "Luna CultureSync API",
-        "version": "1.0.0"
+        "message": "Amber API",
+        "version": "1.0.0",
+        "auth_enabled": is_auth_configured()
     }
 
 
@@ -134,8 +153,29 @@ async def health():
         "status": "healthy",
         "services": {
             "api": "ok",
-            "database": "ok"
+            "database": "ok",
+            "auth": "configured" if is_auth_configured() else "disabled"
         }
+    }
+
+
+# ============ User Endpoints ============
+
+@app.get("/api/me")
+async def get_current_user_info(
+    user: AuthUser = Depends(require_auth)
+):
+    """
+    Get the current authenticated user's information.
+
+    Requires valid JWT token in Authorization header.
+    """
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "is_candidate": user.is_candidate,
+        "is_employer": user.is_employer,
     }
 
 
@@ -305,10 +345,24 @@ async def get_questions():
 
 
 # ============ Candidate Dashboard Endpoints ============
+# Note: These endpoints require authentication when SUPABASE_JWT_SECRET is configured
 
 @app.get("/api/candidates", response_model=List[CandidateResponse])
-async def get_candidates():
-    """Get all candidates with their scores (for HR dashboard)."""
+async def get_candidates(
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Get all candidates with their scores (for employer dashboard).
+
+    When auth is enabled, requires employer role.
+    """
+    # In production, verify employer role
+    if user and not user.is_employer:
+        raise HTTPException(
+            status_code=403,
+            detail="Only employers can view candidate list"
+        )
+
     candidates = get_all_candidates_with_scores()
 
     return [
@@ -328,8 +382,22 @@ async def get_candidates():
 
 
 @app.get("/api/candidates/{candidate_id}", response_model=CandidateResponse)
-async def get_candidate_by_id(candidate_id: int):
-    """Get a specific candidate by ID."""
+async def get_candidate_by_id(
+    candidate_id: int,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Get a specific candidate by ID.
+
+    When auth is enabled, requires employer role.
+    """
+    # In production, verify employer role
+    if user and not user.is_employer:
+        raise HTTPException(
+            status_code=403,
+            detail="Only employers can view candidate details"
+        )
+
     candidate = get_candidate(candidate_id)
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
@@ -381,7 +449,7 @@ async def get_feedback():
 # ============ Main Entry Point ============
 
 if __name__ == "__main__":
-    print("starting Luna CultureSync backend...")
+    print("starting Amber backend...")
     print("api docs: http://127.0.0.1:8000/docs")
 
     uvicorn.run(

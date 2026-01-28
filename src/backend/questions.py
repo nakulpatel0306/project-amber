@@ -1,5 +1,5 @@
 """
-Luna CultureSync - Assessment Questions
+Amber - Assessment Questions
 """
 
 ASSESSMENT_QUESTIONS = [

@@ -71,13 +71,13 @@ export function AuthPage() {
               className="brand-font text-lg"
               style={{ color: "var(--color-text)" }}
             >
-              prj luna
+              amber
             </h1>
             <p
               className="text-sm mt-1"
               style={{ color: "var(--color-textMuted)" }}
             >
-              your local development agent
+              culture-first job matching
             </p>
           </div>
 

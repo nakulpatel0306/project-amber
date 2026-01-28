@@ -23,6 +23,50 @@ export interface Theme {
 }
 
 export const themes: Theme[] = [
+  // Amber themes (default for new platform)
+  {
+    id: 'amber-light',
+    name: 'Amber Light',
+    colors: {
+      background: '#F5F3EF',
+      backgroundSecondary: '#FDFCFB',
+      surface: '#FFFFFF',
+      surfaceHover: '#EBE8E2',
+      border: '#DDD8CE',
+      borderHover: '#C5BEB2',
+      text: '#1C1917',
+      textSecondary: '#57534E',
+      textMuted: '#78716C',
+      accent: '#D97706',
+      accentHover: '#B45309',
+      accentText: '#FFFFFF',
+      success: '#16A34A',
+      error: '#DC2626',
+      warning: '#F59E0B',
+    },
+  },
+  {
+    id: 'amber-dark',
+    name: 'Amber Dark',
+    colors: {
+      background: '#1C1917',
+      backgroundSecondary: '#292524',
+      surface: '#44403C',
+      surfaceHover: '#57534E',
+      border: '#57534E',
+      borderHover: '#78716C',
+      text: '#FAFAF9',
+      textSecondary: '#D6D3D1',
+      textMuted: '#A8A29E',
+      accent: '#F59E0B',
+      accentHover: '#D97706',
+      accentText: '#1C1917',
+      success: '#22C55E',
+      error: '#EF4444',
+      warning: '#FBBF24',
+    },
+  },
+  // Legacy themes (keep for users who prefer them)
   {
     id: 'midnight',
     name: 'Midnight',
@@ -42,27 +86,6 @@ export const themes: Theme[] = [
       success: '#22c55e',
       error: '#ef4444',
       warning: '#f59e0b',
-    },
-  },
-  {
-    id: 'claude',
-    name: 'Claude',
-    colors: {
-      background: '#1a1915',
-      backgroundSecondary: '#252420',
-      surface: '#2d2c28',
-      surfaceHover: '#3a3935',
-      border: '#3d3c38',
-      borderHover: '#4d4c48',
-      text: '#f5f4ef',
-      textSecondary: '#b8b5a8',
-      textMuted: '#8a8778',
-      accent: '#da7756',
-      accentHover: '#c96645',
-      accentText: '#ffffff',
-      success: '#5fb280',
-      error: '#e67373',
-      warning: '#d9a441',
     },
   },
   {
@@ -108,27 +131,6 @@ export const themes: Theme[] = [
     },
   },
   {
-    id: 'rose',
-    name: 'Rose',
-    colors: {
-      background: '#1f1318',
-      backgroundSecondary: '#2a1a22',
-      surface: '#362430',
-      surfaceHover: '#442e3c',
-      border: '#4a3542',
-      borderHover: '#5c4250',
-      text: '#fdf2f5',
-      textSecondary: '#d4a5b5',
-      textMuted: '#9a7585',
-      accent: '#f472b6',
-      accentHover: '#ec4899',
-      accentText: '#1f1318',
-      success: '#86efac',
-      error: '#fca5a5',
-      warning: '#fcd34d',
-    },
-  },
-  {
     id: 'forest',
     name: 'Forest',
     colors: {
@@ -159,21 +161,31 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'amber-theme';
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('luma-theme');
+    const saved = localStorage.getItem(STORAGE_KEY);
     const found = themes.find(t => t.id === saved);
+    // Default to amber-light for new users
     return found || themes[0];
   });
 
   useEffect(() => {
-    localStorage.setItem('luma-theme', currentTheme.id);
+    localStorage.setItem(STORAGE_KEY, currentTheme.id);
 
     // Apply CSS variables
     const root = document.documentElement;
     Object.entries(currentTheme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
     });
+
+    // Set color-scheme for native elements
+    const isDark = currentTheme.id.includes('dark') ||
+                   currentTheme.id === 'midnight' ||
+                   currentTheme.id === 'ocean' ||
+                   currentTheme.id === 'forest';
+    root.style.colorScheme = isDark ? 'dark' : 'light';
   }, [currentTheme]);
 
   const setTheme = (themeId: string) => {

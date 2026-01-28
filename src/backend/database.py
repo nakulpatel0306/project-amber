@@ -1,5 +1,5 @@
 """
-Luna CultureSync - Database setup and management
+Amber - Database setup and management
 """
 
 import sqlite3

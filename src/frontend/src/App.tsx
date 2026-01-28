@@ -1,22 +1,120 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+
+// Auth components
+import {
+  LoginPage,
+  SignupPage,
+  PasswordResetPage,
+  AuthCallback,
+  ProtectedRoute,
+  GuestRoute,
+} from './components/auth';
+
+// Layout
+import { AppLayout } from './components/layout/AppLayout';
+import { ErrorBoundary } from './components/layout/ErrorBoundary';
+
+// Pages (keeping existing components for now)
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { ChatInterface } from './components/ChatInterface';
-import { AuthPage } from "./components/AuthPage";
-import './App.css';
+import { SettingsPage } from './components/settings/SettingsPage';
+
+import './styles/globals.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ChatInterface />} />
-            <Route path="/signup" element={<AuthPage />} />
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<WelcomeScreen />} />
+
+                {/* Auth routes (guest only) */}
+                <Route
+                  path="/auth/login"
+                  element={
+                    <GuestRoute>
+                      <LoginPage />
+                    </GuestRoute>
+                  }
+                />
+                <Route
+                  path="/auth/signup"
+                  element={
+                    <GuestRoute>
+                      <SignupPage />
+                    </GuestRoute>
+                  }
+                />
+                <Route path="/auth/forgot-password" element={<PasswordResetPage />} />
+                <Route path="/auth/reset-password" element={<PasswordResetPage />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+
+                {/* Legacy route redirect */}
+                <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+
+                {/* Protected app routes */}
+                <Route
+                  path="/app"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  {/* Candidate routes */}
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route
+                    path="dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <ChatInterface />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="assessment"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <ChatInterface />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
+                  <Route path="chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
+
+                  {/* Employer routes */}
+                  <Route
+                    path="employer"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Employer dashboard coming soon...</div>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="employer/roles" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Manage roles coming soon...</div>} />
+                  <Route path="employer/candidates" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Candidates page coming soon...</div>} />
+                  <Route path="employer/chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
+
+                  {/* Shared routes */}
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="settings/:section" element={<SettingsPage />} />
+                </Route>
+
+                {/* Catch all - 404 */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </ToastProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

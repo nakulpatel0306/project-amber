@@ -150,7 +150,7 @@ export function ChatInterface() {
         >
           <div className="flex items-center gap-2">
             <span className="brand-font" style={{ color: 'var(--color-text)' }}>
-              luna culturesync
+              amber
             </span>
             <span
               className="text-[10px] px-1.5 py-0.5 rounded"
@@ -166,12 +166,7 @@ export function ChatInterface() {
 
         {/* content area */}
         <main className="flex-1 overflow-y-auto">
-          {currentView === 'welcome' && (
-            <WelcomeScreen
-              onStartAssessment={() => setCurrentView('assessment')}
-              onViewDashboard={() => setCurrentView('dashboard')}
-            />
-          )}
+          {currentView === 'welcome' && <WelcomeScreen />}
           {currentView === 'assessment' && <AssessmentFlow />}
           {currentView === 'dashboard' && <CandidateDashboard />}
           {currentView === 'account' && <AccountPage />}
