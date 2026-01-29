@@ -162,11 +162,23 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'amber-theme';
+const CUSTOM_THEMES_KEY = 'amber-custom-themes';
+
+function getCustomThemes(): Theme[] {
+  try {
+    const saved = localStorage.getItem(CUSTOM_THEMES_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const found = themes.find(t => t.id === saved);
+    const customThemes = getCustomThemes();
+    const allThemes = [...themes, ...customThemes];
+    const found = allThemes.find(t => t.id === saved);
     // Default to amber-light for new users
     return found || themes[0];
   });
@@ -189,7 +201,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [currentTheme]);
 
   const setTheme = (themeId: string) => {
-    const theme = themes.find(t => t.id === themeId);
+    const customThemes = getCustomThemes();
+    const allThemes = [...themes, ...customThemes];
+    const theme = allThemes.find(t => t.id === themeId);
     if (theme) {
       setCurrentTheme(theme);
     }
