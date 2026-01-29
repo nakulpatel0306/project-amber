@@ -7,7 +7,7 @@ export interface Profile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
-  role: UserRole;
+  role: UserRole | null;
   onboarding_completed: boolean;
   created_at: string;
   updated_at: string;

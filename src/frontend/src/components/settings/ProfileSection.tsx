@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -18,6 +18,16 @@ export function ProfileSection() {
     full_name: profile?.full_name || '',
     avatar_url: profile?.avatar_url || '',
   });
+
+  // Sync formData when profile loads or changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        avatar_url: profile.avatar_url || '',
+      });
+    }
+  }, [profile]);
 
   const handleSave = async () => {
     setIsSaving(true);

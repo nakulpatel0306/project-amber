@@ -24,6 +24,7 @@ interface AuthContextType extends AuthState {
   isCandidate: boolean;
   isEmployer: boolean;
   isAuthEnabled: boolean;
+  needsOnboarding: boolean;
 
   // Auth methods
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -173,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with OAuth
   const signInWithOAuth = useCallback(
-    async (provider: 'google' | 'github', role: UserRole = 'candidate') => {
+    async (provider: 'google' | 'github', role?: UserRole) => {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -192,8 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
 
-      // Store role for after OAuth callback
-      localStorage.setItem('amber-signup-role', role);
+      // Only store role if explicitly provided (from signup flow)
+      if (role) {
+        localStorage.setItem('amber-signup-role', role);
+      }
     },
     []
   );
@@ -255,12 +258,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [state.user]);
 
+  // Check if user needs onboarding (no role selected or onboarding not completed)
+  const needsOnboarding = !!state.user && !!state.profile && (!state.profile.role || !state.profile.onboarding_completed);
+
   const value: AuthContextType = {
     ...state,
     isAuthenticated: !!state.user,
     isCandidate: state.profile?.role === 'candidate',
     isEmployer: state.profile?.role === 'employer',
     isAuthEnabled: isSupabaseConfigured,
+    needsOnboarding,
     signInWithEmail,
     signUpWithEmail,
     signInWithOAuth,

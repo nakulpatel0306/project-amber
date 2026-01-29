@@ -11,15 +11,18 @@ import {
   AuthCallback,
   ProtectedRoute,
   GuestRoute,
+  Onboarding,
 } from './components/auth';
 
 // Layout
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 
-// Pages (keeping existing components for now)
+// Pages
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { ChatInterface } from './components/ChatInterface';
+import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
+import { AssessmentFlow } from './components/AssessmentFlow';
+import { CultureQuiz, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
 import { SettingsPage } from './components/settings/SettingsPage';
 
 import './styles/globals.css';
@@ -68,13 +71,23 @@ function App() {
                     </ProtectedRoute>
                   }
                 >
+                  {/* Onboarding route - skip onboarding check to avoid redirect loop */}
+                  <Route
+                    path="onboarding"
+                    element={
+                      <ProtectedRoute skipOnboardingCheck>
+                        <Onboarding />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   {/* Candidate routes */}
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route
                     path="dashboard"
                     element={
                       <ProtectedRoute allowedRoles={['candidate']}>
-                        <ChatInterface />
+                        <JobSeekerDashboard />
                       </ProtectedRoute>
                     }
                   />
@@ -82,7 +95,7 @@ function App() {
                     path="assessment"
                     element={
                       <ProtectedRoute allowedRoles={['candidate']}>
-                        <ChatInterface />
+                        <AssessmentFlow />
                       </ProtectedRoute>
                     }
                   />
@@ -94,12 +107,14 @@ function App() {
                     path="employer"
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
-                        <div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Employer dashboard coming soon...</div>
+                        <EmployerDashboard />
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="employer/roles" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Manage roles coming soon...</div>} />
-                  <Route path="employer/candidates" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Candidates page coming soon...</div>} />
+                  <Route path="employer/culture" element={<CultureQuiz />} />
+                  <Route path="employer/roles" element={<ManageRoles />} />
+                  <Route path="employer/roles/new" element={<CreateRole />} />
+                  <Route path="employer/candidates" element={<BrowseCandidates />} />
                   <Route path="employer/chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
 
                   {/* Shared routes */}
