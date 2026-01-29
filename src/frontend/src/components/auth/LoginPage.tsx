@@ -54,6 +54,9 @@ export function LoginPage() {
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     try {
+      // Don't pass role for login - only signup should set role
+      // Remove any stale signup role from localStorage
+      localStorage.removeItem('amber-signup-role');
       await signInWithOAuth(provider);
     } catch (err) {
       const message = err instanceof Error ? err.message : `Failed to sign in with ${provider}`;

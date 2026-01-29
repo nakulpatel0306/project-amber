@@ -6,15 +6,15 @@ import type { UserRole } from '../../types/auth.types';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
-  requireOnboarding?: boolean;
+  skipOnboardingCheck?: boolean;
 }
 
 export function ProtectedRoute({
   children,
   allowedRoles,
-  requireOnboarding = false,
+  skipOnboardingCheck = false,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, profile, isAuthEnabled } = useAuth();
+  const { isAuthenticated, isLoading, profile, isAuthEnabled, needsOnboarding } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking auth
@@ -32,16 +32,17 @@ export function ProtectedRoute({
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Check role-based access
-  if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+  // Check if user needs onboarding (no role selected)
+  // Skip this check for the onboarding page itself
+  if (!skipOnboardingCheck && needsOnboarding) {
+    return <Navigate to="/app/onboarding" replace />;
+  }
+
+  // Check role-based access (only if profile has a role)
+  if (allowedRoles && profile?.role && !allowedRoles.includes(profile.role)) {
     // Redirect to appropriate dashboard based on role
     const redirectPath = profile.role === 'employer' ? '/app/employer' : '/app/dashboard';
     return <Navigate to={redirectPath} replace />;
-  }
-
-  // Check onboarding requirement
-  if (requireOnboarding && profile && !profile.onboarding_completed) {
-    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
