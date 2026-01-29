@@ -1,8 +1,8 @@
 {
-  "name": "luma-desktop-agent",
+  "name": "amber",
   "version": "0.1.0",
   "private": true,
-  "description": "local-first ai agent for development workflows",
+  "description": "culture-first job matching platform",
   "author": "nakul patel",
   "license": "MIT",
   "workspaces": [
@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "setup": "chmod +x setup_project_structure.sh && ./setup_project_structure.sh",
-    "frontend": "cd src/frontend && npm run tauri dev",
+    "frontend": "cd src/frontend && npm run dev",
     "backend": "cd src/backend && python main.py",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "test": "npm run test:frontend && npm run test:backend",
@@ -31,11 +31,10 @@
     "npm": ">=9.0.0"
   },
   "keywords": [
-    "ai",
-    "agent",
-    "automation",
-    "desktop",
-    "developer-tools",
-    "local-first"
+    "job-matching",
+    "culture-fit",
+    "recruitment",
+    "personality-assessment",
+    "career"
   ]
 }
