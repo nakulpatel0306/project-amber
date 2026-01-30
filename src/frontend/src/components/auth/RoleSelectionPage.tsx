@@ -25,10 +25,11 @@ export function RoleSelectionPage() {
         throw new Error('Not authenticated');
       }
 
-      // Update the profile role using upsert to handle race conditions
+      // Update the profile role and mark onboarding as started
+      // Setting onboarding_completed ensures returning users won't be asked for role again
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ role })
+        .update({ role, onboarding_completed: true })
         .eq('id', user.id);
 
       if (profileError) {

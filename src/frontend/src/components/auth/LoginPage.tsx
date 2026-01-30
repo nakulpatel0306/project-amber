@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, Chrome, Github, ArrowLeft, Eye, EyeOff, User, Building2, Check } from 'lucide-react';
+import { Mail, Lock, Chrome, Github, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { APP_NAME } from '../../utils/constants';
-import type { UserRole } from '../../types/auth.types';
-import { cn } from '../../utils/cn';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -19,10 +17,6 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-
-  // OAuth role selection state
-  const [pendingOAuthProvider, setPendingOAuthProvider] = useState<'google' | 'github' | null>(null);
-  const [selectedRole, setSelectedRole] = useState<UserRole>('candidate');
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
 
@@ -58,158 +52,17 @@ export function LoginPage() {
     }
   };
 
-  const handleOAuthClick = (provider: 'google' | 'github') => {
-    // Show role selection before proceeding with OAuth
-    setPendingOAuthProvider(provider);
-  };
-
-  const handleOAuthContinue = async () => {
-    if (!pendingOAuthProvider) return;
-
+  const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     try {
-      // Store the selected role and proceed with OAuth
-      await signInWithOAuth(pendingOAuthProvider, selectedRole);
+      // Clear any stale signup role - login doesn't set a role
+      // If user is new, AuthCallback will redirect them to role selection
+      localStorage.removeItem('amber-signup-role');
+      await signInWithOAuth(provider);
     } catch (err) {
-      const message = err instanceof Error ? err.message : `Failed to sign in with ${pendingOAuthProvider}`;
+      const message = err instanceof Error ? err.message : `Failed to sign in with ${provider}`;
       showError('Sign in failed', message);
-      setPendingOAuthProvider(null);
     }
   };
-
-  const roleOptions = [
-    {
-      id: 'candidate' as const,
-      label: "I'm looking for jobs",
-      description: 'Find roles that match your personality and values',
-      icon: User,
-    },
-    {
-      id: 'employer' as const,
-      label: "I'm hiring",
-      description: 'Find candidates who fit your company culture',
-      icon: Building2,
-    },
-  ];
-
-  // Show role selection screen if OAuth provider is pending
-  if (pendingOAuthProvider) {
-    return (
-      <div
-        className="min-h-screen flex flex-col"
-        style={{ backgroundColor: 'var(--color-background)' }}
-      >
-        {/* Header */}
-        <header className="p-6">
-          <button
-            onClick={() => setPendingOAuthProvider(null)}
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:opacity-80"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-        </header>
-
-        {/* Main content */}
-        <main className="flex-1 flex items-center justify-center px-4 pb-16">
-          <div className="w-full max-w-sm">
-            {/* Logo */}
-            <div className="text-center mb-8">
-              <div
-                className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-                }}
-              >
-                <span className="text-xl font-bold text-white">A</span>
-              </div>
-              <h1
-                className="text-2xl font-semibold"
-                style={{ color: 'var(--color-text)' }}
-              >
-                one more step
-              </h1>
-              <p
-                className="text-sm mt-2"
-                style={{ color: 'var(--color-textMuted)' }}
-              >
-                how will you be using amber?
-              </p>
-            </div>
-
-            {/* Role selection */}
-            <div className="space-y-3 mb-6">
-              {roleOptions.map(option => (
-                <button
-                  key={option.id}
-                  onClick={() => setSelectedRole(option.id)}
-                  className={cn(
-                    'w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-all',
-                    selectedRole === option.id
-                      ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
-                      : 'border-[var(--color-border)] hover:border-[var(--color-borderHover)]'
-                  )}
-                  style={{
-                    backgroundColor:
-                      selectedRole === option.id
-                        ? undefined
-                        : 'var(--color-surface)',
-                  }}
-                  disabled={isLoading}
-                >
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center',
-                      selectedRole === option.id
-                        ? 'bg-[var(--color-accent)] text-white'
-                        : 'bg-[var(--color-background)]'
-                    )}
-                    style={{
-                      color:
-                        selectedRole === option.id
-                          ? undefined
-                          : 'var(--color-textSecondary)',
-                    }}
-                  >
-                    <option.icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p
-                      className="font-medium text-sm"
-                      style={{ color: 'var(--color-text)' }}
-                    >
-                      {option.label.toLowerCase()}
-                    </p>
-                    <p
-                      className="text-xs mt-0.5"
-                      style={{ color: 'var(--color-textMuted)' }}
-                    >
-                      {option.description.toLowerCase()}
-                    </p>
-                  </div>
-                  {selectedRole === option.id && (
-                    <Check
-                      className="w-5 h-5"
-                      style={{ color: 'var(--color-accent)' }}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <Button
-              fullWidth
-              onClick={handleOAuthContinue}
-              isLoading={isLoading}
-              leftIcon={pendingOAuthProvider === 'google' ? <Chrome className="w-4 h-4" /> : <Github className="w-4 h-4" />}
-            >
-              continue with {pendingOAuthProvider}
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -260,7 +113,7 @@ export function LoginPage() {
             <Button
               variant="secondary"
               fullWidth
-              onClick={() => handleOAuthClick('google')}
+              onClick={() => handleOAuthSignIn('google')}
               leftIcon={<Chrome className="w-4 h-4" />}
               disabled={isLoading}
             >
@@ -269,7 +122,7 @@ export function LoginPage() {
             <Button
               variant="secondary"
               fullWidth
-              onClick={() => handleOAuthClick('github')}
+              onClick={() => handleOAuthSignIn('github')}
               leftIcon={<Github className="w-4 h-4" />}
               disabled={isLoading}
             >
