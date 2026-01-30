@@ -20,45 +20,39 @@ export function AuthCallback() {
         }
 
         if (session) {
-          // Check for role from different sources:
-          // 1. localStorage (OAuth signup from signup page)
-          // 2. User metadata (email signup)
+          // Check for role from localStorage (OAuth signup from signup page)
           const storedRole = localStorage.getItem('amber-signup-role');
-          const metadataRole = session.user.user_metadata?.role;
 
-          // Get current profile (may not exist yet due to trigger timing)
+          // Wait briefly for the database trigger to create the profile
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Get current profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role, onboarding_completed')
+            .select('role')
             .eq('id', session.user.id)
             .single();
 
-          // Determine the role to use
-          // Only use profile.role if user has completed onboarding (meaning they chose it themselves)
-          const roleToUse = storedRole || metadataRole || (profile?.onboarding_completed ? profile?.role : null);
+          // If we have a stored role from signup flow, save it to the profile
+          if (storedRole && (storedRole === 'candidate' || storedRole === 'employer')) {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: storedRole })
+              .eq('id', session.user.id);
 
-          if (roleToUse && (roleToUse === 'candidate' || roleToUse === 'employer')) {
-            // Update profile with the chosen role
-            if (profile && profile.role !== roleToUse) {
-              const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ role: roleToUse as 'candidate' | 'employer' })
-                .eq('id', session.user.id);
-
-              if (updateError) {
-                console.error('Error updating role:', updateError);
-              }
+            if (updateError) {
+              console.error('Error updating role:', updateError);
             }
 
-            // Clean up localStorage if it was used
-            if (storedRole) {
-              localStorage.removeItem('amber-signup-role');
-            }
-
+            localStorage.removeItem('amber-signup-role');
             success('Welcome!', 'You have been signed in successfully.');
             navigate('/app', { replace: true });
+          } else if (profile?.role) {
+            // User already has a role assigned - they're a returning user
+            success('Welcome back!', 'You have been signed in successfully.');
+            navigate('/app', { replace: true });
           } else {
-            // New OAuth user who hasn't chosen a role yet - redirect to role selection
+            // No role assigned yet - new user needs to choose
             navigate('/auth/select-role', { replace: true });
           }
         } else {

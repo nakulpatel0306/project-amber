@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
-  role TEXT NOT NULL CHECK (role IN ('candidate', 'employer')) DEFAULT 'candidate',
+  role TEXT CHECK (role IN ('candidate', 'employer')),  -- NULL until user chooses
   onboarding_completed BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -308,28 +308,29 @@ CREATE TRIGGER update_user_settings_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Create profile
+  -- Create profile (role is NULL until user chooses, unless provided via email signup)
   INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
     NEW.raw_user_meta_data->>'avatar_url',
-    COALESCE(NEW.raw_user_meta_data->>'role', 'candidate')
+    NEW.raw_user_meta_data->>'role'  -- Only set if explicitly provided
   );
 
   -- Create user settings with defaults
   INSERT INTO public.user_settings (user_id)
   VALUES (NEW.id);
 
-  -- Create role-specific record
-  IF COALESCE(NEW.raw_user_meta_data->>'role', 'candidate') = 'candidate' THEN
+  -- Create role-specific record only if role was provided (email signup with role)
+  IF NEW.raw_user_meta_data->>'role' = 'candidate' THEN
     INSERT INTO public.candidates (user_id)
     VALUES (NEW.id);
-  ELSE
+  ELSIF NEW.raw_user_meta_data->>'role' = 'employer' THEN
     INSERT INTO public.employers (user_id, company_name)
     VALUES (NEW.id, 'My Company');
   END IF;
+  -- For OAuth users without role, candidate/employer record created after role selection
 
   RETURN NEW;
 END;
