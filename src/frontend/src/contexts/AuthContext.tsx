@@ -33,7 +33,7 @@ interface AuthContextType extends AuthState {
     password: string,
     role: UserRole,
     metadata?: Record<string, unknown>
-  ) => Promise<void>;
+  ) => Promise<{ session: Session | null; user: User | null }>;
   signInWithOAuth: (provider: 'google' | 'github', role?: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ) => {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -168,6 +168,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState(prev => ({ ...prev, isLoading: false, error }));
         throw error;
       }
+
+      // If session is returned, user is logged in immediately (no email verification required)
+      if (data.session) {
+        // Small delay to allow database trigger to create profile
+        setTimeout(async () => {
+          const result = await getCurrentUserWithProfile();
+          setState({
+            user: data.user,
+            profile: result?.profile as Profile | null,
+            session: data.session,
+            isLoading: false,
+            error: null,
+          });
+        }, 500);
+        return { session: data.session, user: data.user };
+      }
+
+      setState(prev => ({ ...prev, isLoading: false }));
+      return { session: null, user: data.user };
     },
     []
   );

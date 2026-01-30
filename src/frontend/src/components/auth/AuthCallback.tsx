@@ -20,25 +20,47 @@ export function AuthCallback() {
         }
 
         if (session) {
-          // Check if this is a new user (from OAuth)
+          // Check for role from different sources:
+          // 1. localStorage (OAuth signup from signup page)
+          // 2. User metadata (email signup)
+          // 3. Existing profile
           const storedRole = localStorage.getItem('amber-signup-role');
+          const metadataRole = session.user.user_metadata?.role;
 
-          if (storedRole && (storedRole === 'candidate' || storedRole === 'employer')) {
-            // Update the user's role in their profile
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ role: storedRole as 'candidate' | 'employer' })
-              .eq('id', session.user.id);
+          // Get current profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-            if (updateError) {
-              console.error('Error updating role:', updateError);
+          // Determine the role to use (priority: stored > metadata > profile)
+          const roleToUse = storedRole || metadataRole || profile?.role;
+
+          if (roleToUse && (roleToUse === 'candidate' || roleToUse === 'employer')) {
+            // Update profile if it doesn't have a role yet
+            if (!profile?.role) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ role: roleToUse as 'candidate' | 'employer' })
+                .eq('id', session.user.id);
+
+              if (updateError) {
+                console.error('Error updating role:', updateError);
+              }
             }
 
-            localStorage.removeItem('amber-signup-role');
-          }
+            // Clean up localStorage if it was used
+            if (storedRole) {
+              localStorage.removeItem('amber-signup-role');
+            }
 
-          success('Welcome!', 'You have been signed in successfully.');
-          navigate('/app', { replace: true });
+            success('Welcome!', 'You have been signed in successfully.');
+            navigate('/app', { replace: true });
+          } else {
+            // No role found anywhere - user needs to select one (OAuth login without prior signup)
+            navigate('/auth/select-role', { replace: true });
+          }
         } else {
           // No session found - redirect to login
           navigate('/auth/login', { replace: true });

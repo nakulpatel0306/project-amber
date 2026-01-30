@@ -66,12 +66,19 @@ export function SignupPage() {
     if (!validateForm()) return;
 
     try {
-      await signUpWithEmail(email, password, role, { full_name: fullName });
-      info(
-        'Check your email',
-        'We sent you a confirmation link. Please check your inbox.'
-      );
-      navigate('/auth/login');
+      const result = await signUpWithEmail(email, password, role, { full_name: fullName });
+
+      if (result.session) {
+        // User is logged in immediately, navigate to app
+        navigate('/app');
+      } else {
+        // Email verification required
+        info(
+          'Check your email',
+          'We sent you a confirmation link. Please check your inbox.'
+        );
+        navigate('/auth/login');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create account';
       showError('Sign up failed', message);

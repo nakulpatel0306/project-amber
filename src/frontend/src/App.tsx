@@ -9,6 +9,7 @@ import {
   SignupPage,
   PasswordResetPage,
   AuthCallback,
+  RoleSelectionPage,
   ProtectedRoute,
   GuestRoute,
   Onboarding,
@@ -58,6 +59,14 @@ function App() {
                 <Route path="/auth/forgot-password" element={<PasswordResetPage />} />
                 <Route path="/auth/reset-password" element={<PasswordResetPage />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route
+                  path="/auth/select-role"
+                  element={
+                    <ProtectedRoute>
+                      <RoleSelectionPage />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Legacy route redirect */}
                 <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
