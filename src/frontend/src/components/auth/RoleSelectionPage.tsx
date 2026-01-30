@@ -25,20 +25,59 @@ export function RoleSelectionPage() {
         throw new Error('Not authenticated');
       }
 
-      // Update the profile role and mark onboarding as started
-      // Setting onboarding_completed ensures returning users won't be asked for role again
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role, onboarding_completed: true })
-        .eq('id', user.id);
+      // Wait for profile to exist (database trigger may not have completed yet)
+      let profile = null;
+      let attempts = 0;
+      const maxAttempts = 10;
 
-      if (profileError) {
-        throw profileError;
+      while (!profile && attempts < maxAttempts) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          profile = data;
+        } else {
+          // Wait 500ms before trying again
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+      }
+
+      // If profile still doesn't exist after waiting, create it manually
+      if (!profile) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+            role: role,
+            onboarding_completed: true
+          });
+
+        if (insertError) {
+          console.error('Profile insert error:', insertError);
+          throw new Error('Unable to create profile. Please try again.');
+        }
+      } else {
+        // Profile exists, update it
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role, onboarding_completed: true })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+          throw updateError;
+        }
       }
 
       // Ensure the role-specific record exists
       if (role === 'candidate') {
-        // Check if candidate record exists, create if not
         const { data: existing } = await supabase
           .from('candidates')
           .select('id')
@@ -46,10 +85,15 @@ export function RoleSelectionPage() {
           .single();
 
         if (!existing) {
-          await supabase.from('candidates').insert({ user_id: user.id });
+          const { error: candidateError } = await supabase
+            .from('candidates')
+            .insert({ user_id: user.id });
+
+          if (candidateError) {
+            console.error('Candidate insert error:', candidateError);
+          }
         }
       } else if (role === 'employer') {
-        // Check if employer record exists, create if not
         const { data: existing } = await supabase
           .from('employers')
           .select('id')
@@ -57,11 +101,25 @@ export function RoleSelectionPage() {
           .single();
 
         if (!existing) {
-          await supabase.from('employers').insert({
-            user_id: user.id,
-            company_name: 'My Company'
-          });
+          const { error: employerError } = await supabase
+            .from('employers')
+            .insert({ user_id: user.id, company_name: 'My Company' });
+
+          if (employerError) {
+            console.error('Employer insert error:', employerError);
+          }
         }
+      }
+
+      // Also create user_settings if they don't exist
+      const { data: existingSettings } = await supabase
+        .from('user_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!existingSettings) {
+        await supabase.from('user_settings').insert({ user_id: user.id });
       }
 
       await refreshProfile();
