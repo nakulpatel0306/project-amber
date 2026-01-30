@@ -23,23 +23,23 @@ export function AuthCallback() {
           // Check for role from different sources:
           // 1. localStorage (OAuth signup from signup page)
           // 2. User metadata (email signup)
-          // 3. Existing profile
           const storedRole = localStorage.getItem('amber-signup-role');
           const metadataRole = session.user.user_metadata?.role;
 
-          // Get current profile
+          // Get current profile (may not exist yet due to trigger timing)
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, onboarding_completed')
             .eq('id', session.user.id)
             .single();
 
-          // Determine the role to use (priority: stored > metadata > profile)
-          const roleToUse = storedRole || metadataRole || profile?.role;
+          // Determine the role to use
+          // Only use profile.role if user has completed onboarding (meaning they chose it themselves)
+          const roleToUse = storedRole || metadataRole || (profile?.onboarding_completed ? profile?.role : null);
 
           if (roleToUse && (roleToUse === 'candidate' || roleToUse === 'employer')) {
-            // Update profile if it doesn't have a role yet
-            if (!profile?.role) {
+            // Update profile with the chosen role
+            if (profile && profile.role !== roleToUse) {
               const { error: updateError } = await supabase
                 .from('profiles')
                 .update({ role: roleToUse as 'candidate' | 'employer' })
@@ -58,7 +58,7 @@ export function AuthCallback() {
             success('Welcome!', 'You have been signed in successfully.');
             navigate('/app', { replace: true });
           } else {
-            // No role found anywhere - user needs to select one (OAuth login without prior signup)
+            // New OAuth user who hasn't chosen a role yet - redirect to role selection
             navigate('/auth/select-role', { replace: true });
           }
         } else {

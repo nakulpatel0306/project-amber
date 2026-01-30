@@ -62,7 +62,7 @@ function App() {
                 <Route
                   path="/auth/select-role"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute skipOnboardingCheck>
                       <RoleSelectionPage />
                     </ProtectedRoute>
                   }

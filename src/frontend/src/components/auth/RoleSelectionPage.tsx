@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { User, Building2, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import type { UserRole } from '../../types/auth.types';
 import { cn } from '../../utils/cn';
 
 export function RoleSelectionPage() {
   const navigate = useNavigate();
-  const { updateProfile, refreshProfile } = useAuth();
-  const { error: showError } = useToast();
+  const { refreshProfile } = useAuth();
+  const { error: showError, success } = useToast();
 
   const [role, setRole] = useState<UserRole>('candidate');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,11 +19,56 @@ export function RoleSelectionPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await updateProfile({ role });
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Update the profile role using upsert to handle race conditions
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', user.id);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Ensure the role-specific record exists
+      if (role === 'candidate') {
+        // Check if candidate record exists, create if not
+        const { data: existing } = await supabase
+          .from('candidates')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!existing) {
+          await supabase.from('candidates').insert({ user_id: user.id });
+        }
+      } else if (role === 'employer') {
+        // Check if employer record exists, create if not
+        const { data: existing } = await supabase
+          .from('employers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!existing) {
+          await supabase.from('employers').insert({
+            user_id: user.id,
+            company_name: 'My Company'
+          });
+        }
+      }
+
       await refreshProfile();
+      success('Welcome!', 'Your account is ready.');
       navigate('/app', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save role';
+      console.error('Role selection error:', err);
+      const message = err instanceof Error ? err.message : 'Failed to save role. Please try again.';
       showError('Error', message);
     } finally {
       setIsSubmitting(false);
