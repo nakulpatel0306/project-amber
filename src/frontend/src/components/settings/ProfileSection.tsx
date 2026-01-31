@@ -1,10 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Camera, User } from 'lucide-react';
+import { User, Pencil } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { supabase } from '../../lib/supabase';
+import { AvatarPicker, getAvatarDisplay } from '../ui/AvatarPicker';
+
+// Parse avatar_url to determine if it's an emoji avatar or image URL
+function parseAvatarUrl(avatarUrl: string | null): { type: 'emoji' | 'image' | 'none'; avatarId?: string; colorId?: string; url?: string } {
+  if (!avatarUrl) return { type: 'none' };
+  if (avatarUrl.startsWith('emoji:')) {
+    const [, avatarId, colorId] = avatarUrl.split(':');
+    return { type: 'emoji', avatarId, colorId };
+  }
+  return { type: 'image', url: avatarUrl };
+}
+
+// Create avatar_url string from emoji selection
+function createEmojiAvatarUrl(avatarId: string, colorId: string): string {
+  return `emoji:${avatarId}:${colorId}`;
+}
 
 export function ProfileSection() {
   const { user, profile, updateProfile, isCandidate } = useAuth();
@@ -12,7 +27,7 @@ export function ProfileSection() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
@@ -50,47 +65,59 @@ export function ProfileSection() {
     setIsEditing(false);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      showError('File too large', 'Please choose an image under 2MB.');
-      return;
-    }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      showError('Invalid file type', 'Please choose an image file.');
-      return;
-    }
-
-    setIsUploading(true);
+  const handleAvatarSelect = async (avatarId: string, colorId: string) => {
+    const newAvatarUrl = createEmojiAvatarUrl(avatarId, colorId);
+    setFormData(prev => ({ ...prev, avatar_url: newAvatarUrl }));
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
-      await updateProfile({ avatar_url: publicUrl });
-
-      success('Avatar updated', 'Your profile photo has been changed.');
+      await updateProfile({ avatar_url: newAvatarUrl });
+      success('Avatar updated', 'Your new look is saved!');
     } catch (err) {
-      showError('Upload failed', 'Please try again.');
-    } finally {
-      setIsUploading(false);
+      showError('Update failed', 'Please try again.');
     }
+
+    setShowAvatarPicker(false);
+  };
+
+  // Parse current avatar
+  const avatarData = parseAvatarUrl(formData.avatar_url);
+
+  // Render avatar based on type
+  const renderAvatar = () => {
+    if (avatarData.type === 'emoji' && avatarData.avatarId && avatarData.colorId) {
+      const { emoji, gradient } = getAvatarDisplay(avatarData.avatarId, avatarData.colorId);
+      return (
+        <div
+          className="w-full h-full flex items-center justify-center text-4xl"
+          style={{ background: gradient }}
+        >
+          {emoji}
+        </div>
+      );
+    }
+
+    if (avatarData.type === 'image' && avatarData.url) {
+      return (
+        <img
+          src={avatarData.url}
+          alt="Avatar"
+          className="w-full h-full object-cover"
+        />
+      );
+    }
+
+    // Default fallback - show initial
+    return (
+      <div
+        className="w-full h-full flex items-center justify-center text-2xl font-medium"
+        style={{
+          background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+          color: 'white',
+        }}
+      >
+        {(formData.full_name || user?.email || '?')[0].toUpperCase()}
+      </div>
+    );
   };
 
   return (
@@ -114,60 +141,60 @@ export function ProfileSection() {
             className="w-20 h-20 rounded-full overflow-hidden"
             style={{ backgroundColor: 'var(--color-surface)' }}
           >
-            {formData.avatar_url ? (
-              <img
-                src={formData.avatar_url}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div
-                className="w-full h-full flex items-center justify-center text-2xl font-medium"
-                style={{
-                  background:
-                    'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-                  color: 'var(--color-accentText)',
-                }}
-              >
-                {(formData.full_name || user?.email || '?')[0].toUpperCase()}
-              </div>
-            )}
+            {renderAvatar()}
           </div>
-          <label
-            className={`
-              absolute -bottom-1 -right-1 w-8 h-8 rounded-full
-              flex items-center justify-center cursor-pointer
-              transition-transform hover:scale-105
-              ${isUploading ? 'opacity-50 cursor-wait' : ''}
-            `}
+          <button
+            onClick={() => setShowAvatarPicker(true)}
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-105"
             style={{
               backgroundColor: 'var(--color-accent)',
-              color: 'var(--color-accentText)',
+              color: 'white',
             }}
           >
-            {isUploading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Camera className="w-4 h-4" />
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarUpload}
-              disabled={isUploading}
-            />
-          </label>
+            <Pencil className="w-4 h-4" />
+          </button>
         </div>
         <div>
           <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            Profile Photo
+            Profile Avatar
           </p>
           <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            Click the camera icon to upload (max 2MB)
+            Click to choose a fun avatar
           </p>
         </div>
       </div>
+
+      {/* Avatar Picker Modal */}
+      {showAvatarPicker && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowAvatarPicker(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="w-full max-w-md rounded-2xl p-6 shadow-xl"
+              style={{
+                backgroundColor: 'var(--color-background)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <h3
+                className="text-lg font-semibold mb-4 text-center"
+                style={{ color: 'var(--color-text)' }}
+              >
+                Choose Your Avatar
+              </h3>
+              <AvatarPicker
+                selectedAvatar={avatarData.type === 'emoji' ? avatarData.avatarId || null : null}
+                selectedColor={avatarData.type === 'emoji' ? avatarData.colorId || null : null}
+                onSelect={handleAvatarSelect}
+                onClose={() => setShowAvatarPicker(false)}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Form fields */}
       <div className="space-y-4">

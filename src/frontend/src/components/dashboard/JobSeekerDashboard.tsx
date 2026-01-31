@@ -11,25 +11,28 @@ import {
   MessageCircle,
   Calendar,
   ChevronRight,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
+import { supabase } from '../../lib/supabase';
 
 interface QuickAction {
   title: string;
   description: string;
   icon: React.ElementType;
-  href: string;
+  href?: string;
   color: string;
   status?: 'complete' | 'in-progress' | 'not-started';
+  onClick?: () => void;
 }
 
 export function JobSeekerDashboard() {
   const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('');
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
-  const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
+  const [hasCompletedProfile, setHasCompletedProfile] = useState<boolean | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
 
   useEffect(() => {
@@ -38,28 +41,47 @@ export function JobSeekerDashboard() {
     else if (hour >= 12 && hour < 17) setGreeting('good afternoon');
     else if (hour >= 17 && hour < 21) setGreeting('good evening');
     else setGreeting('hey there');
+  }, []);
 
-    // Check if profile is complete (has full_name)
-    setHasCompletedProfile(!!profile?.full_name);
-    // TODO: Check assessment status from API
-    setHasCompletedAssessment(false);
-  }, [profile]);
-
-  // Check if we should show the setup modal - only once based on onboarding_completed flag
+  // Check profile and assessment completion status from candidates table
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user) return;
 
-    // Only show modal if onboarding is not completed
-    if (!profile.onboarding_completed) {
-      setShowSetupModal(true);
-    } else {
-      setShowSetupModal(false);
-    }
-  }, [user, profile]);
+    const checkCompletionStatus = async () => {
+      const { data: candidate } = await supabase
+        .from('candidates')
+        .select('headline, bio, openness_score')
+        .eq('user_id', user.id)
+        .single();
+
+      // Profile is complete if they have a headline or bio filled out
+      const profileComplete = !!(candidate?.headline || candidate?.bio);
+      setHasCompletedProfile(profileComplete);
+
+      // Show modal automatically if profile is not complete AND user hasn't skipped this session
+      const hasSkippedThisSession = sessionStorage.getItem('profile_setup_skipped');
+      if (!profileComplete && !hasSkippedThisSession) {
+        setShowSetupModal(true);
+      }
+
+      // Assessment is complete if they have OCEAN scores
+      setHasCompletedAssessment(candidate?.openness_score !== null && candidate?.openness_score !== undefined);
+    };
+
+    checkCompletionStatus();
+  }, [user]);
 
   const handleSetupComplete = () => {
     setShowSetupModal(false);
     setHasCompletedProfile(true);
+    // Clear the skip flag since profile is now complete
+    sessionStorage.removeItem('profile_setup_skipped');
+  };
+
+  const handleSetupSkip = () => {
+    setShowSetupModal(false);
+    // Mark that user has skipped setup this session
+    sessionStorage.setItem('profile_setup_skipped', 'true');
   };
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
@@ -69,23 +91,23 @@ export function JobSeekerDashboard() {
       title: 'complete your profile',
       description: 'add your details so employers can learn about you',
       icon: CheckCircle2,
-      href: '/app/settings/profile',
       color: '#10B981',
       status: hasCompletedProfile ? 'complete' : 'not-started',
+      onClick: () => setShowSetupModal(true),
     },
     {
       title: 'take personality assessment',
       description: '15 minutes to discover your work style',
       icon: Sparkles,
-      href: '/app/assessment',
+      href: '/app/personality',
       color: '#F59E0B',
       status: hasCompletedAssessment ? 'complete' : 'not-started',
     },
     {
-      title: 'browse job matches',
-      description: 'see roles that fit your personality',
-      icon: Target,
-      href: '/app/jobs',
+      title: 'find your matches',
+      description: 'discover companies that match your personality',
+      icon: Users,
+      href: '/app/matches',
       color: '#8B5CF6',
       status: hasCompletedAssessment ? 'not-started' : 'not-started',
     },
@@ -195,27 +217,28 @@ export function JobSeekerDashboard() {
                 </div>
               </div>
             </div>
-            <Link to={hasCompletedProfile ? '/app/assessment' : '/app/settings/profile'}>
-              <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
-                {hasCompletedProfile ? 'take assessment' : 'set up profile'}
+            {hasCompletedProfile ? (
+              <Link to="/app/personality">
+                <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  take assessment
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                onClick={() => setShowSetupModal(true)}
+              >
+                set up profile
               </Button>
-            </Link>
+            )}
           </div>
         </div>
       )}
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {quickActions.map((action) => (
-          <Link
-            key={action.title}
-            to={action.href}
-            className="p-5 rounded-xl border transition-all hover:shadow-md group"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
-          >
+        {quickActions.map((action) => {
+          const cardContent = (
             <div className="flex items-start gap-4">
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -244,8 +267,38 @@ export function JobSeekerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
             </div>
-          </Link>
-        ))}
+          );
+
+          if (action.onClick) {
+            return (
+              <button
+                key={action.title}
+                onClick={action.onClick}
+                className="p-5 rounded-xl border transition-all hover:shadow-md group text-left"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                {cardContent}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={action.title}
+              to={action.href || '#'}
+              className="p-5 rounded-xl border transition-all hover:shadow-md group"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              {cardContent}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Two Column Layout */}
@@ -414,7 +467,7 @@ export function JobSeekerDashboard() {
       {/* Candidate Setup Modal */}
       <CandidateSetupModal
         isOpen={showSetupModal}
-        onClose={() => setShowSetupModal(false)}
+        onClose={handleSetupSkip}
         onComplete={handleSetupComplete}
       />
     </div>

@@ -25,20 +25,19 @@ interface EmployerSetupModalProps {
 
 interface EmployerData {
   company_name: string;
-  company_description: string;
+  description: string;
   company_size: string;
   industry: string;
   location: string;
-  website_url: string;
-  linkedin_url: string;
+  company_website: string;
 }
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup', description: '1-50 employees' },
-  { id: 'small', label: 'Small', description: '51-200 employees' },
-  { id: 'medium', label: 'Medium', description: '201-1000 employees' },
-  { id: 'large', label: 'Large', description: '1000+ employees' },
-  { id: 'enterprise', label: 'Enterprise', description: '10,000+ employees' },
+  { id: '1-10', label: 'Startup', description: '1-10 employees' },
+  { id: '11-50', label: 'Small', description: '11-50 employees' },
+  { id: '51-200', label: 'Medium', description: '51-200 employees' },
+  { id: '201-500', label: 'Large', description: '201-500 employees' },
+  { id: '500+', label: 'Enterprise', description: '500+ employees' },
 ];
 
 const INDUSTRIES = [
@@ -69,12 +68,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
   const [isSaving, setIsSaving] = useState(false);
   const [data, setData] = useState<EmployerData>({
     company_name: '',
-    company_description: '',
-    company_size: 'small',
+    description: '',
+    company_size: '11-50',
     industry: '',
     location: '',
-    website_url: '',
-    linkedin_url: '',
+    company_website: '',
   });
 
   // Load existing employer data if any
@@ -91,12 +89,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
       if (employer) {
         setData({
           company_name: employer.company_name || '',
-          company_description: employer.company_description || '',
-          company_size: employer.company_size || 'small',
+          description: employer.description || '',
+          company_size: employer.company_size || '11-50',
           industry: employer.industry || '',
           location: employer.location || '',
-          website_url: employer.website_url || '',
-          linkedin_url: employer.linkedin_url || '',
+          company_website: employer.company_website || '',
         });
       }
     };
@@ -139,12 +136,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
         .from('employers')
         .update({
           company_name: data.company_name || null,
-          company_description: data.company_description || null,
+          description: data.description || null,
           company_size: data.company_size || null,
           industry: data.industry || null,
           location: data.location || null,
-          website_url: data.website_url || null,
-          linkedin_url: data.linkedin_url || null,
+          company_website: data.company_website || null,
         })
         .eq('user_id', user.id);
 
@@ -305,8 +301,8 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                     Company Description
                   </label>
                   <textarea
-                    value={data.company_description}
-                    onChange={(e) => setData({ ...data, company_description: e.target.value })}
+                    value={data.description}
+                    onChange={(e) => setData({ ...data, description: e.target.value })}
                     placeholder="Tell candidates about your company, mission, and what makes you unique..."
                     rows={3}
                     className="w-full px-4 py-3 rounded-xl text-sm resize-none focus:outline-none focus:ring-2"
@@ -441,19 +437,10 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                 <Input
                   label="Company Website"
                   type="url"
-                  value={data.website_url}
-                  onChange={(e) => setData({ ...data, website_url: e.target.value })}
+                  value={data.company_website}
+                  onChange={(e) => setData({ ...data, company_website: e.target.value })}
                   placeholder="https://yourcompany.com"
                   leftIcon={<Globe className="w-4 h-4" />}
-                />
-
-                <Input
-                  label="LinkedIn Company Page"
-                  type="url"
-                  value={data.linkedin_url}
-                  onChange={(e) => setData({ ...data, linkedin_url: e.target.value })}
-                  placeholder="https://linkedin.com/company/yourcompany"
-                  leftIcon={<LinkIcon className="w-4 h-4" />}
                 />
 
                 <div

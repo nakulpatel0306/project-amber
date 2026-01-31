@@ -16,20 +16,24 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
+import { supabase } from '../../lib/supabase';
 
 interface QuickAction {
   title: string;
   description: string;
   icon: React.ElementType;
-  href: string;
+  href?: string;
   color: string;
+  status?: 'complete' | 'in-progress' | 'not-started';
+  onClick?: () => void;
 }
 
 export function EmployerDashboard() {
   const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('');
+  const [hasCompletedProfile, setHasCompletedProfile] = useState<boolean | null>(null);
   const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState(false);
-  const [hasCreatedRole, setHasCreatedRole] = useState(false);
+  const [_hasCreatedRole, setHasCreatedRole] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
 
   useEffect(() => {
@@ -38,44 +42,69 @@ export function EmployerDashboard() {
     else if (hour >= 12 && hour < 17) setGreeting('good afternoon');
     else if (hour >= 17 && hour < 21) setGreeting('good evening');
     else setGreeting('hey there');
-
-    // TODO: Check actual status from API
-    setHasCompletedCultureQuiz(false);
-    setHasCreatedRole(false);
   }, []);
 
-  // Check if we should show the setup modal - only once based on onboarding_completed flag
+  // Check profile and culture assessment completion status
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user) return;
 
-    // Only show modal if onboarding is not completed
-    if (!profile.onboarding_completed) {
-      setShowSetupModal(true);
-    } else {
-      setShowSetupModal(false);
-    }
-  }, [user, profile]);
+    const checkCompletionStatus = async () => {
+      const { data: employer } = await supabase
+        .from('employers')
+        .select('company_name, description, culture_quiz_completed')
+        .eq('user_id', user.id)
+        .single();
+
+      // Profile is complete if they have company_name or description filled out
+      const profileComplete = !!(employer?.company_name || employer?.description);
+      setHasCompletedProfile(profileComplete);
+
+      // Show modal automatically if profile is not complete AND user hasn't skipped this session
+      const hasSkippedThisSession = sessionStorage.getItem('employer_setup_skipped');
+      if (!profileComplete && !hasSkippedThisSession) {
+        setShowSetupModal(true);
+      }
+
+      // If they've completed the culture quiz
+      setHasCompletedCultureQuiz(!!employer?.culture_quiz_completed);
+    };
+
+    checkCompletionStatus();
+    // TODO: Check role creation status
+    setHasCreatedRole(false);
+  }, [user]);
 
   const handleSetupComplete = () => {
     setShowSetupModal(false);
+    setHasCompletedProfile(true);
+    // Clear the skip flag since profile is now complete
+    sessionStorage.removeItem('employer_setup_skipped');
+  };
+
+  const handleSetupSkip = () => {
+    setShowSetupModal(false);
+    // Mark that user has skipped setup this session
+    sessionStorage.setItem('employer_setup_skipped', 'true');
   };
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
   const quickActions: QuickAction[] = [
     {
-      title: 'define company culture',
-      description: 'take our quiz to help us find the right candidates',
+      title: 'set up company profile',
+      description: 'add your company details so candidates can learn about you',
       icon: Building2,
-      href: '/app/employer/culture',
-      color: '#F59E0B',
+      color: '#10B981',
+      status: hasCompletedProfile ? 'complete' : 'not-started',
+      onClick: () => setShowSetupModal(true),
     },
     {
-      title: 'create a role',
-      description: 'post a new position and set personality requirements',
-      icon: Plus,
-      href: '/app/employer/roles/new',
-      color: '#10B981',
+      title: 'define company culture',
+      description: 'take our quiz to help us find the right candidates',
+      icon: Sparkles,
+      href: '/app/employer/culture-assessment',
+      color: '#F59E0B',
+      status: hasCompletedCultureQuiz ? 'complete' : 'not-started',
     },
     {
       title: 'browse candidates',
@@ -132,7 +161,7 @@ export function EmployerDashboard() {
       </div>
 
       {/* Setup Banner (if not complete) */}
-      {(!hasCompletedCultureQuiz || !hasCreatedRole) && (
+      {(!hasCompletedProfile || !hasCompletedCultureQuiz) && (
         <div
           className="p-6 rounded-2xl mb-8 border"
           style={{
@@ -150,11 +179,26 @@ export function EmployerDashboard() {
                 get started with hiring
               </h2>
               <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
-                {!hasCompletedCultureQuiz
-                  ? 'define your company culture first so we can match you with candidates who fit your team.'
-                  : 'create your first role to start receiving culture-matched applicants.'}
+                {!hasCompletedProfile
+                  ? 'start by setting up your company profile, then define your culture to match with candidates.'
+                  : 'define your company culture to start matching with candidates who fit your team.'}
               </p>
               <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCompletedProfile ? '' : 'border-2'}`}
+                    style={{
+                      backgroundColor: hasCompletedProfile ? 'var(--color-success)' : 'transparent',
+                      borderColor: hasCompletedProfile ? 'transparent' : 'var(--color-border)',
+                    }}
+                  >
+                    {hasCompletedProfile && <CheckCircle2 className="w-3 h-3 text-white" />}
+                  </div>
+                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+                    profile
+                  </span>
+                </div>
+                <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCompletedCultureQuiz ? '' : 'border-2'}`}
@@ -166,22 +210,7 @@ export function EmployerDashboard() {
                     {hasCompletedCultureQuiz && <CheckCircle2 className="w-3 h-3 text-white" />}
                   </div>
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    culture quiz
-                  </span>
-                </div>
-                <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCreatedRole ? '' : 'border-2'}`}
-                    style={{
-                      backgroundColor: hasCreatedRole ? 'var(--color-success)' : 'transparent',
-                      borderColor: hasCreatedRole ? 'transparent' : 'var(--color-border)',
-                    }}
-                  >
-                    {hasCreatedRole && <CheckCircle2 className="w-3 h-3 text-white" />}
-                  </div>
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    first role
+                    culture
                   </span>
                 </div>
                 <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
@@ -196,11 +225,20 @@ export function EmployerDashboard() {
                 </div>
               </div>
             </div>
-            <Link to={hasCompletedCultureQuiz ? '/app/employer/roles/new' : '/app/employer/culture'}>
-              <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
-                {hasCompletedCultureQuiz ? 'create role' : 'define culture'}
+            {hasCompletedProfile ? (
+              <Link to="/app/employer/culture-assessment">
+                <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  define culture
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                onClick={() => setShowSetupModal(true)}
+              >
+                set up company
               </Button>
-            </Link>
+            )}
           </div>
         </div>
       )}
@@ -231,16 +269,8 @@ export function EmployerDashboard() {
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {quickActions.map((action) => (
-          <Link
-            key={action.title}
-            to={action.href}
-            className="p-5 rounded-xl border transition-all hover:shadow-md group"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
-          >
+        {quickActions.map((action) => {
+          const cardContent = (
             <div className="flex items-start gap-4">
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -249,12 +279,17 @@ export function EmployerDashboard() {
                 <action.icon className="w-5 h-5" style={{ color: action.color }} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3
-                  className="font-medium mb-1"
-                  style={{ color: 'var(--color-text)' }}
-                >
-                  {action.title}
-                </h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3
+                    className="font-medium"
+                    style={{ color: 'var(--color-text)' }}
+                  >
+                    {action.title}
+                  </h3>
+                  {action.status === 'complete' && (
+                    <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
+                  )}
+                </div>
                 <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
                   {action.description}
                 </p>
@@ -264,8 +299,38 @@ export function EmployerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
             </div>
-          </Link>
-        ))}
+          );
+
+          if (action.onClick) {
+            return (
+              <button
+                key={action.title}
+                onClick={action.onClick}
+                className="p-5 rounded-xl border transition-all hover:shadow-md group text-left"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                }}
+              >
+                {cardContent}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={action.title}
+              to={action.href || '#'}
+              className="p-5 rounded-xl border transition-all hover:shadow-md group"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              {cardContent}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Two Column Layout */}
@@ -451,7 +516,7 @@ export function EmployerDashboard() {
       {/* Employer Setup Modal */}
       <EmployerSetupModal
         isOpen={showSetupModal}
-        onClose={() => setShowSetupModal(false)}
+        onClose={handleSetupSkip}
         onComplete={handleSetupComplete}
       />
     </div>

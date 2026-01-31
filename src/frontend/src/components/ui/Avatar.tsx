@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 import { User } from 'lucide-react';
+import { getAvatarDisplay } from './AvatarPicker';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string | null;
@@ -17,6 +18,14 @@ const sizeMap = {
   xl: 'w-20 h-20 text-xl',
 };
 
+const emojiSizeMap = {
+  xs: 'text-sm',
+  sm: 'text-lg',
+  md: 'text-xl',
+  lg: 'text-2xl',
+  xl: 'text-4xl',
+};
+
 const iconSizeMap = {
   xs: 'w-3 h-3',
   sm: 'w-4 h-4',
@@ -24,6 +33,14 @@ const iconSizeMap = {
   lg: 'w-7 h-7',
   xl: 'w-10 h-10',
 };
+
+// Parse emoji avatar format: "emoji:avatarId:colorId"
+function parseEmojiAvatar(src: string): { avatarId: string; colorId: string } | null {
+  if (!src.startsWith('emoji:')) return null;
+  const [, avatarId, colorId] = src.split(':');
+  if (avatarId && colorId) return { avatarId, colorId };
+  return null;
+}
 
 const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
   ({ className, src, alt, fallback, size = 'md', ...props }, ref) => {
@@ -36,6 +53,9 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
           .slice(0, 2)
       : null;
 
+    // Check if it's an emoji avatar
+    const emojiData = src ? parseEmojiAvatar(src) : null;
+
     return (
       <div
         ref={ref}
@@ -46,13 +66,28 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
         )}
         {...props}
       >
-        {src ? (
+        {emojiData ? (
+          // Render emoji avatar
+          (() => {
+            const { emoji, gradient } = getAvatarDisplay(emojiData.avatarId, emojiData.colorId);
+            return (
+              <div
+                className={cn('flex h-full w-full items-center justify-center', emojiSizeMap[size])}
+                style={{ background: gradient }}
+              >
+                {emoji}
+              </div>
+            );
+          })()
+        ) : src ? (
+          // Render image avatar
           <img
             src={src}
             alt={alt || 'Avatar'}
             className="aspect-square h-full w-full object-cover"
           />
         ) : (
+          // Render fallback
           <div
             className="flex h-full w-full items-center justify-center font-medium"
             style={{

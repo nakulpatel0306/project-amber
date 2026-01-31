@@ -237,6 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sign out
   const signOut = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true }));
+    // Clear session storage so setup modal shows on next login
+    sessionStorage.removeItem('profile_setup_skipped');
+    sessionStorage.removeItem('employer_setup_skipped');
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Sign out error:', error);
