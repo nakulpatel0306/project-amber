@@ -17,20 +17,19 @@ import { cn } from '../../utils/cn';
 
 interface EmployerData {
   company_name: string;
-  company_description: string;
+  description: string;
   company_size: string;
   industry: string;
   location: string;
-  website_url: string;
-  linkedin_url: string;
+  company_website: string;
 }
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup (1-50)' },
-  { id: 'small', label: 'Small (51-200)' },
-  { id: 'medium', label: 'Medium (201-1000)' },
-  { id: 'large', label: 'Large (1000+)' },
-  { id: 'enterprise', label: 'Enterprise (10,000+)' },
+  { id: '1-10', label: 'Startup (1-10)' },
+  { id: '11-50', label: 'Small (11-50)' },
+  { id: '51-200', label: 'Medium (51-200)' },
+  { id: '201-500', label: 'Large (201-500)' },
+  { id: '500+', label: 'Enterprise (500+)' },
 ];
 
 const INDUSTRIES = [
@@ -56,12 +55,11 @@ export function EmployerProfileSection() {
 
   const [data, setData] = useState<EmployerData>({
     company_name: '',
-    company_description: '',
-    company_size: 'small',
+    description: '',
+    company_size: '11-50',
     industry: '',
     location: '',
-    website_url: '',
-    linkedin_url: '',
+    company_website: '',
   });
 
   const [originalData, setOriginalData] = useState<EmployerData>(data);
@@ -79,12 +77,11 @@ export function EmployerProfileSection() {
       if (employer) {
         const loadedData = {
           company_name: employer.company_name || '',
-          company_description: employer.company_description || '',
-          company_size: employer.company_size || 'small',
+          description: employer.description || '',
+          company_size: employer.company_size || '11-50',
           industry: employer.industry || '',
           location: employer.location || '',
-          website_url: employer.website_url || '',
-          linkedin_url: employer.linkedin_url || '',
+          company_website: employer.company_website || '',
         };
         setData(loadedData);
         setOriginalData(loadedData);
@@ -112,12 +109,11 @@ export function EmployerProfileSection() {
         .from('employers')
         .update({
           company_name: data.company_name || null,
-          company_description: data.company_description || null,
+          description: data.description || null,
           company_size: data.company_size || null,
           industry: data.industry || null,
           location: data.location || null,
-          website_url: data.website_url || null,
-          linkedin_url: data.linkedin_url || null,
+          company_website: data.company_website || null,
         })
         .eq('user_id', user.id);
 
@@ -187,8 +183,8 @@ export function EmployerProfileSection() {
             Company Description
           </label>
           <textarea
-            value={data.company_description}
-            onChange={(e) => handleChange('company_description', e.target.value)}
+            value={data.description}
+            onChange={(e) => handleChange('description', e.target.value)}
             placeholder="Tell candidates about your company, mission, and culture..."
             rows={4}
             className="w-full px-4 py-3 rounded-xl text-sm resize-none focus:outline-none focus:ring-2"
@@ -282,18 +278,10 @@ export function EmployerProfileSection() {
         <Input
           label="Company Website"
           type="url"
-          value={data.website_url}
-          onChange={(e) => handleChange('website_url', e.target.value)}
+          value={data.company_website}
+          onChange={(e) => handleChange('company_website', e.target.value)}
           placeholder="https://yourcompany.com"
           leftIcon={<Globe className="w-4 h-4" />}
-        />
-
-        <Input
-          label="LinkedIn Company Page"
-          type="url"
-          value={data.linkedin_url}
-          onChange={(e) => handleChange('linkedin_url', e.target.value)}
-          placeholder="https://linkedin.com/company/yourcompany"
         />
       </div>
 

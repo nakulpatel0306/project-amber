@@ -8,10 +8,10 @@ import {
   User,
   ChevronDown,
   Bell,
-  Briefcase,
   LayoutDashboard,
-  ClipboardList,
   Coffee,
+  Users,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -39,15 +39,15 @@ export function Navbar() {
 
   const candidateNavItems = [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/assessment', label: 'Assessment', icon: ClipboardList },
-    { path: '/app/jobs', label: 'Jobs', icon: Briefcase },
+    { path: '/app/personality', label: 'Assessment', icon: Sparkles },
+    { path: '/app/matches', label: 'Matches', icon: Users },
     { path: '/app/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 
   const employerNavItems = [
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/employer/roles', label: 'Roles', icon: Briefcase },
-    { path: '/app/employer/candidates', label: 'Candidates', icon: User },
+    { path: '/app/employer/culture-assessment', label: 'Culture', icon: Sparkles },
+    { path: '/app/employer/candidates', label: 'Candidates', icon: Users },
     { path: '/app/employer/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 

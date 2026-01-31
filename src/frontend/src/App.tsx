@@ -24,7 +24,8 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
 import { AssessmentFlow } from './components/AssessmentFlow';
-import { CultureQuiz, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
+import { Assessment, MatchingAgent } from './components/candidate';
+import { CultureQuiz, CultureAssessment, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
 import { SettingsPage } from './components/settings/SettingsPage';
 
 import './styles/globals.css';
@@ -110,6 +111,22 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="personality"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <Assessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="matches"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <MatchingAgent />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
                   <Route path="chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
 
@@ -123,6 +140,14 @@ function App() {
                     }
                   />
                   <Route path="employer/culture" element={<CultureQuiz />} />
+                  <Route
+                    path="employer/culture-assessment"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <CultureAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="employer/roles" element={<ManageRoles />} />
                   <Route path="employer/roles/new" element={<CreateRole />} />
                   <Route path="employer/candidates" element={<BrowseCandidates />} />
