@@ -1,5 +1,7 @@
 export { SettingsPage } from './SettingsPage';
 export { ProfileSection } from './ProfileSection';
+export { CandidateProfileSection } from './CandidateProfileSection';
+export { EmployerProfileSection } from './EmployerProfileSection';
 export { NotificationSection } from './NotificationSection';
 export { PrivacySection } from './PrivacySection';
 export { AppearanceSection } from './AppearanceSection';

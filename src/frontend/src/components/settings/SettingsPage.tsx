@@ -7,26 +7,37 @@ import {
   MessageSquare,
   Settings,
   ChevronRight,
+  Briefcase,
+  Building2,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Section components
 import { ProfileSection } from './ProfileSection';
+import { CandidateProfileSection } from './CandidateProfileSection';
+import { EmployerProfileSection } from './EmployerProfileSection';
 import { NotificationSection } from './NotificationSection';
 import { PrivacySection } from './PrivacySection';
 import { AppearanceSection } from './AppearanceSection';
 import { FeedbackSection } from './FeedbackSection';
 import { AccountSection } from './AccountSection';
 
-type SettingsSection = 'profile' | 'notifications' | 'privacy' | 'appearance' | 'feedback' | 'account';
+type SettingsSection = 'profile' | 'work-profile' | 'company-profile' | 'notifications' | 'privacy' | 'appearance' | 'feedback' | 'account';
 
-const sections: {
+interface SectionConfig {
   id: SettingsSection;
   label: string;
   icon: React.ElementType;
   description: string;
-}[] = [
-  { id: 'profile', label: 'Profile', icon: User, description: 'Manage your personal info' },
+  candidateOnly?: boolean;
+  employerOnly?: boolean;
+}
+
+const allSections: SectionConfig[] = [
+  { id: 'profile', label: 'Profile', icon: User, description: 'Your personal information' },
+  { id: 'work-profile', label: 'Work Profile', icon: Briefcase, description: 'Job preferences and experience', candidateOnly: true },
+  { id: 'company-profile', label: 'Company Profile', icon: Building2, description: 'Company information', employerOnly: true },
   { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and push preferences' },
   { id: 'privacy', label: 'Privacy', icon: Shield, description: 'Control your visibility' },
   { id: 'appearance', label: 'Appearance', icon: Palette, description: 'Theme and display' },
@@ -37,8 +48,16 @@ const sections: {
 export function SettingsPage() {
   const { section } = useParams<{ section?: string }>();
   const navigate = useNavigate();
+  const { isCandidate, isEmployer } = useAuth();
 
   const activeSection = (section as SettingsSection) || 'profile';
+
+  // Filter sections based on user role
+  const sections = allSections.filter(s => {
+    if (s.candidateOnly && !isCandidate) return false;
+    if (s.employerOnly && !isEmployer) return false;
+    return true;
+  });
 
   const handleSectionChange = (newSection: SettingsSection) => {
     navigate(`/app/settings/${newSection}`);
@@ -48,6 +67,10 @@ export function SettingsPage() {
     switch (activeSection) {
       case 'profile':
         return <ProfileSection />;
+      case 'work-profile':
+        return isCandidate ? <CandidateProfileSection /> : <ProfileSection />;
+      case 'company-profile':
+        return isEmployer ? <EmployerProfileSection /> : <ProfileSection />;
       case 'notifications':
         return <NotificationSection />;
       case 'privacy':
@@ -69,7 +92,7 @@ export function SettingsPage() {
         className="text-2xl font-semibold mb-8"
         style={{ color: 'var(--color-text)' }}
       >
-        settings
+        Settings
       </h1>
 
       <div className="flex flex-col md:flex-row gap-8">
@@ -97,12 +120,12 @@ export function SettingsPage() {
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{label.toLowerCase()}</p>
+                    <p className="text-sm font-medium">{label}</p>
                     <p
                       className="text-xs mt-0.5 truncate"
                       style={{ color: 'var(--color-textMuted)' }}
                     >
-                      {description.toLowerCase()}
+                      {description}
                     </p>
                   </div>
                   <ChevronRight

@@ -66,23 +66,42 @@
     font-feature-settings: 'liga' 1, 'calt' 1;
   }
 
-  /* custom scrollbar - minimal */
+  /* custom scrollbar - amber themed */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--color-surface);
+    border-radius: 10px;
+    margin: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 3px;
+    background: linear-gradient(180deg, var(--color-accent), var(--color-accentHover));
+    border-radius: 10px;
+    border: 2px solid var(--color-surface);
+    transition: all 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-borderHover);
+    background: linear-gradient(180deg, var(--color-warning), var(--color-accent));
+    border: 2px solid var(--color-background);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--color-accentHover);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-accent) var(--color-surface);
   }
 
   /* focus styles */

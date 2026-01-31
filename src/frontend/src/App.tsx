@@ -13,6 +13,7 @@ import {
   ProtectedRoute,
   GuestRoute,
   Onboarding,
+  EmailVerificationPage,
 } from './components/auth';
 
 // Layout
@@ -58,6 +59,7 @@ function App() {
                 />
                 <Route path="/auth/forgot-password" element={<PasswordResetPage />} />
                 <Route path="/auth/reset-password" element={<PasswordResetPage />} />
+                <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route
                   path="/auth/select-role"

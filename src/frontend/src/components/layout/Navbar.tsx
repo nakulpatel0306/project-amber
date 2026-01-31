@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Avatar } from '../ui/Avatar';
+import { CoffeeLogo } from '../ui/CoffeeLogo';
 import {
   Dropdown,
   DropdownItem,
@@ -64,15 +65,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/app" className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-              }}
-            >
-              <span className="text-sm font-bold text-white">A</span>
-            </div>
+            <CoffeeLogo size="sm" />
             <span
               className="text-lg font-semibold hidden sm:block"
               style={{ color: 'var(--color-text)' }}

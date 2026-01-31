@@ -33,6 +33,7 @@ from auth import (
     require_role,
     AuthUser,
     get_current_user_dependency,
+    check_email_in_profiles,
 )
 from auth.supabase_auth import is_auth_configured
 
@@ -65,7 +66,7 @@ app.add_middleware(
 app.add_middleware(
     AuthMiddleware,
     exclude_paths=["/", "/health", "/docs", "/redoc", "/openapi.json"],
-    exclude_prefixes=["/api/assessment/"],  # Assessment endpoints are public
+    exclude_prefixes=["/api/assessment/", "/api/auth/"],  # Assessment and auth endpoints are public
 )
 
 
@@ -133,6 +134,15 @@ class FeedbackResponse(BaseModel):
     message: str
 
 
+class CheckEmailRequest(BaseModel):
+    email: str
+
+
+class CheckEmailResponse(BaseModel):
+    exists: bool
+    message: str
+
+
 # ============ Health Check Endpoints ============
 
 @app.get("/")
@@ -157,6 +167,34 @@ async def health():
             "auth": "configured" if is_auth_configured() else "disabled"
         }
     }
+
+
+# ============ Auth Endpoints ============
+
+@app.post("/api/auth/check-email", response_model=CheckEmailResponse)
+async def check_email_exists(request: CheckEmailRequest):
+    """
+    Check if an email exists in the database.
+    Used to redirect users appropriately during signup/signin.
+    """
+    if not request.email or not request.email.strip():
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    email = request.email.strip().lower()
+
+    # Check in Supabase profiles table
+    exists = check_email_in_profiles(email)
+
+    if exists:
+        return CheckEmailResponse(
+            exists=True,
+            message="An account with this email already exists."
+        )
+
+    return CheckEmailResponse(
+        exists=False,
+        message="No account found with this email."
+    )
 
 
 # ============ User Endpoints ============

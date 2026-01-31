@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT,
   avatar_url TEXT,
   role TEXT CHECK (role IN ('candidate', 'employer')),  -- NULL until user chooses
+  email_verified BOOLEAN DEFAULT FALSE,
   onboarding_completed BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

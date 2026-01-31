@@ -87,10 +87,10 @@ export function AccountSection() {
           className="text-lg font-medium mb-1"
           style={{ color: 'var(--color-text)' }}
         >
-          account
+          Account
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          manage your account security and settings
+          Manage your account security and settings
         </p>
       </div>
 
@@ -111,15 +111,15 @@ export function AccountSection() {
               className="text-sm font-medium"
               style={{ color: 'var(--color-text)' }}
             >
-              password
+              Password
             </p>
             <p
               className="text-xs mt-0.5"
               style={{ color: 'var(--color-textMuted)' }}
             >
               {user?.app_metadata?.provider === 'email'
-                ? 'change your password to keep your account secure'
-                : `signed in with ${user?.app_metadata?.provider || 'oauth'}`}
+                ? 'Change your password to keep your account secure'
+                : `Signed in with ${user?.app_metadata?.provider || 'OAuth'}`}
             </p>
 
             {isChangingPassword ? (
@@ -162,10 +162,10 @@ export function AccountSection() {
                     }}
                     disabled={isUpdating}
                   >
-                    cancel
+                    Cancel
                   </Button>
                   <Button type="submit" size="sm" isLoading={isUpdating}>
-                    update password
+                    Update Password
                   </Button>
                 </div>
               </form>
@@ -177,7 +177,7 @@ export function AccountSection() {
                 onClick={() => setIsChangingPassword(true)}
                 disabled={user?.app_metadata?.provider !== 'email'}
               >
-                change password
+                Change Password
               </Button>
             )}
           </div>
@@ -201,13 +201,13 @@ export function AccountSection() {
               className="text-sm font-medium"
               style={{ color: 'var(--color-text)' }}
             >
-              sign out
+              Sign Out
             </p>
             <p
               className="text-xs mt-0.5"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              sign out from this device
+              Sign out from this device
             </p>
             <Button
               variant="outline"
@@ -215,7 +215,7 @@ export function AccountSection() {
               className="mt-3"
               onClick={handleSignOut}
             >
-              sign out
+              Sign Out
             </Button>
           </div>
         </div>
@@ -241,13 +241,13 @@ export function AccountSection() {
               className="text-sm font-medium"
               style={{ color: 'var(--color-error)' }}
             >
-              delete account
+              Delete Account
             </p>
             <p
               className="text-xs mt-0.5"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              permanently delete your account and all associated data
+              Permanently delete your account and all associated data
             </p>
             <Button
               variant="danger"
@@ -255,7 +255,7 @@ export function AccountSection() {
               className="mt-3"
               onClick={() => setShowDeleteModal(true)}
             >
-              delete account
+              Delete Account
             </Button>
           </div>
         </div>
@@ -279,20 +279,20 @@ export function AccountSection() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-error)' }}
               >
-                this action cannot be undone
+                This action cannot be undone
               </p>
               <p
                 className="text-xs mt-1"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                all your data including profile, assessments, applications, and
+                All your data including profile, assessments, applications, and
                 chat history will be permanently deleted.
               </p>
             </div>
           </div>
 
           <Input
-            label={`type "delete my account" to confirm`}
+            label={`Type "delete my account" to confirm`}
             value={deleteConfirmText}
             onChange={e => setDeleteConfirmText(e.target.value)}
             placeholder="delete my account"
@@ -305,7 +305,7 @@ export function AccountSection() {
             onClick={() => setShowDeleteModal(false)}
             disabled={isDeleting}
           >
-            cancel
+            Cancel
           </Button>
           <Button
             variant="danger"
@@ -313,7 +313,7 @@ export function AccountSection() {
             isLoading={isDeleting}
             disabled={deleteConfirmText !== 'delete my account'}
           >
-            delete account
+            Delete Account
           </Button>
         </ModalFooter>
       </Modal>

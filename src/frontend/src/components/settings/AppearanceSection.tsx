@@ -32,10 +32,10 @@ export function AppearanceSection() {
           className="text-lg font-medium mb-1"
           style={{ color: 'var(--color-text)' }}
         >
-          appearance
+          Appearance
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          customize how amber looks on your device
+          Customize how Amber looks on your device
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export function AppearanceSection() {
               className="text-sm font-medium"
               style={{ color: 'var(--color-text)' }}
             >
-              {group.label.toLowerCase()}
+              {group.label}
             </h3>
             <span
               className="text-xs"
@@ -116,7 +116,7 @@ export function AppearanceSection() {
                       className="text-xs font-medium"
                       style={{ color: 'var(--color-text)' }}
                     >
-                      {theme.name.toLowerCase()}
+                      {theme.name}
                     </span>
                   </div>
                   {currentTheme.id === theme.id && (
@@ -160,7 +160,7 @@ export function AppearanceSection() {
         }}
       >
         <p>
-          theme preference is saved locally and will persist across sessions.
+          Theme preference is saved locally and will persist across sessions.
         </p>
       </div>
     </div>

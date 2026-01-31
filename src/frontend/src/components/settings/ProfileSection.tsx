@@ -100,10 +100,10 @@ export function ProfileSection() {
           className="text-lg font-medium mb-1"
           style={{ color: 'var(--color-text)' }}
         >
-          profile
+          Profile
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          manage your personal information
+          Manage your personal information
         </p>
       </div>
 
@@ -161,10 +161,10 @@ export function ProfileSection() {
         </div>
         <div>
           <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            profile photo
+            Profile Photo
           </p>
           <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            click the camera icon to upload (max 2mb)
+            Click the camera icon to upload (max 2MB)
           </p>
         </div>
       </div>
@@ -172,7 +172,7 @@ export function ProfileSection() {
       {/* Form fields */}
       <div className="space-y-4">
         <Input
-          label="full name"
+          label="Full Name"
           type="text"
           value={formData.full_name}
           onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
@@ -182,16 +182,16 @@ export function ProfileSection() {
         />
 
         <Input
-          label="email"
+          label="Email"
           type="email"
           value={user?.email || ''}
           disabled
-          hint="email cannot be changed"
+          hint="Email cannot be changed"
         />
 
         <div>
           <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
-            account type
+            Account Type
           </p>
           <div
             className="px-4 py-2.5 rounded-xl text-sm"
@@ -203,7 +203,7 @@ export function ProfileSection() {
             {isCandidate ? 'Job Seeker' : 'Employer'}
           </div>
           <p className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
-            account type cannot be changed
+            Account type cannot be changed
           </p>
         </div>
       </div>
@@ -213,14 +213,14 @@ export function ProfileSection() {
         {isEditing ? (
           <>
             <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-              cancel
+              Cancel
             </Button>
             <Button onClick={handleSave} isLoading={isSaving}>
-              save changes
+              Save Changes
             </Button>
           </>
         ) : (
-          <Button onClick={() => setIsEditing(true)}>edit profile</Button>
+          <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
         )}
       </div>
     </div>

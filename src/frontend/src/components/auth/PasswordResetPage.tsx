@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { CoffeeLogo } from '../ui/CoffeeLogo';
 
 type Step = 'request' | 'reset' | 'success';
 
@@ -107,38 +108,37 @@ export function PasswordResetPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div
-              className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
-              style={{
-                background:
-                  step === 'success'
-                    ? 'linear-gradient(135deg, var(--color-success), #16a34a)'
-                    : 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-              }}
-            >
-              {step === 'success' ? (
+            {step === 'success' ? (
+              <div
+                className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
+                style={{
+                  background: 'linear-gradient(135deg, var(--color-success), #16a34a)',
+                }}
+              >
                 <CheckCircle2 className="w-6 h-6 text-white" />
-              ) : (
-                <span className="text-xl font-bold text-white">A</span>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex justify-center mb-4">
+                <CoffeeLogo size="md" />
+              </div>
+            )}
             <h1
               className="text-2xl font-semibold"
               style={{ color: 'var(--color-text)' }}
             >
-              {step === 'request' && 'forgot password?'}
-              {step === 'reset' && 'set new password'}
-              {step === 'success' && 'check your email'}
+              {step === 'request' && 'Forgot Password?'}
+              {step === 'reset' && 'Set New Password'}
+              {step === 'success' && 'Check Your Email'}
             </h1>
             <p
               className="text-sm mt-2"
               style={{ color: 'var(--color-textMuted)' }}
             >
               {step === 'request' &&
-                "no worries, we'll send you reset instructions"}
-              {step === 'reset' && 'enter your new password below'}
+                "No worries, we'll send you reset instructions"}
+              {step === 'reset' && 'Enter your new password below'}
               {step === 'success' &&
-                `we've sent a password reset link to ${email}`}
+                `We've sent a password reset link to ${email}`}
             </p>
           </div>
 
@@ -146,7 +146,7 @@ export function PasswordResetPage() {
           {step === 'request' && (
             <form onSubmit={handleRequestReset} className="space-y-4">
               <Input
-                label="email"
+                label="Email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -157,7 +157,7 @@ export function PasswordResetPage() {
               />
 
               <Button type="submit" fullWidth isLoading={isLoading}>
-                send reset link
+                Send Reset Link
               </Button>
             </form>
           )}
@@ -166,7 +166,7 @@ export function PasswordResetPage() {
           {step === 'reset' && (
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <Input
-                label="new password"
+                label="New Password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -190,7 +190,7 @@ export function PasswordResetPage() {
               />
 
               <Input
-                label="confirm new password"
+                label="Confirm New Password"
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
@@ -201,7 +201,7 @@ export function PasswordResetPage() {
               />
 
               <Button type="submit" fullWidth isLoading={isLoading}>
-                update password
+                Update Password
               </Button>
             </form>
           )}
@@ -213,7 +213,7 @@ export function PasswordResetPage() {
                 className="text-sm text-center"
                 style={{ color: 'var(--color-textSecondary)' }}
               >
-                didn't receive the email? check your spam folder or{' '}
+                Didn't receive the email? Check your spam folder or{' '}
                 <button
                   onClick={() => setStep('request')}
                   className="font-medium"
@@ -228,7 +228,7 @@ export function PasswordResetPage() {
                 fullWidth
                 onClick={() => navigate('/auth/login')}
               >
-                back to sign in
+                Back to Sign In
               </Button>
             </div>
           )}

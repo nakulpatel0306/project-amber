@@ -17,6 +17,17 @@ export function ProtectedRoute({
   const { isAuthenticated, isLoading, profile, isAuthEnabled, needsOnboarding } = useAuth();
   const location = useLocation();
 
+  // Debug logging
+  console.log('ProtectedRoute:', {
+    path: location.pathname,
+    isLoading,
+    isAuthenticated,
+    isAuthEnabled,
+    profile: profile ? { role: profile.role, onboarding_completed: profile.onboarding_completed } : null,
+    needsOnboarding,
+    allowedRoles,
+  });
+
   // Show loading spinner while checking auth
   if (isLoading) {
     return <PageLoader />;

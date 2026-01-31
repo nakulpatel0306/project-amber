@@ -4,19 +4,20 @@ import { User, Building2, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
+import { CoffeeLogo } from '../ui/CoffeeLogo';
 import type { UserRole } from '../../types/auth.types';
 
 const roleOptions = [
   {
     id: 'candidate' as const,
-    label: "i'm looking for jobs",
-    description: 'find roles that match your personality and values',
+    label: "I'm Looking for Jobs",
+    description: 'Find roles that match your personality and values',
     icon: User,
   },
   {
     id: 'employer' as const,
-    label: "i'm hiring",
-    description: 'find candidates who fit your company culture',
+    label: "I'm Hiring",
+    description: 'Find candidates who fit your company culture',
     icon: Building2,
   },
 ];
@@ -36,10 +37,10 @@ export function Onboarding() {
     try {
       await updateProfile({
         role: selectedRole,
-        onboarding_completed: true,
+        onboarding_completed: false,  // Set to false so setup modal shows
       });
 
-      success('Welcome to Amber!', 'Your account is all set up.');
+      success('Welcome to Amber!', 'Let\'s set up your profile.');
 
       // Navigate to appropriate dashboard
       if (selectedRole === 'employer') {
@@ -63,26 +64,20 @@ export function Onboarding() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-              boxShadow: '0 8px 24px rgba(217, 119, 6, 0.25)',
-            }}
-          >
-            <span className="text-2xl font-bold text-white">A</span>
+          <div className="flex justify-center mb-4">
+            <CoffeeLogo size="lg" />
           </div>
           <h1
             className="text-2xl font-semibold mb-2"
             style={{ color: 'var(--color-text)' }}
           >
-            welcome to amber
+            Welcome to Amber
           </h1>
           <p
             className="text-sm"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            let's get you set up. what brings you here?
+            Let's get you set up. What brings you here?
           </p>
         </div>
 
@@ -159,14 +154,14 @@ export function Onboarding() {
             )
           }
         >
-          {isSubmitting ? 'setting up...' : 'continue'}
+          {isSubmitting ? 'Setting up...' : 'Continue'}
         </Button>
 
         <p
           className="text-xs text-center mt-4"
           style={{ color: 'var(--color-textMuted)' }}
         >
-          you can change this later in settings
+          You can change this later in settings
         </p>
       </div>
     </div>

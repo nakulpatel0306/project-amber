@@ -5,18 +5,20 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { CoffeeLogo } from '../ui/CoffeeLogo';
 import { APP_NAME } from '../../utils/constants';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithEmail, signInWithOAuth, isLoading } = useAuth();
-  const { error: showError, success } = useToast();
+  const { signInWithEmail, signInWithOAuth, checkEmailExists, isLoading } = useAuth();
+  const { error: showError, info } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
 
@@ -43,11 +45,36 @@ export function LoginPage() {
     if (!validateForm()) return;
 
     try {
+      // Check if email exists before attempting sign in
+      setIsCheckingEmail(true);
+      const { exists } = await checkEmailExists(email);
+      setIsCheckingEmail(false);
+
+      if (!exists) {
+        info(
+          'No account found',
+          'You need an account to sign in. Please sign up first.'
+        );
+        navigate('/auth/signup');
+        return;
+      }
+
       await signInWithEmail(email, password);
-      success('Welcome back!', 'You have been signed in successfully.');
       navigate(from, { replace: true });
     } catch (err) {
+      setIsCheckingEmail(false);
       const message = err instanceof Error ? err.message : 'Failed to sign in';
+
+      // Handle email not verified error
+      if (message.includes('Email not confirmed') || message.includes('not confirmed')) {
+        info(
+          'Email not verified',
+          'Please check your inbox and verify your email before signing in.'
+        );
+        navigate('/auth/verify-email', { state: { email } });
+        return;
+      }
+
       showError('Sign in failed', message);
     }
   };
@@ -86,25 +113,20 @@ export function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div
-              className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-              }}
-            >
-              <span className="text-xl font-bold text-white">A</span>
+            <div className="flex justify-center mb-4">
+              <CoffeeLogo size="md" />
             </div>
             <h1
               className="text-2xl font-semibold"
               style={{ color: 'var(--color-text)' }}
             >
-              welcome back
+              Welcome Back
             </h1>
             <p
               className="text-sm mt-2"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              sign in to your {APP_NAME.toLowerCase()} account
+              Sign in to your {APP_NAME} account
             </p>
           </div>
 
@@ -117,7 +139,7 @@ export function LoginPage() {
               leftIcon={<Chrome className="w-4 h-4" />}
               disabled={isLoading}
             >
-              continue with google
+              Continue with Google
             </Button>
             <Button
               variant="secondary"
@@ -126,7 +148,7 @@ export function LoginPage() {
               leftIcon={<Github className="w-4 h-4" />}
               disabled={isLoading}
             >
-              continue with github
+              Continue with GitHub
             </Button>
           </div>
 
@@ -149,7 +171,7 @@ export function LoginPage() {
                   color: 'var(--color-textMuted)',
                 }}
               >
-                or continue with email
+                or continue with Email
               </span>
             </div>
           </div>
@@ -157,7 +179,7 @@ export function LoginPage() {
           {/* Email form */}
           <form onSubmit={handleEmailSignIn} className="space-y-4">
             <Input
-              label="email"
+              label="Email"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -169,7 +191,7 @@ export function LoginPage() {
 
             <div>
               <Input
-                label="password"
+                label="Password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -197,13 +219,13 @@ export function LoginPage() {
                   className="text-xs transition-colors"
                   style={{ color: 'var(--color-accent)' }}
                 >
-                  forgot password?
+                  Forgot password?
                 </Link>
               </div>
             </div>
 
-            <Button type="submit" fullWidth isLoading={isLoading}>
-              sign in
+            <Button type="submit" fullWidth isLoading={isLoading || isCheckingEmail}>
+              Sign In
             </Button>
           </form>
 
@@ -212,13 +234,13 @@ export function LoginPage() {
             className="text-center text-sm mt-6"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            don't have an account?{' '}
+            Don't have an account?{' '}
             <Link
               to="/auth/signup"
               className="font-medium transition-colors"
               style={{ color: 'var(--color-accent)' }}
             >
-              sign up
+              Sign up
             </Link>
           </p>
         </div>

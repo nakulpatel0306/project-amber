@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/Button';
+import { CoffeeLogo } from './ui/CoffeeLogo';
 import { APP_NAME } from '../utils/constants';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import {
@@ -157,7 +158,7 @@ export function WelcomeScreen() {
       <FloatingThemeSelector />
 
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 px-4 sm:px-6 lg:px-8 py-3">
+      <nav className="sticky top-0 z-50 px-4 sm:px-6 lg:px-8 pt-6 pb-3">
         <div
           className="max-w-5xl mx-auto px-6 py-3 rounded-2xl border"
           style={{
@@ -171,14 +172,8 @@ export function WelcomeScreen() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-                  boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
-                }}
-              >
-                <span className="text-sm font-bold text-white">A</span>
+              <div className="transition-transform group-hover:scale-110 group-hover:rotate-3">
+                <CoffeeLogo size="sm" />
               </div>
               <span
                 className="text-lg font-semibold tracking-tight"
@@ -677,14 +672,7 @@ export function WelcomeScreen() {
       >
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-              }}
-            >
-              <span className="text-xs font-bold text-white">A</span>
-            </div>
+            <CoffeeLogo size="sm" />
             <span
               className="text-sm font-semibold"
               style={{ color: 'var(--color-text)' }}

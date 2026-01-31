@@ -39,6 +39,10 @@ interface AuthContextType extends AuthState {
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
 
+  // Email verification methods
+  checkEmailExists: (email: string) => Promise<{ exists: boolean; message: string }>;
+  resendVerificationEmail: (email: string) => Promise<void>;
+
   // Profile methods
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -171,17 +175,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // If session is returned, user is logged in immediately (no email verification required)
       if (data.session) {
-        // Small delay to allow database trigger to create profile
-        setTimeout(async () => {
-          const result = await getCurrentUserWithProfile();
-          setState({
-            user: data.user,
-            profile: result?.profile as Profile | null,
-            session: data.session,
-            isLoading: false,
-            error: null,
-          });
-        }, 500);
+        // Wait for database trigger to create profile, then fetch it
+        let attempts = 0;
+        const maxAttempts = 10;
+        let profileResult = null;
+
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          profileResult = await getCurrentUserWithProfile();
+          if (profileResult?.profile) {
+            break;
+          }
+          attempts++;
+        }
+
+        setState({
+          user: data.user,
+          profile: profileResult?.profile as Profile | null,
+          session: data.session,
+          isLoading: false,
+          error: null,
+        });
         return { session: data.session, user: data.user };
       }
 
@@ -247,6 +261,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
+  // Check if email exists in the database
+  const checkEmailExists = useCallback(async (email: string): Promise<{ exists: boolean; message: string }> => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/check-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check email');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking email:', error);
+      // If we can't reach the backend, allow the auth flow to continue
+      // Supabase will handle duplicate email detection
+      return { exists: false, message: 'Unable to verify email' };
+    }
+  }, []);
+
+  // Resend verification email
+  const resendVerificationEmail = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) throw error;
+  }, []);
+
   // Update profile
   const updateProfile = useCallback(
     async (updates: Partial<Profile>) => {
@@ -267,18 +318,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [state.user]
   );
 
-  // Refresh profile
+  // Refresh profile - fetches latest profile from database
   const refreshProfile = useCallback(async () => {
-    if (!state.user) return;
-
     const result = await getCurrentUserWithProfile();
-    if (result?.profile) {
-      setState(prev => ({ ...prev, profile: (result.profile ?? null) as Profile | null }));
+    if (result?.user && result?.profile) {
+      setState(prev => ({
+        ...prev,
+        user: result.user,
+        profile: result.profile as Profile,
+      }));
+    } else if (result?.user) {
+      // User exists but no profile yet - still update user
+      setState(prev => ({
+        ...prev,
+        user: result.user,
+      }));
     }
-  }, [state.user]);
+  }, []);
 
-  // Check if user needs onboarding (no role selected or onboarding not completed)
-  const needsOnboarding = !!state.user && !!state.profile && (!state.profile.role || !state.profile.onboarding_completed);
+  // Check if user needs onboarding (only if no role is selected)
+  // If user has a role, they don't need onboarding - they selected it during signup
+  const needsOnboarding = !!state.user && !!state.profile && !state.profile.role;
 
   const value: AuthContextType = {
     ...state,
@@ -293,6 +353,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     resetPassword,
     updatePassword,
+    checkEmailExists,
+    resendVerificationEmail,
     updateProfile,
     refreshProfile,
   };

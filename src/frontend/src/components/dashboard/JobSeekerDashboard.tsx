@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
+import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
 
 interface QuickAction {
   title: string;
@@ -25,10 +26,11 @@ interface QuickAction {
 }
 
 export function JobSeekerDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('');
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -42,6 +44,23 @@ export function JobSeekerDashboard() {
     // TODO: Check assessment status from API
     setHasCompletedAssessment(false);
   }, [profile]);
+
+  // Check if we should show the setup modal - only once based on onboarding_completed flag
+  useEffect(() => {
+    if (!user || !profile) return;
+
+    // Only show modal if onboarding is not completed
+    if (!profile.onboarding_completed) {
+      setShowSetupModal(true);
+    } else {
+      setShowSetupModal(false);
+    }
+  }, [user, profile]);
+
+  const handleSetupComplete = () => {
+    setShowSetupModal(false);
+    setHasCompletedProfile(true);
+  };
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -100,12 +119,14 @@ export function JobSeekerDashboard() {
           className="text-2xl font-bold mb-2"
           style={{ color: 'var(--color-text)' }}
         >
-          {greeting}, {firstName}
+          {hasCompletedAssessment
+            ? `${greeting}, ${firstName}`
+            : `${firstName}, ready for your assessment?`}
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
           {hasCompletedAssessment
             ? "here's what's happening with your job search"
-            : "let's get you set up to find your perfect culture fit"}
+            : "complete your personality assessment to get matched with jobs that fit your culture"}
         </p>
       </div>
 
@@ -389,6 +410,13 @@ export function JobSeekerDashboard() {
           </p>
         </div>
       </div>
+
+      {/* Candidate Setup Modal */}
+      <CandidateSetupModal
+        isOpen={showSetupModal}
+        onClose={() => setShowSetupModal(false)}
+        onComplete={handleSetupComplete}
+      />
     </div>
   );
 }

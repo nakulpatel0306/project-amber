@@ -12,11 +12,38 @@ from datetime import datetime
 import jwt
 from jwt import PyJWKClient
 from fastapi import HTTPException, status
+from supabase import create_client, Client
 
 # Supabase configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+# Supabase client (lazy initialization)
+_supabase_client: Optional[Client] = None
+
+
+def get_supabase_client() -> Optional[Client]:
+    """Get the Supabase client instance."""
+    global _supabase_client
+    if _supabase_client is None and SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+        _supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    return _supabase_client
+
+
+def check_email_in_profiles(email: str) -> bool:
+    """Check if an email exists in the profiles table."""
+    client = get_supabase_client()
+    if not client:
+        return False
+
+    try:
+        result = client.table("profiles").select("id").eq("email", email.lower()).execute()
+        return len(result.data) > 0
+    except Exception as e:
+        print(f"Error checking email: {e}")
+        return False
 
 # JWT configuration
 JWT_ALGORITHM = "HS256"

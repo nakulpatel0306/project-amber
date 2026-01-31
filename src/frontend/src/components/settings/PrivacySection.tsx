@@ -94,10 +94,10 @@ export function PrivacySection() {
           className="text-lg font-medium mb-1"
           style={{ color: 'var(--color-text)' }}
         >
-          privacy
+          Privacy
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          control who can see your information
+          Control who can see your information
         </p>
       </div>
 
@@ -123,15 +123,15 @@ export function PrivacySection() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text)' }}
               >
-                profile visible to employers
+                Profile Visible to Employers
               </p>
               <p
                 className="text-xs mt-0.5 max-w-sm"
                 style={{ color: 'var(--color-textMuted)' }}
               >
                 {settings.profile_visible
-                  ? 'employers can discover you based on your assessment results'
-                  : 'your profile is hidden from employer searches'}
+                  ? 'Employers can discover you based on your assessment results'
+                  : 'Your profile is hidden from employer searches'}
               </p>
             </div>
           </div>
@@ -180,15 +180,15 @@ export function PrivacySection() {
                   className="text-sm font-medium"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  show salary expectations
+                  Show Salary Expectations
                 </p>
                 <p
                   className="text-xs mt-0.5 max-w-sm"
                   style={{ color: 'var(--color-textMuted)' }}
                 >
                   {settings.show_salary_expectation
-                    ? 'employers can see your salary range'
-                    : 'your salary expectations are hidden until you apply'}
+                    ? 'Employers can see your salary range'
+                    : 'Your salary expectations are hidden until you apply'}
                 </p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export function PrivacySection() {
         }}
       >
         <p>
-          even when your profile is hidden, you can still apply to jobs and
+          Even when your profile is hidden, you can still apply to jobs and
           employers you've applied to can see your profile.
         </p>
       </div>
@@ -231,10 +231,10 @@ export function PrivacySection() {
       {hasChanges && (
         <div className="flex gap-3 pt-2">
           <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-            reset
+            Reset
           </Button>
           <Button onClick={handleSave} isLoading={isSaving}>
-            save changes
+            Save Changes
           </Button>
         </div>
       )}

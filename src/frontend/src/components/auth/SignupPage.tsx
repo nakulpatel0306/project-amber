@@ -16,13 +16,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { CoffeeLogo } from '../ui/CoffeeLogo';
 import type { UserRole } from '../../types/auth.types';
 import { cn } from '../../utils/cn';
 
 export function SignupPage() {
   const navigate = useNavigate();
-  const { signUpWithEmail, signInWithOAuth, isLoading } = useAuth();
+  const { signUpWithEmail, signInWithOAuth, checkEmailExists, isLoading } = useAuth();
   const { error: showError, info } = useToast();
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const [step, setStep] = useState<'role' | 'details'>('role');
   const [role, setRole] = useState<UserRole>('candidate');
@@ -66,20 +68,35 @@ export function SignupPage() {
     if (!validateForm()) return;
 
     try {
-      const result = await signUpWithEmail(email, password, role, { full_name: fullName });
+      // Check if email already exists
+      setIsCheckingEmail(true);
+      const { exists } = await checkEmailExists(email);
+      setIsCheckingEmail(false);
 
-      if (result.session) {
-        // User is logged in immediately, navigate to app
-        navigate('/app');
-      } else {
-        // Email verification required
+      if (exists) {
         info(
-          'Check your email',
-          'We sent you a confirmation link. Please check your inbox.'
+          'Account exists',
+          'You already have an account. Try signing in instead.'
         );
         navigate('/auth/login');
+        return;
+      }
+
+      const result = await signUpWithEmail(email, password, role, { full_name: fullName });
+      console.log('Signup result:', result);
+
+      if (result.session) {
+        // User is logged in immediately, navigate to appropriate dashboard
+        const dashboardPath = role === 'employer' ? '/app/employer' : '/app/dashboard';
+        console.log('Navigating to:', dashboardPath);
+        navigate(dashboardPath, { replace: true });
+      } else {
+        // Email verification required - redirect to verify email page
+        console.log('Email verification required, redirecting to verify-email');
+        navigate('/auth/verify-email', { state: { email } });
       }
     } catch (err) {
+      setIsCheckingEmail(false);
       const message = err instanceof Error ? err.message : 'Failed to create account';
       showError('Sign up failed', message);
     }
@@ -131,27 +148,22 @@ export function SignupPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div
-              className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-              }}
-            >
-              <span className="text-xl font-bold text-white">A</span>
+            <div className="flex justify-center mb-4">
+              <CoffeeLogo size="md" />
             </div>
             <h1
               className="text-2xl font-semibold"
               style={{ color: 'var(--color-text)' }}
             >
-              {step === 'role' ? 'join amber' : 'create your account'}
+              {step === 'role' ? 'Join Amber' : 'Create Your Account'}
             </h1>
             <p
               className="text-sm mt-2"
               style={{ color: 'var(--color-textMuted)' }}
             >
               {step === 'role'
-                ? 'how will you be using amber?'
-                : `signing up as ${role === 'candidate' ? 'a job seeker' : 'an employer'}`}
+                ? 'How will you be using Amber?'
+                : `Signing up as ${role === 'candidate' ? 'a job seeker' : 'an employer'}`}
             </p>
           </div>
 
@@ -197,13 +209,13 @@ export function SignupPage() {
                         className="font-medium text-sm"
                         style={{ color: 'var(--color-text)' }}
                       >
-                        {option.label.toLowerCase()}
+                        {option.label}
                       </p>
                       <p
                         className="text-xs mt-0.5"
                         style={{ color: 'var(--color-textMuted)' }}
                       >
-                        {option.description.toLowerCase()}
+                        {option.description}
                       </p>
                     </div>
                     {role === option.id && (
@@ -217,7 +229,7 @@ export function SignupPage() {
               </div>
 
               <Button fullWidth onClick={() => setStep('details')}>
-                continue
+                Continue
               </Button>
             </>
           ) : (
@@ -231,7 +243,7 @@ export function SignupPage() {
                   leftIcon={<Chrome className="w-4 h-4" />}
                   disabled={isLoading}
                 >
-                  continue with google
+                  Continue with Google
                 </Button>
                 <Button
                   variant="secondary"
@@ -240,7 +252,7 @@ export function SignupPage() {
                   leftIcon={<Github className="w-4 h-4" />}
                   disabled={isLoading}
                 >
-                  continue with github
+                  Continue with GitHub
                 </Button>
               </div>
 
@@ -263,7 +275,7 @@ export function SignupPage() {
                       color: 'var(--color-textMuted)',
                     }}
                   >
-                    or continue with email
+                    or continue with Email
                   </span>
                 </div>
               </div>
@@ -271,7 +283,7 @@ export function SignupPage() {
               {/* Email form */}
               <form onSubmit={handleEmailSignUp} className="space-y-4">
                 <Input
-                  label="full name"
+                  label="Full Name"
                   type="text"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
@@ -282,7 +294,7 @@ export function SignupPage() {
                 />
 
                 <Input
-                  label="email"
+                  label="Email"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -293,7 +305,7 @@ export function SignupPage() {
                 />
 
                 <Input
-                  label="password"
+                  label="Password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -317,7 +329,7 @@ export function SignupPage() {
                 />
 
                 <Input
-                  label="confirm password"
+                  label="Confirm Password"
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
@@ -332,12 +344,12 @@ export function SignupPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setStep('role')}
-                    disabled={isLoading}
+                    disabled={isLoading || isCheckingEmail}
                   >
-                    back
+                    Back
                   </Button>
-                  <Button type="submit" fullWidth isLoading={isLoading}>
-                    create account
+                  <Button type="submit" fullWidth isLoading={isLoading || isCheckingEmail}>
+                    Create Account
                   </Button>
                 </div>
               </form>
@@ -349,13 +361,13 @@ export function SignupPage() {
             className="text-center text-sm mt-6"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            already have an account?{' '}
+            Already have an account?{' '}
             <Link
               to="/auth/login"
               className="font-medium transition-colors"
               style={{ color: 'var(--color-accent)' }}
             >
-              sign in
+              Sign in
             </Link>
           </p>
         </div>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
+import { EmployerSetupModal } from '../employer/EmployerSetupModal';
 
 interface QuickAction {
   title: string;
@@ -25,10 +26,11 @@ interface QuickAction {
 }
 
 export function EmployerDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('');
   const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState(false);
   const [hasCreatedRole, setHasCreatedRole] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -41,6 +43,22 @@ export function EmployerDashboard() {
     setHasCompletedCultureQuiz(false);
     setHasCreatedRole(false);
   }, []);
+
+  // Check if we should show the setup modal - only once based on onboarding_completed flag
+  useEffect(() => {
+    if (!user || !profile) return;
+
+    // Only show modal if onboarding is not completed
+    if (!profile.onboarding_completed) {
+      setShowSetupModal(true);
+    } else {
+      setShowSetupModal(false);
+    }
+  }, [user, profile]);
+
+  const handleSetupComplete = () => {
+    setShowSetupModal(false);
+  };
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
@@ -102,12 +120,14 @@ export function EmployerDashboard() {
           className="text-2xl font-bold mb-2"
           style={{ color: 'var(--color-text)' }}
         >
-          {greeting}, {firstName}
+          {hasCompletedCultureQuiz
+            ? `${greeting}, ${firstName}`
+            : `${firstName}, ready to define your culture?`}
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
           {hasCompletedCultureQuiz
             ? "here's an overview of your hiring activity"
-            : "let's set up your company profile to start finding great culture fits"}
+            : "complete the culture quiz to start matching with candidates who fit your team"}
         </p>
       </div>
 
@@ -427,6 +447,13 @@ export function EmployerDashboard() {
           </p>
         </div>
       </div>
+
+      {/* Employer Setup Modal */}
+      <EmployerSetupModal
+        isOpen={showSetupModal}
+        onClose={() => setShowSetupModal(false)}
+        onComplete={handleSetupComplete}
+      />
     </div>
   );
 }

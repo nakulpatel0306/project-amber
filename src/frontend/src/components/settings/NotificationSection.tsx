@@ -122,10 +122,10 @@ export function NotificationSection() {
           className="text-lg font-medium mb-1"
           style={{ color: 'var(--color-text)' }}
         >
-          notifications
+          Notifications
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          choose what emails you'd like to receive
+          Choose what emails you'd like to receive
         </p>
       </div>
 
@@ -141,13 +141,13 @@ export function NotificationSection() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text)' }}
               >
-                {item.label.toLowerCase()}
+                {item.label}
               </p>
               <p
                 className="text-xs mt-0.5"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                {item.description.toLowerCase()}
+                {item.description}
               </p>
             </div>
             <button
@@ -178,10 +178,10 @@ export function NotificationSection() {
       {hasChanges && (
         <div className="flex gap-3 pt-2">
           <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-            reset
+            Reset
           </Button>
           <Button onClick={handleSave} isLoading={isSaving}>
-            save changes
+            Save Changes
           </Button>
         </div>
       )}

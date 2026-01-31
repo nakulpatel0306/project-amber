@@ -94,10 +94,10 @@ export function FeedbackSection() {
           className="text-lg font-medium mb-1"
           style={{ color: 'var(--color-text)' }}
         >
-          feedback
+          Feedback
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          help us improve amber by sharing your thoughts
+          Help us improve Amber by sharing your thoughts
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export function FeedbackSection() {
             }}
           >
             <Icon className="w-4 h-4" />
-            <span className="hidden sm:inline">{label.toLowerCase()}</span>
+            <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
       </div>
@@ -140,7 +140,7 @@ export function FeedbackSection() {
             className="text-sm mb-3"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            how would you rate your experience?
+            How would you rate your experience?
           </p>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map(value => (
@@ -190,7 +190,7 @@ export function FeedbackSection() {
       <Textarea
         value={message}
         onChange={e => setMessage(e.target.value)}
-        placeholder={currentTab.placeholder.toLowerCase()}
+        placeholder={currentTab.placeholder}
         rows={5}
         disabled={isSubmitting}
       />
@@ -208,7 +208,7 @@ export function FeedbackSection() {
             className="text-xs"
             style={{ color: 'var(--color-success)' }}
           >
-            feedback submitted successfully!
+            Feedback submitted successfully!
           </p>
         )}
       </div>
@@ -220,7 +220,7 @@ export function FeedbackSection() {
         isLoading={isSubmitting}
         leftIcon={<Send className="w-4 h-4" />}
       >
-        submit feedback
+        Submit Feedback
       </Button>
 
       {/* Info */}
@@ -232,7 +232,7 @@ export function FeedbackSection() {
         }}
       >
         <p>
-          your feedback helps us build a better product. we read every
+          Your feedback helps us build a better product. We read every
           submission and may reach out if we have questions.
         </p>
       </div>
