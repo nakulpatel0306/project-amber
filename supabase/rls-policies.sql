@@ -11,6 +11,7 @@ ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coffee_chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.assessments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 
@@ -256,6 +257,14 @@ DROP POLICY IF EXISTS "Users can insert own settings" ON public.user_settings;
 CREATE POLICY "Users can insert own settings"
   ON public.user_settings FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+-- ============================================
+-- QUESTIONS POLICIES (Read-only for all authenticated users)
+-- ============================================
+DROP POLICY IF EXISTS "Authenticated users can view questions" ON public.questions;
+CREATE POLICY "Authenticated users can view questions"
+  ON public.questions FOR SELECT
+  USING (auth.role() = 'authenticated');
 
 -- ============================================
 -- ASSESSMENTS POLICIES

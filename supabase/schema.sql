@@ -190,6 +190,26 @@ CREATE TABLE IF NOT EXISTS public.coffee_chats (
 );
 
 -- ============================================
+-- QUESTIONS TABLE (Assessment Questions)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.questions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  question_code TEXT UNIQUE NOT NULL,  -- e.g., 'c1', 'c2', 'e1', 'e2'
+  question_type TEXT CHECK (question_type IN ('candidate', 'employer')) NOT NULL,
+  question_format TEXT CHECK (question_format IN ('scenario', 'metaphor', 'tradeoff', 'ranking', 'reflection', 'slider')) NOT NULL,
+  category TEXT NOT NULL,
+  question_text TEXT NOT NULL,
+  description TEXT,
+  options JSONB,  -- Array of options with id, text, description, traitScores
+  slider_config JSONB,  -- For slider questions: min, max, minLabel, maxLabel, trait
+  traits TEXT[],  -- Array of trait names this question measures
+  display_order INTEGER,  -- Order in which to display the question
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
 -- ASSESSMENTS TABLE (Assessment Sessions)
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.assessments (
@@ -213,7 +233,8 @@ CREATE TABLE IF NOT EXISTS public.assessment_responses (
   assessment_id UUID NOT NULL REFERENCES public.assessments(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
 
-  question_id TEXT NOT NULL,
+  question_id TEXT NOT NULL,  -- Legacy field for backwards compatibility
+  question_code TEXT REFERENCES public.questions(question_code),  -- Foreign key to questions table
   answer_id TEXT,              -- For multiple choice questions
   slider_value INTEGER,        -- For slider questions (0-100)
   ranking_order TEXT[],        -- For ranking questions (array of option IDs)
@@ -281,9 +302,12 @@ CREATE INDEX IF NOT EXISTS idx_applications_role_id ON public.applications(role_
 CREATE INDEX IF NOT EXISTS idx_applications_status ON public.applications(status);
 CREATE INDEX IF NOT EXISTS idx_coffee_chats_candidate_id ON public.coffee_chats(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_coffee_chats_employer_id ON public.coffee_chats(employer_id);
+CREATE INDEX IF NOT EXISTS idx_questions_question_type ON public.questions(question_type);
+CREATE INDEX IF NOT EXISTS idx_questions_question_code ON public.questions(question_code);
 CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON public.assessments(user_id);
 CREATE INDEX IF NOT EXISTS idx_assessment_responses_assessment_id ON public.assessment_responses(assessment_id);
 CREATE INDEX IF NOT EXISTS idx_assessment_responses_user_id ON public.assessment_responses(user_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_responses_question_code ON public.assessment_responses(question_code);
 CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON public.feedback(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
 
