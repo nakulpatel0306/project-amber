@@ -22,8 +22,8 @@ export function AppearanceSection() {
     theme.id.includes('dark') ||
     theme.id === 'midnight' ||
     theme.id === 'ocean' ||
-    theme.id === 'forest' ||
-    theme.id === 'rose';
+    theme.id === 'rose' ||
+    theme.id === 'slate';
 
   return (
     <div className="space-y-6">

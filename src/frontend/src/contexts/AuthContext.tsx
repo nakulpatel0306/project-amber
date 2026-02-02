@@ -10,6 +10,13 @@ import { supabase, getCurrentUserWithProfile, isSupabaseConfigured } from '../li
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import type { Profile, UserRole } from '../types/auth.types';
 
+// Dev mode - set to true to skip profile setup requirements
+// Toggle this in localStorage: localStorage.setItem('dev_mode', 'true')
+export const isDevMode = () => {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('dev_mode') === 'true';
+};
+
 interface AuthState {
   user: User | null;
   profile: Profile | null;

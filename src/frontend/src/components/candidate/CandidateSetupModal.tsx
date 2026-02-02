@@ -7,12 +7,12 @@ import {
   User,
   Briefcase,
   Link as LinkIcon,
-  MapPin,
   DollarSign,
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { LocationPicker } from '../ui/LocationPicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -47,10 +47,9 @@ const WORK_STYLES = [
 ];
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup', description: '1-50 employees' },
-  { id: 'small', label: 'Small', description: '51-200 employees' },
-  { id: 'medium', label: 'Medium', description: '201-1000 employees' },
-  { id: 'large', label: 'Large', description: '1000+ employees' },
+  { id: 'startup', label: 'Startup', description: '1-100 employees' },
+  { id: 'midsize', label: 'Mid-size', description: '100-1000 employees' },
+  { id: 'enterprise', label: 'Enterprise', description: '1000+ employees' },
   { id: 'any', label: 'Any Size', description: 'Open to all' },
 ];
 
@@ -82,15 +81,28 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
     portfolio_url: '',
   });
 
+  // Track if we've loaded data for this modal session
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Reset dataLoaded when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDataLoaded(false);
+    }
+  }, [isOpen]);
+
+  // Use user.id as dependency to prevent unnecessary reloads
+  const userId = user?.id;
+
   // Load existing candidate data and resume from last step
   useEffect(() => {
-    if (!user || !isOpen) return;
+    if (!userId || !isOpen || dataLoaded) return;
 
     const loadCandidateData = async () => {
       const { data: candidate } = await supabase
         .from('candidates')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (candidate) {
@@ -112,10 +124,11 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
           setCurrentStep(candidate.setup_step);
         }
       }
+      setDataLoaded(true);
     };
 
     loadCandidateData();
-  }, [user, isOpen]);
+  }, [userId, isOpen, dataLoaded]);
 
   // Save step data to database
   const saveStepData = async (step: number) => {
@@ -397,13 +410,11 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <Input
+                  <LocationPicker
                     label="Location"
-                    type="text"
                     value={data.location}
-                    onChange={(e) => setData({ ...data, location: e.target.value })}
-                    placeholder="e.g., San Francisco, CA"
-                    leftIcon={<MapPin className="w-4 h-4" />}
+                    onChange={(location) => setData({ ...data, location })}
+                    placeholder="Select your location"
                   />
                   <Input
                     label="Years of Experience"

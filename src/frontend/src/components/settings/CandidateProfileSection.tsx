@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   User,
-  MapPin,
   Briefcase,
   Link as LinkIcon,
   DollarSign,
@@ -10,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { LocationPicker } from '../ui/LocationPicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -38,10 +38,9 @@ const WORK_STYLES = [
 ];
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup (1-50)' },
-  { id: 'small', label: 'Small (51-200)' },
-  { id: 'medium', label: 'Medium (201-1000)' },
-  { id: 'large', label: 'Large (1000+)' },
+  { id: 'startup', label: 'Startup (1-100)' },
+  { id: 'midsize', label: 'Mid-size (100-1000)' },
+  { id: 'enterprise', label: 'Enterprise (1000+)' },
   { id: 'any', label: 'Any Size' },
 ];
 
@@ -68,15 +67,19 @@ export function CandidateProfileSection() {
   });
 
   const [originalData, setOriginalData] = useState<CandidateData>(data);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Use user.id as dependency to prevent unnecessary reloads
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId || dataLoaded) return;
 
     const loadData = async () => {
       const { data: candidate } = await supabase
         .from('candidates')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (candidate) {
@@ -97,18 +100,22 @@ export function CandidateProfileSection() {
         setOriginalData(loadedData);
       }
       setIsLoading(false);
+      setDataLoaded(true);
     };
 
     loadData();
-  }, [user]);
+  }, [userId, dataLoaded]);
 
   const handleChange = (field: keyof CandidateData, value: string | number | null) => {
-    setData(prev => {
-      const newData = { ...prev, [field]: value };
-      setHasChanges(JSON.stringify(newData) !== JSON.stringify(originalData));
-      return newData;
-    });
+    setData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Track changes separately using useEffect to avoid stale closures
+  useEffect(() => {
+    if (dataLoaded) {
+      setHasChanges(JSON.stringify(data) !== JSON.stringify(originalData));
+    }
+  }, [data, originalData, dataLoaded]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -214,13 +221,11 @@ export function CandidateProfileSection() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <LocationPicker
             label="Location"
-            type="text"
             value={data.location}
-            onChange={(e) => handleChange('location', e.target.value)}
-            placeholder="e.g., San Francisco, CA"
-            leftIcon={<MapPin className="w-4 h-4" />}
+            onChange={(location) => handleChange('location', location)}
+            placeholder="Select your location"
           />
           <Input
             label="Years of Experience"

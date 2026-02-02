@@ -12,11 +12,36 @@ import {
   Calendar,
   ChevronRight,
   Users,
+  Brain,
+  RotateCcw,
+  Lightbulb,
+  Zap,
+  Anchor,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
 import { supabase } from '../../lib/supabase';
+
+interface PersonalityScores {
+  openness: number;
+  conscientiousness: number;
+  extraversion: number;
+  agreeableness: number;
+  neuroticism: number;
+}
+
+interface CandidateData {
+  headline: string | null;
+  bio: string | null;
+  openness_score: number | null;
+  conscientiousness_score: number | null;
+  extraversion_score: number | null;
+  agreeableness_score: number | null;
+  neuroticism_score: number | null;
+  top_traits: string[] | null;
+  assessment_completed_at: string | null;
+}
 
 interface QuickAction {
   title: string;
@@ -34,6 +59,9 @@ export function JobSeekerDashboard() {
   const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
   const [hasCompletedProfile, setHasCompletedProfile] = useState<boolean | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [personalityScores, setPersonalityScores] = useState<PersonalityScores | null>(null);
+  const [topTraits, setTopTraits] = useState<string[]>([]);
+  const [lastAssessmentDate, setLastAssessmentDate] = useState<Date | null>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -50,12 +78,14 @@ export function JobSeekerDashboard() {
     const checkCompletionStatus = async () => {
       const { data: candidate } = await supabase
         .from('candidates')
-        .select('headline, bio, openness_score')
+        .select('headline, bio, openness_score, conscientiousness_score, extraversion_score, agreeableness_score, neuroticism_score, top_traits, assessment_completed_at')
         .eq('user_id', user.id)
         .single();
 
+      const typedCandidate = candidate as CandidateData | null;
+
       // Profile is complete if they have a headline or bio filled out
-      const profileComplete = !!(candidate?.headline || candidate?.bio);
+      const profileComplete = !!(typedCandidate?.headline || typedCandidate?.bio);
       setHasCompletedProfile(profileComplete);
 
       // Show modal automatically if profile is not complete AND user hasn't skipped this session
@@ -65,7 +95,23 @@ export function JobSeekerDashboard() {
       }
 
       // Assessment is complete if they have OCEAN scores
-      setHasCompletedAssessment(candidate?.openness_score !== null && candidate?.openness_score !== undefined);
+      const assessmentComplete = typedCandidate?.openness_score !== null && typedCandidate?.openness_score !== undefined;
+      setHasCompletedAssessment(assessmentComplete);
+
+      // Set personality scores if assessment is complete
+      if (assessmentComplete && typedCandidate) {
+        setPersonalityScores({
+          openness: typedCandidate.openness_score || 0,
+          conscientiousness: typedCandidate.conscientiousness_score || 0,
+          extraversion: typedCandidate.extraversion_score || 0,
+          agreeableness: typedCandidate.agreeableness_score || 0,
+          neuroticism: typedCandidate.neuroticism_score || 0,
+        });
+        setTopTraits(typedCandidate.top_traits || []);
+        if (typedCandidate.assessment_completed_at) {
+          setLastAssessmentDate(new Date(typedCandidate.assessment_completed_at));
+        }
+      }
     };
 
     checkCompletionStatus();
@@ -96,11 +142,11 @@ export function JobSeekerDashboard() {
       onClick: () => setShowSetupModal(true),
     },
     {
-      title: 'take personality assessment',
-      description: '15 minutes to discover your work style',
-      icon: Sparkles,
-      href: '/app/personality',
-      color: '#F59E0B',
+      title: hasCompletedAssessment ? 'view personality insights' : 'take personality assessment',
+      description: hasCompletedAssessment ? 'explore your detailed personality profile' : '15 minutes to discover your work style',
+      icon: Brain,
+      href: hasCompletedAssessment ? '/app/insights' : '/app/personality',
+      color: '#8B5CF6',
       status: hasCompletedAssessment ? 'complete' : 'not-started',
     },
     {
@@ -232,6 +278,109 @@ export function JobSeekerDashboard() {
               </Button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Personality Profile Summary (when assessment is complete) */}
+      {hasCompletedAssessment && personalityScores && (
+        <div
+          className="p-6 rounded-2xl mb-8 border"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2
+              className="text-lg font-semibold flex items-center gap-2"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+              your personality profile
+            </h2>
+            <div className="flex items-center gap-3">
+              {lastAssessmentDate && (
+                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                  completed {lastAssessmentDate.toLocaleDateString()}
+                </span>
+              )}
+              <Link to="/app/insights">
+                <Button variant="ghost" size="sm" leftIcon={<ArrowRight className="w-3 h-3" />}>
+                  full insights
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* OCEAN Scores */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            {[
+              { key: 'openness', label: 'Openness', icon: Lightbulb, color: '#8B5CF6' },
+              { key: 'conscientiousness', label: 'Conscient.', icon: Target, color: '#10B981' },
+              { key: 'extraversion', label: 'Extraversion', icon: Zap, color: '#F59E0B' },
+              { key: 'agreeableness', label: 'Agreeable.', icon: Heart, color: '#EC4899' },
+              { key: 'neuroticism', label: 'Stability', icon: Anchor, color: '#06B6D4' },
+            ].map(({ key, label, icon: Icon, color }) => {
+              const value = key === 'neuroticism'
+                ? 100 - personalityScores[key as keyof PersonalityScores]
+                : personalityScores[key as keyof PersonalityScores];
+              return (
+                <div
+                  key={key}
+                  className="p-4 rounded-xl text-center"
+                  style={{ backgroundColor: 'var(--color-background)' }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center"
+                    style={{ backgroundColor: `${color}20` }}
+                  >
+                    <Icon className="w-4 h-4" style={{ color }} />
+                  </div>
+                  <div
+                    className="text-2xl font-bold mb-1"
+                    style={{ color }}
+                  >
+                    {value}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    {label}
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${value}%`,
+                        backgroundColor: color,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Top Traits */}
+          {topTraits.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
+                your top traits
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {topTraits.slice(0, 5).map((trait, index) => (
+                  <span
+                    key={trait}
+                    className="px-3 py-1.5 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
+                      color: index === 0 ? 'white' : 'var(--color-text)',
+                    }}
+                  >
+                    {trait}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

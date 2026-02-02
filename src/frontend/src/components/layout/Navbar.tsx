@@ -39,14 +39,14 @@ export function Navbar() {
 
   const candidateNavItems = [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/personality', label: 'Assessment', icon: Sparkles },
+    { path: '/app/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/matches', label: 'Matches', icon: Users },
     { path: '/app/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 
   const employerNavItems = [
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/employer/culture-assessment', label: 'Culture', icon: Sparkles },
+    { path: '/app/employer/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/employer/candidates', label: 'Candidates', icon: Users },
     { path: '/app/employer/chats', label: 'Coffee Chats', icon: Coffee },
   ];
