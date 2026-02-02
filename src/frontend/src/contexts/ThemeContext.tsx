@@ -131,24 +131,66 @@ export const themes: Theme[] = [
     },
   },
   {
-    id: 'forest',
-    name: 'Forest',
+    id: 'rose',
+    name: 'Rose',
     colors: {
-      background: '#0f1612',
-      backgroundSecondary: '#161f1a',
-      surface: '#1e2a23',
-      surfaceHover: '#28362f',
-      border: '#2f4038',
-      borderHover: '#3d5048',
-      text: '#ecfdf5',
-      textSecondary: '#a7d4bc',
-      textMuted: '#6b9a80',
-      accent: '#4ade80',
-      accentHover: '#22c55e',
-      accentText: '#0f1612',
+      background: '#1a1318',
+      backgroundSecondary: '#231a1f',
+      surface: '#2d2228',
+      surfaceHover: '#3a2d33',
+      border: '#4a3a42',
+      borderHover: '#5c4a52',
+      text: '#fdf2f8',
+      textSecondary: '#f9a8d4',
+      textMuted: '#be6b8f',
+      accent: '#f472b6',
+      accentHover: '#ec4899',
+      accentText: '#1a1318',
       success: '#86efac',
       error: '#fca5a5',
       warning: '#fde047',
+    },
+  },
+  {
+    id: 'lavender',
+    name: 'Lavender',
+    colors: {
+      background: '#faf8ff',
+      backgroundSecondary: '#f5f0ff',
+      surface: '#ede5ff',
+      surfaceHover: '#e2d6ff',
+      border: '#d8caff',
+      borderHover: '#c4b0ff',
+      text: '#1e1b2e',
+      textSecondary: '#4a4565',
+      textMuted: '#7c7693',
+      accent: '#8b5cf6',
+      accentHover: '#7c3aed',
+      accentText: '#ffffff',
+      success: '#16a34a',
+      error: '#dc2626',
+      warning: '#d97706',
+    },
+  },
+  {
+    id: 'slate',
+    name: 'Slate',
+    colors: {
+      background: '#0f172a',
+      backgroundSecondary: '#1e293b',
+      surface: '#334155',
+      surfaceHover: '#475569',
+      border: '#475569',
+      borderHover: '#64748b',
+      text: '#f8fafc',
+      textSecondary: '#cbd5e1',
+      textMuted: '#94a3b8',
+      accent: '#6366f1',
+      accentHover: '#4f46e5',
+      accentText: '#ffffff',
+      success: '#22c55e',
+      error: '#ef4444',
+      warning: '#f59e0b',
     },
   },
 ];
@@ -196,7 +238,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const isDark = currentTheme.id.includes('dark') ||
                    currentTheme.id === 'midnight' ||
                    currentTheme.id === 'ocean' ||
-                   currentTheme.id === 'forest';
+                   currentTheme.id === 'rose' ||
+                   currentTheme.id === 'slate';
     root.style.colorScheme = isDark ? 'dark' : 'light';
   }, [currentTheme]);
 

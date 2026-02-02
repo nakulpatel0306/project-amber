@@ -11,9 +11,11 @@ import {
   Zap,
   Heart,
   TrendingUp,
+  Clock,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, isDevMode } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import {
@@ -57,34 +59,70 @@ export function CultureAssessment() {
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
 
+  // Cooldown check (24 hours between assessments)
+  const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
+  const [lastAssessmentAt, setLastAssessmentAt] = useState<Date | null>(null);
+
   const currentQuestion = employerQuestions[state.currentIndex];
   const progress = ((state.currentIndex + 1) / employerQuestions.length) * 100;
 
-  // Check if profile is complete before allowing culture assessment
+  // Check if profile is complete and cooldown status before allowing assessment
   useEffect(() => {
     if (!user) return;
 
-    const checkProfileCompletion = async () => {
+    const checkProfileAndCooldown = async () => {
       setIsCheckingProfile(true);
       try {
         const { data: employer } = await supabase
           .from('employers')
-          .select('company_name, description')
+          .select('company_name, description, culture_quiz_completed, updated_at')
           .eq('user_id', user.id)
           .single();
 
-        // Profile is complete if they have company_name or description filled out
-        setHasCompletedProfile(!!(employer?.company_name || employer?.description));
+        // Dev mode bypasses profile requirement
+        const profileComplete = isDevMode() || !!(employer?.company_name || employer?.description);
+        setHasCompletedProfile(profileComplete);
+
+        // Check cooldown (24 hours = 86400000 ms) - only if already completed once
+        if (employer?.culture_quiz_completed && employer?.updated_at) {
+          const lastCompleted = new Date(employer.updated_at);
+          setLastAssessmentAt(lastCompleted);
+          const timeSince = Date.now() - lastCompleted.getTime();
+          const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours
+
+          if (timeSince < cooldownMs) {
+            setCooldownRemaining(cooldownMs - timeSince);
+          } else {
+            setCooldownRemaining(null);
+          }
+        }
       } catch (err) {
         console.error('Error checking profile:', err);
-        setHasCompletedProfile(false);
+        setHasCompletedProfile(isDevMode()); // Dev mode still works
       } finally {
         setIsCheckingProfile(false);
       }
     };
 
-    checkProfileCompletion();
+    checkProfileAndCooldown();
   }, [user]);
+
+  // Update cooldown timer
+  useEffect(() => {
+    if (cooldownRemaining === null || cooldownRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setCooldownRemaining(prev => {
+        if (prev === null || prev <= 1000) {
+          clearInterval(interval);
+          return null;
+        }
+        return prev - 1000;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [cooldownRemaining]);
 
   // Initialize ranking order when question changes
   useEffect(() => {
@@ -297,6 +335,110 @@ export function CultureAssessment() {
     );
   }
 
+  // Show cooldown screen (24-hour wait between assessments)
+  if (cooldownRemaining && cooldownRemaining > 0) {
+    const hours = Math.floor(cooldownRemaining / (1000 * 60 * 60));
+    const minutes = Math.floor((cooldownRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((cooldownRemaining % (1000 * 60)) / 1000);
+
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ backgroundColor: 'var(--color-background)' }}
+      >
+        <div
+          className="max-w-md w-full p-8 rounded-2xl border text-center"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div
+            className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)' }}
+          >
+            <Clock className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
+          </div>
+          <h1
+            className="text-2xl font-bold mb-3"
+            style={{ color: 'var(--color-text)' }}
+          >
+            assessment cooldown
+          </h1>
+          <p
+            className="mb-6"
+            style={{ color: 'var(--color-textSecondary)' }}
+          >
+            you've recently completed the culture assessment. you can retake it again in:
+          </p>
+
+          {/* Countdown Timer */}
+          <div className="flex justify-center gap-4 mb-6">
+            <div
+              className="p-4 rounded-xl min-w-[80px]"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div className="text-3xl font-bold" style={{ color: 'var(--color-accent)' }}>
+                {hours.toString().padStart(2, '0')}
+              </div>
+              <div className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
+                hours
+              </div>
+            </div>
+            <div
+              className="p-4 rounded-xl min-w-[80px]"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div className="text-3xl font-bold" style={{ color: 'var(--color-accent)' }}>
+                {minutes.toString().padStart(2, '0')}
+              </div>
+              <div className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
+                minutes
+              </div>
+            </div>
+            <div
+              className="p-4 rounded-xl min-w-[80px]"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div className="text-3xl font-bold" style={{ color: 'var(--color-accent)' }}>
+                {seconds.toString().padStart(2, '0')}
+              </div>
+              <div className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
+                seconds
+              </div>
+            </div>
+          </div>
+
+          {lastAssessmentAt && (
+            <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
+              last completed: {lastAssessmentAt.toLocaleDateString()} at {lastAssessmentAt.toLocaleTimeString()}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <Link to="/app/employer/insights">
+              <Button variant="primary" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                view your insights
+              </Button>
+            </Link>
+            <Link to="/app/employer/candidates">
+              <Button variant="ghost" className="w-full">
+                browse candidates
+              </Button>
+            </Link>
+            <div
+              className="flex items-center justify-center gap-2 text-sm"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>retake available in {hours}h {minutes}m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show completion screen
   if (isComplete && cultureProfile) {
     return <CultureAssessmentComplete profile={cultureProfile} />;
@@ -504,12 +646,27 @@ function SliderQuestion({
   value: number;
   onChange: (v: number) => void;
 }) {
+  // Calculate percentage for positioning the value indicator
+  const percentage = ((value - config.min) / (config.max - config.min)) * 100;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div
-        className="relative py-8 px-4 rounded-2xl"
+        className="relative pt-12 pb-6 px-4 rounded-2xl"
         style={{ backgroundColor: 'var(--color-surface)' }}
       >
+        {/* Value indicator that moves with slider */}
+        <div
+          className="absolute -top-1 px-4 py-2 rounded-full font-bold text-lg transform -translate-x-1/2 transition-all duration-100"
+          style={{
+            backgroundColor: 'var(--color-accent)',
+            color: 'white',
+            left: `calc(${percentage}% + ${(50 - percentage) * 0.16}px)`, // Adjust for padding
+          }}
+        >
+          {value}
+        </div>
+
         <input
           type="range"
           min={config.min}
@@ -518,15 +675,9 @@ function SliderQuestion({
           onChange={(e) => onChange(parseInt(e.target.value))}
           className="w-full h-3 rounded-full appearance-none cursor-pointer"
           style={{
-            background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${value}%, var(--color-border) ${value}%, var(--color-border) 100%)`,
+            background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${percentage}%, var(--color-border) ${percentage}%, var(--color-border) 100%)`,
           }}
         />
-        <div
-          className="absolute left-1/2 -translate-x-1/2 -top-2 px-4 py-2 rounded-full font-bold text-lg"
-          style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
-        >
-          {value}
-        </div>
       </div>
       <div className="flex justify-between text-sm">
         <p className="max-w-[40%]" style={{ color: 'var(--color-textSecondary)' }}>
@@ -805,10 +956,10 @@ function CultureAssessmentComplete({ profile }: { profile: EmployerCultureProfil
         <div className="text-center">
           <Button
             size="lg"
-            onClick={() => navigate('/app/employer')}
+            onClick={() => navigate('/app/employer/insights')}
             rightIcon={<ArrowRight className="w-5 h-5" />}
           >
-            Start Finding Candidates
+            view detailed insights
           </Button>
         </div>
       </div>

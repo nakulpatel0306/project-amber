@@ -6,12 +6,12 @@ import {
   Building2,
   Users,
   Link as LinkIcon,
-  MapPin,
   Globe,
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { LocationPicker } from '../ui/LocationPicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -33,11 +33,9 @@ interface EmployerData {
 }
 
 const COMPANY_SIZES = [
-  { id: '1-10', label: 'Startup', description: '1-10 employees' },
-  { id: '11-50', label: 'Small', description: '11-50 employees' },
-  { id: '51-200', label: 'Medium', description: '51-200 employees' },
-  { id: '201-500', label: 'Large', description: '201-500 employees' },
-  { id: '500+', label: 'Enterprise', description: '500+ employees' },
+  { id: 'startup', label: 'Startup', description: '1-100 employees' },
+  { id: 'midsize', label: 'Mid-size', description: '100-1000 employees' },
+  { id: 'enterprise', label: 'Enterprise', description: '1000+ employees' },
 ];
 
 const INDUSTRIES = [
@@ -75,15 +73,28 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
     company_website: '',
   });
 
+  // Track if we've loaded data for this modal session
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Reset dataLoaded when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDataLoaded(false);
+    }
+  }, [isOpen]);
+
+  // Use user.id as dependency to prevent unnecessary reloads
+  const userId = user?.id;
+
   // Load existing employer data and resume from last step
   useEffect(() => {
-    if (!user || !isOpen) return;
+    if (!userId || !isOpen || dataLoaded) return;
 
     const loadEmployerData = async () => {
       const { data: employer } = await supabase
         .from('employers')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (employer) {
@@ -100,10 +111,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
           setCurrentStep(employer.setup_step);
         }
       }
+      setDataLoaded(true);
     };
 
     loadEmployerData();
-  }, [user, isOpen]);
+  }, [userId, isOpen, dataLoaded]);
 
   // Save step data to database
   const saveStepData = async (step: number) => {
@@ -461,13 +473,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                   </div>
                 </div>
 
-                <Input
+                <LocationPicker
                   label="Headquarters Location"
-                  type="text"
                   value={data.location}
-                  onChange={(e) => setData({ ...data, location: e.target.value })}
-                  placeholder="e.g., San Francisco, CA"
-                  leftIcon={<MapPin className="w-4 h-4" />}
+                  onChange={(location) => setData({ ...data, location })}
+                  placeholder="Select headquarters location"
                 />
               </div>
             )}

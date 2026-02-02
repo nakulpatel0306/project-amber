@@ -12,9 +12,11 @@ import {
   Compass,
   Lightbulb,
   User,
+  Clock,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, isDevMode } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import {
@@ -39,6 +41,7 @@ interface AssessmentState {
 export function Assessment() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
+  const navigate = useNavigate();
 
   const [state, setState] = useState<AssessmentState>({
     currentIndex: 0,
@@ -60,38 +63,74 @@ export function Assessment() {
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
 
+  // Cooldown check (24 hours between assessments)
+  const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
+  const [lastAssessmentAt, setLastAssessmentAt] = useState<Date | null>(null);
+
   const currentQuestion = candidateQuestions[state.currentIndex];
   const progress = ((state.currentIndex + 1) / candidateQuestions.length) * 100;
 
-  // Check if profile is complete before allowing assessment
+  // Check if profile is complete and cooldown status before allowing assessment
   useEffect(() => {
     if (!user) return;
 
-    const checkProfileCompletion = async () => {
+    const checkProfileAndCooldown = async () => {
       setIsCheckingProfile(true);
       try {
         const { data: candidate } = await supabase
           .from('candidates')
-          .select('headline, bio')
+          .select('headline, bio, assessment_completed_at')
           .eq('user_id', user.id)
           .single();
 
-        // Profile is complete if they have a headline or bio filled out
-        setHasCompletedProfile(!!(candidate?.headline || candidate?.bio));
+        // Dev mode bypasses profile requirement
+        const profileComplete = isDevMode() || !!(candidate?.headline || candidate?.bio);
+        setHasCompletedProfile(profileComplete);
+
+        // Check cooldown (24 hours = 86400000 ms)
+        if (candidate?.assessment_completed_at) {
+          const lastCompleted = new Date(candidate.assessment_completed_at);
+          setLastAssessmentAt(lastCompleted);
+          const timeSince = Date.now() - lastCompleted.getTime();
+          const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours
+
+          if (timeSince < cooldownMs) {
+            setCooldownRemaining(cooldownMs - timeSince);
+          } else {
+            setCooldownRemaining(null);
+          }
+        }
       } catch (err) {
         console.error('Error checking profile:', err);
-        setHasCompletedProfile(false);
+        setHasCompletedProfile(isDevMode()); // Dev mode still works
       } finally {
         setIsCheckingProfile(false);
       }
     };
 
-    checkProfileCompletion();
+    checkProfileAndCooldown();
   }, [user]);
+
+  // Update cooldown timer
+  useEffect(() => {
+    if (cooldownRemaining === null || cooldownRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setCooldownRemaining(prev => {
+        if (prev === null || prev <= 1000) {
+          clearInterval(interval);
+          return null;
+        }
+        return prev - 1000;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [cooldownRemaining]);
 
   // Initialize or resume assessment session
   useEffect(() => {
-    if (!user || !hasCompletedProfile || isCheckingProfile) return;
+    if (!user || !hasCompletedProfile || isCheckingProfile || cooldownRemaining) return;
 
     const initializeAssessment = async () => {
       try {
@@ -419,9 +458,125 @@ export function Assessment() {
     );
   }
 
-  // Show completion screen
+  // Show cooldown screen (24-hour wait between assessments)
+  if (cooldownRemaining && cooldownRemaining > 0) {
+    const hours = Math.floor(cooldownRemaining / (1000 * 60 * 60));
+    const minutes = Math.floor((cooldownRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((cooldownRemaining % (1000 * 60)) / 1000);
+
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ backgroundColor: 'var(--color-background)' }}
+      >
+        <div
+          className="max-w-md w-full p-8 rounded-2xl border text-center"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div
+            className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
+          >
+            <Clock className="w-10 h-10" style={{ color: '#8B5CF6' }} />
+          </div>
+          <h1
+            className="text-2xl font-bold mb-3"
+            style={{ color: 'var(--color-text)' }}
+          >
+            assessment cooldown
+          </h1>
+          <p
+            className="mb-6"
+            style={{ color: 'var(--color-textSecondary)' }}
+          >
+            you can retake the personality assessment once every 24 hours. this ensures accurate results and prevents assessment fatigue.
+          </p>
+
+          {/* Countdown Timer */}
+          <div
+            className="p-6 rounded-xl mb-6"
+            style={{ backgroundColor: 'var(--color-background)' }}
+          >
+            <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
+              time until next assessment
+            </p>
+            <div className="flex items-center justify-center gap-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+                  {String(hours).padStart(2, '0')}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>hours</p>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: 'var(--color-textMuted)' }}>:</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+                  {String(minutes).padStart(2, '0')}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>minutes</p>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: 'var(--color-textMuted)' }}>:</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
+                  {String(seconds).padStart(2, '0')}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>seconds</p>
+              </div>
+            </div>
+          </div>
+
+          {lastAssessmentAt && (
+            <p className="text-xs mb-6" style={{ color: 'var(--color-textMuted)' }}>
+              last completed: {lastAssessmentAt.toLocaleDateString()} at {lastAssessmentAt.toLocaleTimeString()}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <Link to="/app/insights">
+              <Button className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                view your insights
+              </Button>
+            </Link>
+            <Link to="/app/matches">
+              <Button variant="ghost" className="w-full">
+                browse matches
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to insights page after completion
+  useEffect(() => {
+    if (isComplete && profile) {
+      navigate('/app/insights');
+    }
+  }, [isComplete, profile, navigate]);
+
+  // Show loading while redirecting
   if (isComplete && profile) {
-    return <AssessmentComplete profile={profile} />;
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-background)' }}
+      >
+        <div className="text-center">
+          <div
+            className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
+          >
+            <Sparkles className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <p className="font-medium" style={{ color: 'var(--color-text)' }}>
+            generating your personality profile...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -635,12 +790,25 @@ function SliderQuestion({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const percentage = ((value - config.min) / (config.max - config.min)) * 100;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div
-        className="relative py-8 px-4 rounded-2xl"
+        className="relative pt-12 pb-6 px-4 rounded-2xl"
         style={{ backgroundColor: 'var(--color-surface)' }}
       >
+        {/* Floating value indicator that moves with slider */}
+        <div
+          className="absolute -top-1 px-4 py-2 rounded-full font-bold text-lg transform -translate-x-1/2 transition-all duration-100"
+          style={{
+            backgroundColor: 'var(--color-accent)',
+            color: 'white',
+            left: `calc(${percentage}% + ${(50 - percentage) * 0.16}px)`,
+          }}
+        >
+          {value}
+        </div>
         <input
           type="range"
           min={config.min}
@@ -649,18 +817,9 @@ function SliderQuestion({
           onChange={(e) => onChange(parseInt(e.target.value))}
           className="w-full h-3 rounded-full appearance-none cursor-pointer slider-thumb"
           style={{
-            background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${value}%, var(--color-border) ${value}%, var(--color-border) 100%)`,
+            background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${percentage}%, var(--color-border) ${percentage}%, var(--color-border) 100%)`,
           }}
         />
-        <div
-          className="absolute left-1/2 -translate-x-1/2 -top-2 px-4 py-2 rounded-full font-bold text-lg"
-          style={{
-            backgroundColor: 'var(--color-accent)',
-            color: 'white',
-          }}
-        >
-          {value}
-        </div>
       </div>
       <div className="flex justify-between text-sm">
         <p
@@ -790,216 +949,6 @@ function ReflectionQuestion({
       >
         {value.length} characters
       </p>
-    </div>
-  );
-}
-
-// ============================================
-// COMPLETION SCREEN
-// ============================================
-
-function AssessmentComplete({ profile }: { profile: CandidateProfile }) {
-  const navigate = useNavigate();
-
-  return (
-    <div
-      className="min-h-screen py-12 px-4"
-      style={{ backgroundColor: 'var(--color-background)' }}
-    >
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div
-            className="w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
-            }}
-          >
-            <Sparkles className="w-10 h-10 text-white" />
-          </div>
-          <h1
-            className="text-3xl font-bold mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
-            Your Personality Profile
-          </h1>
-          <p
-            className="text-lg max-w-2xl mx-auto"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            {profile.personalitySummary}
-          </p>
-        </div>
-
-        {/* OCEAN Scores */}
-        <div
-          className="p-6 rounded-2xl border mb-8"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-        >
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-            <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-            Personality Dimensions (OCEAN)
-          </h2>
-          <div className="space-y-4">
-            {[
-              { key: 'openness', label: 'Openness', desc: 'Curiosity & creativity' },
-              { key: 'conscientiousness', label: 'Conscientiousness', desc: 'Organization & reliability' },
-              { key: 'extraversion', label: 'Extraversion', desc: 'Social energy' },
-              { key: 'agreeableness', label: 'Agreeableness', desc: 'Cooperation & empathy' },
-              { key: 'neuroticism', label: 'Emotional Stability', desc: 'Stress resilience' },
-            ].map(({ key, label, desc }) => (
-              <div key={key} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="font-medium" style={{ color: 'var(--color-text)' }}>{label}</p>
-                    <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{desc}</p>
-                  </div>
-                  <p className="font-bold text-lg" style={{ color: 'var(--color-accent)' }}>
-                    {key === 'neuroticism'
-                      ? 100 - profile.ocean[key as keyof typeof profile.ocean]
-                      : profile.ocean[key as keyof typeof profile.ocean]}
-                  </p>
-                </div>
-                <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-1000"
-                    style={{
-                      width: `${key === 'neuroticism' ? 100 - profile.ocean[key as keyof typeof profile.ocean] : profile.ocean[key as keyof typeof profile.ocean]}%`,
-                      background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Constellations */}
-        {profile.constellations.length > 0 && (
-          <div
-            className="p-6 rounded-2xl border mb-8"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-              <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              Your Trait Constellations
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {profile.constellations.map((constellation, index) => (
-                <div
-                  key={constellation.name}
-                  className="p-4 rounded-xl"
-                  style={{ backgroundColor: 'var(--color-background)' }}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{
-                        backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-border)',
-                      }}
-                    >
-                      {constellation.icon === 'lightbulb' && <Lightbulb className="w-5 h-5 text-white" />}
-                      {constellation.icon === 'layers' && <Target className="w-5 h-5 text-white" />}
-                      {constellation.icon === 'compass' && <Compass className="w-5 h-5 text-white" />}
-                      {!['lightbulb', 'layers', 'compass'].includes(constellation.icon) && (
-                        <Sparkles className="w-5 h-5 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                        {constellation.name}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--color-accent)' }}>
-                        {constellation.strength}% match
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                    {constellation.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Strengths & Growth */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div
-            className="p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-              <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--color-success)' }} />
-              Your Strengths
-            </h3>
-            <ul className="space-y-2">
-              {profile.strengthAreas.map((strength) => (
-                <li key={strength} className="flex items-center gap-2">
-                  <Circle className="w-2 h-2" style={{ color: 'var(--color-success)' }} />
-                  <span style={{ color: 'var(--color-textSecondary)' }}>{strength}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div
-            className="p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-              <Compass className="w-5 h-5" style={{ color: 'var(--color-warning)' }} />
-              Growth Areas
-            </h3>
-            <ul className="space-y-2">
-              {profile.growthAreas.length > 0 ? profile.growthAreas.map((area) => (
-                <li key={area} className="flex items-center gap-2">
-                  <Circle className="w-2 h-2" style={{ color: 'var(--color-warning)' }} />
-                  <span style={{ color: 'var(--color-textSecondary)' }}>{area}</span>
-                </li>
-              )) : (
-                <li style={{ color: 'var(--color-textMuted)' }}>Keep being awesome!</li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        {/* Ideal Environment */}
-        {profile.idealEnvironment.length > 0 && (
-          <div
-            className="p-6 rounded-2xl border mb-8"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <h3 className="font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
-              Your Ideal Work Environment
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.idealEnvironment.map((env) => (
-                <span
-                  key={env}
-                  className="px-4 py-2 rounded-full text-sm"
-                  style={{
-                    backgroundColor: 'var(--color-accent)',
-                    color: 'white',
-                  }}
-                >
-                  {env}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* CTA */}
-        <div className="text-center">
-          <Button
-            size="lg"
-            onClick={() => navigate('/app/dashboard')}
-            rightIcon={<ArrowRight className="w-5 h-5" />}
-          >
-            View Your Matches
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -24,8 +24,8 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
 import { AssessmentFlow } from './components/AssessmentFlow';
-import { Assessment, MatchingAgent } from './components/candidate';
-import { CultureQuiz, CultureAssessment, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
+import { Assessment, MatchingAgent, PersonalityInsights } from './components/candidate';
+import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
 import { SettingsPage } from './components/settings/SettingsPage';
 
 import './styles/globals.css';
@@ -120,6 +120,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="insights"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <PersonalityInsights />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="matches"
                     element={
                       <ProtectedRoute allowedRoles={['candidate']}>
@@ -145,6 +153,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
                         <CultureAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="employer/insights"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <CultureInsights />
                       </ProtectedRoute>
                     }
                   />

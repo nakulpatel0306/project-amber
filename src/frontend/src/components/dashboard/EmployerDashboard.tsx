@@ -12,11 +12,38 @@ import {
   ChevronRight,
   Building2,
   Sparkles,
+  Target,
+  RotateCcw,
+  Lightbulb,
+  Zap,
+  Heart,
+  Anchor,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
 import { supabase } from '../../lib/supabase';
+
+interface CulturePreferences {
+  openness: number;
+  conscientiousness: number;
+  extraversion: number;
+  agreeableness: number;
+  neuroticism: number;
+}
+
+interface EmployerData {
+  company_name: string | null;
+  description: string | null;
+  culture_quiz_completed: boolean;
+  openness_preference: number | null;
+  conscientiousness_preference: number | null;
+  extraversion_preference: number | null;
+  agreeableness_preference: number | null;
+  neuroticism_preference: number | null;
+  culture_values: string[] | null;
+  updated_at: string | null;
+}
 
 interface QuickAction {
   title: string;
@@ -35,6 +62,9 @@ export function EmployerDashboard() {
   const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState(false);
   const [_hasCreatedRole, setHasCreatedRole] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [culturePreferences, setCulturePreferences] = useState<CulturePreferences | null>(null);
+  const [cultureValues, setCultureValues] = useState<string[]>([]);
+  const [lastCultureUpdate, setLastCultureUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -51,12 +81,14 @@ export function EmployerDashboard() {
     const checkCompletionStatus = async () => {
       const { data: employer } = await supabase
         .from('employers')
-        .select('company_name, description, culture_quiz_completed')
+        .select('company_name, description, culture_quiz_completed, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_values, updated_at')
         .eq('user_id', user.id)
         .single();
 
+      const typedEmployer = employer as EmployerData | null;
+
       // Profile is complete if they have company_name or description filled out
-      const profileComplete = !!(employer?.company_name || employer?.description);
+      const profileComplete = !!(typedEmployer?.company_name || typedEmployer?.description);
       setHasCompletedProfile(profileComplete);
 
       // Show modal automatically if profile is not complete AND user hasn't skipped this session
@@ -66,7 +98,23 @@ export function EmployerDashboard() {
       }
 
       // If they've completed the culture quiz
-      setHasCompletedCultureQuiz(!!employer?.culture_quiz_completed);
+      const cultureComplete = !!typedEmployer?.culture_quiz_completed;
+      setHasCompletedCultureQuiz(cultureComplete);
+
+      // Set culture preferences if quiz is complete
+      if (cultureComplete && typedEmployer) {
+        setCulturePreferences({
+          openness: typedEmployer.openness_preference || 0,
+          conscientiousness: typedEmployer.conscientiousness_preference || 0,
+          extraversion: typedEmployer.extraversion_preference || 0,
+          agreeableness: typedEmployer.agreeableness_preference || 0,
+          neuroticism: typedEmployer.neuroticism_preference || 0,
+        });
+        setCultureValues(typedEmployer.culture_values || []);
+        if (typedEmployer.updated_at) {
+          setLastCultureUpdate(new Date(typedEmployer.updated_at));
+        }
+      }
     };
 
     checkCompletionStatus();
@@ -99,10 +147,10 @@ export function EmployerDashboard() {
       onClick: () => setShowSetupModal(true),
     },
     {
-      title: 'define company culture',
-      description: 'take our quiz to help us find the right candidates',
+      title: hasCompletedCultureQuiz ? 'view culture insights' : 'define company culture',
+      description: hasCompletedCultureQuiz ? 'see your ideal candidate profile' : 'take our quiz to help us find the right candidates',
       icon: Sparkles,
-      href: '/app/employer/culture-assessment',
+      href: hasCompletedCultureQuiz ? '/app/employer/insights' : '/app/employer/culture-assessment',
       color: '#F59E0B',
       status: hasCompletedCultureQuiz ? 'complete' : 'not-started',
     },
@@ -240,6 +288,114 @@ export function EmployerDashboard() {
               </Button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Culture Profile Summary (when quiz is complete) */}
+      {hasCompletedCultureQuiz && culturePreferences && (
+        <div
+          className="p-6 rounded-2xl mb-8 border"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2
+              className="text-lg font-semibold flex items-center gap-2"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+              ideal candidate profile
+            </h2>
+            <div className="flex items-center gap-3">
+              {lastCultureUpdate && (
+                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                  last updated {lastCultureUpdate.toLocaleDateString()}
+                </span>
+              )}
+              <Link to="/app/employer/insights">
+                <Button variant="outline" size="sm">
+                  view details
+                </Button>
+              </Link>
+              <Link to="/app/employer/culture-assessment">
+                <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="w-3 h-3" />}>
+                  retake
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Ideal Candidate OCEAN Preferences */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            {[
+              { key: 'openness', label: 'Openness', icon: Lightbulb, color: '#8B5CF6' },
+              { key: 'conscientiousness', label: 'Conscient.', icon: Target, color: '#10B981' },
+              { key: 'extraversion', label: 'Extraversion', icon: Zap, color: '#F59E0B' },
+              { key: 'agreeableness', label: 'Agreeable.', icon: Heart, color: '#EC4899' },
+              { key: 'neuroticism', label: 'Stability', icon: Anchor, color: '#06B6D4' },
+            ].map(({ key, label, icon: Icon, color }) => {
+              const value = key === 'neuroticism'
+                ? 100 - culturePreferences[key as keyof CulturePreferences]
+                : culturePreferences[key as keyof CulturePreferences];
+              return (
+                <div
+                  key={key}
+                  className="p-4 rounded-xl text-center"
+                  style={{ backgroundColor: 'var(--color-background)' }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center"
+                    style={{ backgroundColor: `${color}15` }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color }} />
+                  </div>
+                  <div
+                    className="text-2xl font-bold mb-1"
+                    style={{ color }}
+                  >
+                    {value}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    {label}
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${value}%`,
+                        backgroundColor: color,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Culture Values */}
+          {cultureValues.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
+                your culture values
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {cultureValues.slice(0, 5).map((value, index) => (
+                  <span
+                    key={value}
+                    className="px-3 py-1.5 rounded-full text-sm font-medium capitalize"
+                    style={{
+                      backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
+                      color: index === 0 ? 'white' : 'var(--color-text)',
+                    }}
+                  >
+                    {value}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
