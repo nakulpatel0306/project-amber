@@ -107,15 +107,17 @@ export function EmployerProfileSection() {
     try {
       const { error } = await supabase
         .from('employers')
-        .update({
-          company_name: data.company_name || null,
+        .upsert({
+          user_id: user.id,
+          company_name: data.company_name || 'My Company',
           description: data.description || null,
           company_size: data.company_size || null,
           industry: data.industry || null,
           location: data.location || null,
           company_website: data.company_website || null,
-        })
-        .eq('user_id', user.id);
+        }, {
+          onConflict: 'user_id',
+        });
 
       if (error) throw error;
 

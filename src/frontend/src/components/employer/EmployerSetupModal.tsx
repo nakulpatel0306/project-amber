@@ -75,7 +75,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
     company_website: '',
   });
 
-  // Load existing employer data if any
+  // Load existing employer data and resume from last step
   useEffect(() => {
     if (!user || !isOpen) return;
 
@@ -95,15 +95,67 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
           location: employer.location || '',
           company_website: employer.company_website || '',
         });
+        // Resume from saved step (but not past the last step)
+        if (employer.setup_step && employer.setup_step > 0 && employer.setup_step < STEPS.length) {
+          setCurrentStep(employer.setup_step);
+        }
       }
     };
 
     loadEmployerData();
   }, [user, isOpen]);
 
-  const handleNext = () => {
+  // Save step data to database
+  const saveStepData = async (step: number) => {
+    if (!user) return;
+
+    try {
+      let upsertData: Record<string, unknown> = {
+        user_id: user.id,
+        setup_step: step,
+        company_name: data.company_name || 'My Company',  // Required field
+      };
+
+      // Include relevant data based on completed step
+      if (step >= 1) {
+        // Company info step completed
+        upsertData = {
+          ...upsertData,
+          company_name: data.company_name || 'My Company',
+          description: data.description || null,
+          industry: data.industry || null,
+        };
+      }
+      if (step >= 2) {
+        // Details step completed
+        upsertData = {
+          ...upsertData,
+          company_size: data.company_size || null,
+          location: data.location || null,
+        };
+      }
+      if (step >= 3) {
+        // Links step completed
+        upsertData = {
+          ...upsertData,
+          company_website: data.company_website || null,
+        };
+      }
+
+      await supabase
+        .from('employers')
+        .upsert(upsertData, { onConflict: 'user_id' });
+    } catch (err) {
+      console.error('Error saving step data:', err);
+    }
+  };
+
+  const handleNext = async () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      // Save current step data before moving to next
+      await saveStepData(nextStep);
+      setCurrentStep(nextStep);
     }
   };
 
@@ -131,18 +183,22 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
 
     setIsSaving(true);
     try {
-      // Update employer data
+      // Upsert employer data - creates record if doesn't exist, updates if it does
       const { error: employerError } = await supabase
         .from('employers')
-        .update({
-          company_name: data.company_name || null,
+        .upsert({
+          user_id: user.id,
+          company_name: data.company_name || 'My Company',
           description: data.description || null,
           company_size: data.company_size || null,
           industry: data.industry || null,
           location: data.location || null,
           company_website: data.company_website || null,
-        })
-        .eq('user_id', user.id);
+          setup_step: STEPS.length,  // Mark all steps complete
+          setup_completed_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
 
       if (employerError) throw employerError;
 

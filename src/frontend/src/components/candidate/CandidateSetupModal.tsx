@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   ArrowLeft,
@@ -21,6 +22,7 @@ interface CandidateSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
+  redirectToAssessment?: boolean;
 }
 
 interface CandidateData {
@@ -59,9 +61,10 @@ const STEPS = [
   { id: 'links', title: 'Links', icon: LinkIcon },
 ];
 
-export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSetupModalProps) {
+export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAssessment = true }: CandidateSetupModalProps) {
   const { user, profile, refreshProfile } = useAuth();
   const { success, error: showError } = useToast();
+  const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,7 +82,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
     portfolio_url: '',
   });
 
-  // Load existing candidate data if any
+  // Load existing candidate data and resume from last step
   useEffect(() => {
     if (!user || !isOpen) return;
 
@@ -104,15 +107,71 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
           github_url: candidate.github_url || '',
           portfolio_url: candidate.portfolio_url || '',
         });
+        // Resume from saved step (but not past the last step)
+        if (candidate.setup_step && candidate.setup_step > 0 && candidate.setup_step < STEPS.length) {
+          setCurrentStep(candidate.setup_step);
+        }
       }
     };
 
     loadCandidateData();
   }, [user, isOpen]);
 
-  const handleNext = () => {
+  // Save step data to database
+  const saveStepData = async (step: number) => {
+    if (!user) return;
+
+    try {
+      let upsertData: Record<string, unknown> = {
+        user_id: user.id,
+        setup_step: step,
+      };
+
+      // Include relevant data based on completed step
+      if (step >= 1) {
+        // Basic info step completed
+        upsertData = {
+          ...upsertData,
+          headline: data.headline || null,
+          bio: data.bio || null,
+          location: data.location || null,
+          years_experience: data.years_experience,
+        };
+      }
+      if (step >= 2) {
+        // Preferences step completed
+        upsertData = {
+          ...upsertData,
+          preferred_work_style: data.preferred_work_style || null,
+          preferred_company_size: data.preferred_company_size || null,
+          salary_expectation_min: data.salary_expectation_min,
+          salary_expectation_max: data.salary_expectation_max,
+        };
+      }
+      if (step >= 3) {
+        // Links step completed
+        upsertData = {
+          ...upsertData,
+          linkedin_url: data.linkedin_url || null,
+          github_url: data.github_url || null,
+          portfolio_url: data.portfolio_url || null,
+        };
+      }
+
+      await supabase
+        .from('candidates')
+        .upsert(upsertData, { onConflict: 'user_id' });
+    } catch (err) {
+      console.error('Error saving step data:', err);
+    }
+  };
+
+  const handleNext = async () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      // Save current step data before moving to next
+      await saveStepData(nextStep);
+      setCurrentStep(nextStep);
     }
   };
 
@@ -140,10 +199,11 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
 
     setIsSaving(true);
     try {
-      // Update candidate data
+      // Upsert candidate data - creates record if doesn't exist, updates if it does
       const { error: candidateError } = await supabase
         .from('candidates')
-        .update({
+        .upsert({
+          user_id: user.id,
           headline: data.headline || null,
           bio: data.bio || null,
           location: data.location || null,
@@ -155,8 +215,11 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
           linkedin_url: data.linkedin_url || null,
           github_url: data.github_url || null,
           portfolio_url: data.portfolio_url || null,
-        })
-        .eq('user_id', user.id);
+          setup_step: STEPS.length,  // Mark all steps complete
+          setup_completed_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
 
       if (candidateError) throw candidateError;
 
@@ -169,8 +232,13 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
       // Refresh profile to update the onboarding_completed flag in context
       await refreshProfile();
 
-      success('Profile setup complete!', 'You can update these details anytime in settings.');
+      success('Profile setup complete!', 'Now take the personality assessment to get matched.');
       onComplete();
+
+      // Redirect to assessment page after completing setup
+      if (redirectToAssessment) {
+        navigate('/app/personality');
+      }
     } catch (err) {
       console.error('Setup error:', err);
       showError('Setup failed', 'Please try again.');
@@ -544,7 +612,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
                       className="text-xs mt-0.5"
                       style={{ color: 'var(--color-textMuted)' }}
                     >
-                      Click "Complete Setup" to save your profile. You can always update these details later in settings.
+                      Click "Complete Setup" to save your profile and start the personality assessment. You can update these details anytime in settings.
                     </p>
                   </div>
                 </div>
@@ -579,9 +647,9 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete }: CandidateSe
                 <Button
                   onClick={handleComplete}
                   isLoading={isSaving}
-                  rightIcon={!isSaving ? <CheckCircle2 className="w-4 h-4" /> : undefined}
+                  rightIcon={!isSaving ? <ArrowRight className="w-4 h-4" /> : undefined}
                 >
-                  Complete Setup
+                  Complete & Take Assessment
                 </Button>
               )}
             </div>

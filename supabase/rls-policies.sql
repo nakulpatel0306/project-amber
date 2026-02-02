@@ -276,6 +276,26 @@ CREATE POLICY "Users can update own assessments"
   USING (auth.uid() = user_id);
 
 -- ============================================
+-- ASSESSMENT_RESPONSES POLICIES
+-- ============================================
+ALTER TABLE public.assessment_responses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own assessment responses" ON public.assessment_responses;
+CREATE POLICY "Users can view own assessment responses"
+  ON public.assessment_responses FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own assessment responses" ON public.assessment_responses;
+CREATE POLICY "Users can insert own assessment responses"
+  ON public.assessment_responses FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own assessment responses" ON public.assessment_responses;
+CREATE POLICY "Users can update own assessment responses"
+  ON public.assessment_responses FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ============================================
 -- FEEDBACK POLICIES
 -- ============================================
 DROP POLICY IF EXISTS "Users can view own feedback" ON public.feedback;

@@ -50,6 +50,10 @@ CREATE TABLE IF NOT EXISTS public.candidates (
   assessment_status TEXT CHECK (assessment_status IN ('not_started', 'in_progress', 'completed')) DEFAULT 'not_started',
   assessment_completed_at TIMESTAMPTZ,
 
+  -- Profile setup progress tracking
+  setup_step INTEGER DEFAULT 0,  -- 0=not started, 1=basic, 2=preferences, 3=links, 4=complete
+  setup_completed_at TIMESTAMPTZ,
+
   -- Preferences
   preferred_work_style TEXT CHECK (preferred_work_style IN ('remote', 'hybrid', 'onsite', 'flexible')),
   preferred_company_size TEXT CHECK (preferred_company_size IN ('startup', 'small', 'medium', 'large', 'any')),
@@ -87,6 +91,10 @@ CREATE TABLE IF NOT EXISTS public.employers (
   neuroticism_preference INTEGER,
 
   culture_quiz_completed BOOLEAN DEFAULT FALSE,
+
+  -- Profile setup progress tracking
+  setup_step INTEGER DEFAULT 0,  -- 0=not started, 1=company, 2=details, 3=links, 4=complete
+  setup_completed_at TIMESTAMPTZ,
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -182,19 +190,39 @@ CREATE TABLE IF NOT EXISTS public.coffee_chats (
 );
 
 -- ============================================
--- ASSESSMENTS TABLE (Question Responses)
+-- ASSESSMENTS TABLE (Assessment Sessions)
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.assessments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   assessment_type TEXT CHECK (assessment_type IN ('candidate_personality', 'employer_culture')) NOT NULL,
 
-  responses JSONB NOT NULL,
+  responses JSONB,  -- Final compiled responses (populated on completion)
 
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
 
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- ASSESSMENT_RESPONSES TABLE (Individual Answers)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.assessment_responses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  assessment_id UUID NOT NULL REFERENCES public.assessments(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+
+  question_id TEXT NOT NULL,
+  answer_id TEXT,              -- For multiple choice questions
+  slider_value INTEGER,        -- For slider questions (0-100)
+  ranking_order TEXT[],        -- For ranking questions (array of option IDs)
+  reflection_text TEXT,        -- For open-ended questions
+
+  answered_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Ensure one response per question per assessment
+  UNIQUE(assessment_id, question_id)
 );
 
 -- ============================================
@@ -254,6 +282,8 @@ CREATE INDEX IF NOT EXISTS idx_applications_status ON public.applications(status
 CREATE INDEX IF NOT EXISTS idx_coffee_chats_candidate_id ON public.coffee_chats(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_coffee_chats_employer_id ON public.coffee_chats(employer_id);
 CREATE INDEX IF NOT EXISTS idx_assessments_user_id ON public.assessments(user_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_responses_assessment_id ON public.assessment_responses(assessment_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_responses_user_id ON public.assessment_responses(user_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON public.feedback(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings(user_id);
 

@@ -117,7 +117,8 @@ export function CandidateProfileSection() {
     try {
       const { error } = await supabase
         .from('candidates')
-        .update({
+        .upsert({
+          user_id: user.id,
           headline: data.headline || null,
           bio: data.bio || null,
           location: data.location || null,
@@ -129,8 +130,9 @@ export function CandidateProfileSection() {
           linkedin_url: data.linkedin_url || null,
           github_url: data.github_url || null,
           portfolio_url: data.portfolio_url || null,
-        })
-        .eq('user_id', user.id);
+        }, {
+          onConflict: 'user_id',
+        });
 
       if (error) throw error;
 

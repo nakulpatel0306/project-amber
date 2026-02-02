@@ -33,6 +33,7 @@ interface AssessmentState {
   currentIndex: number;
   responses: Record<string, AssessmentResponse>;
   startedAt: number;
+  assessmentId: string | null;
 }
 
 export function Assessment() {
@@ -43,6 +44,7 @@ export function Assessment() {
     currentIndex: 0,
     responses: {},
     startedAt: Date.now(),
+    assessmentId: null,
   });
 
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -87,6 +89,103 @@ export function Assessment() {
     checkProfileCompletion();
   }, [user]);
 
+  // Initialize or resume assessment session
+  useEffect(() => {
+    if (!user || !hasCompletedProfile || isCheckingProfile) return;
+
+    const initializeAssessment = async () => {
+      try {
+        // Check for existing in-progress assessment
+        const { data: existingAssessment } = await supabase
+          .from('assessments')
+          .select('id, started_at')
+          .eq('user_id', user.id)
+          .eq('assessment_type', 'candidate_personality')
+          .is('completed_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (existingAssessment) {
+          // Resume existing assessment - load saved responses
+          const { data: savedResponses } = await supabase
+            .from('assessment_responses')
+            .select('*')
+            .eq('assessment_id', existingAssessment.id);
+
+          if (savedResponses && savedResponses.length > 0) {
+            // Convert saved responses to the format expected by the component
+            const responses: Record<string, AssessmentResponse> = {};
+            let lastAnsweredIndex = -1;
+
+            savedResponses.forEach((r) => {
+              const response: AssessmentResponse = {
+                questionId: r.question_id,
+                timestamp: new Date(r.answered_at).getTime(),
+              };
+              if (r.answer_id) response.answerId = r.answer_id;
+              if (r.slider_value !== null) response.sliderValue = r.slider_value;
+              if (r.ranking_order) response.rankingOrder = r.ranking_order;
+              if (r.reflection_text) response.reflectionText = r.reflection_text;
+
+              responses[r.question_id] = response;
+
+              // Process in personality engine
+              const question = candidateQuestions.find(q => q.id === r.question_id);
+              if (question) {
+                personalityEngine.processResponse(response, {
+                  type: question.type,
+                  options: question.options,
+                  sliderConfig: question.sliderConfig,
+                });
+                const questionIndex = candidateQuestions.findIndex(q => q.id === r.question_id);
+                if (questionIndex > lastAnsweredIndex) {
+                  lastAnsweredIndex = questionIndex;
+                }
+              }
+            });
+
+            setState(prev => ({
+              ...prev,
+              assessmentId: existingAssessment.id,
+              responses,
+              startedAt: new Date(existingAssessment.started_at).getTime(),
+              currentIndex: Math.min(lastAnsweredIndex + 1, candidateQuestions.length - 1),
+            }));
+          } else {
+            setState(prev => ({
+              ...prev,
+              assessmentId: existingAssessment.id,
+              startedAt: new Date(existingAssessment.started_at).getTime(),
+            }));
+          }
+        } else {
+          // Create new assessment session
+          const { data: newAssessment, error } = await supabase
+            .from('assessments')
+            .insert({
+              user_id: user.id,
+              assessment_type: 'candidate_personality',
+              started_at: new Date().toISOString(),
+            })
+            .select('id')
+            .single();
+
+          if (error) throw error;
+
+          setState(prev => ({
+            ...prev,
+            assessmentId: newAssessment.id,
+          }));
+        }
+      } catch (err) {
+        console.error('Error initializing assessment:', err);
+      }
+    };
+
+    initializeAssessment();
+  }, [user, hasCompletedProfile, isCheckingProfile]);
+
   // Initialize ranking order when question changes
   useEffect(() => {
     if (currentQuestion?.type === 'ranking' && currentQuestion.options) {
@@ -109,7 +208,7 @@ export function Assessment() {
     }
   }, [state.currentIndex, currentQuestion?.id, state.responses]);
 
-  const saveResponse = () => {
+  const saveResponse = async () => {
     const response: AssessmentResponse = {
       questionId: currentQuestion.id,
       timestamp: Date.now(),
@@ -140,11 +239,33 @@ export function Assessment() {
       },
     }));
 
+    // Save response to database incrementally
+    if (state.assessmentId && user) {
+      try {
+        await supabase
+          .from('assessment_responses')
+          .upsert({
+            assessment_id: state.assessmentId,
+            user_id: user.id,
+            question_id: currentQuestion.id,
+            answer_id: response.answerId || null,
+            slider_value: response.sliderValue ?? null,
+            ranking_order: response.rankingOrder || null,
+            reflection_text: response.reflectionText || null,
+            answered_at: new Date().toISOString(),
+          }, {
+            onConflict: 'assessment_id,question_id',
+          });
+      } catch (err) {
+        console.error('Error saving response:', err);
+      }
+    }
+
     return response;
   };
 
-  const handleNext = () => {
-    saveResponse();
+  const handleNext = async () => {
+    await saveResponse();
 
     if (state.currentIndex < candidateQuestions.length - 1) {
       setState(prev => ({ ...prev, currentIndex: prev.currentIndex + 1 }));
@@ -161,7 +282,7 @@ export function Assessment() {
   };
 
   const completeAssessment = async () => {
-    if (!user) return;
+    if (!user || !state.assessmentId) return;
 
     setIsSubmitting(true);
 
@@ -170,16 +291,14 @@ export function Assessment() {
       const generatedProfile = personalityEngine.generateCandidateProfile(user.id);
       setProfile(generatedProfile);
 
-      // Save to database
+      // Update assessment record with final responses and completion time
       const { error: assessmentError } = await supabase
         .from('assessments')
-        .insert({
-          user_id: user.id,
-          assessment_type: 'candidate_personality',
+        .update({
           responses: state.responses,
-          started_at: new Date(state.startedAt).toISOString(),
           completed_at: new Date().toISOString(),
-        });
+        })
+        .eq('id', state.assessmentId);
 
       if (assessmentError) throw assessmentError;
 
@@ -294,6 +413,7 @@ export function Assessment() {
           isOpen={showSetupModal}
           onClose={() => setShowSetupModal(false)}
           onComplete={handleSetupComplete}
+          redirectToAssessment={false}
         />
       </div>
     );
