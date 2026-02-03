@@ -290,8 +290,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error checking email:', error);
       // If we can't reach the backend, allow the auth flow to continue
-      // Supabase will handle duplicate email detection
-      return { exists: false, message: 'Unable to verify email' };
+      // Supabase will handle the actual authentication
+      return { exists: true, message: 'Unable to verify email' };
     }
   }, []);
 

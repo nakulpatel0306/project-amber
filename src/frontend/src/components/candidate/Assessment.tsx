@@ -247,6 +247,14 @@ export function Assessment() {
     }
   }, [state.currentIndex, currentQuestion?.id, state.responses]);
 
+  // Redirect to insights page after completion
+  // NOTE: This hook must be before any conditional returns to maintain consistent hook order
+  useEffect(() => {
+    if (isComplete && profile) {
+      navigate('/app/insights');
+    }
+  }, [isComplete, profile, navigate]);
+
   const saveResponse = async () => {
     const response: AssessmentResponse = {
       questionId: currentQuestion.id,
@@ -549,13 +557,6 @@ export function Assessment() {
       </div>
     );
   }
-
-  // Redirect to insights page after completion
-  useEffect(() => {
-    if (isComplete && profile) {
-      navigate('/app/insights');
-    }
-  }, [isComplete, profile, navigate]);
 
   // Show loading while redirecting
   if (isComplete && profile) {
