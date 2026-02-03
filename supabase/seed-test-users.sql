@@ -1,125 +1,59 @@
--- Seed Test Users for Amber Platform
--- Run this in Supabase SQL Editor to create 10 test profiles
+-- Seed Test User Data for Amber Platform
+-- Run this in Supabase SQL Editor to populate test profile data
 -- 5 Job Seekers (candidates) + 5 Employers
+--
+-- PREREQUISITE: The 10 test auth users must already exist (created via signup API).
+-- All users have password: TestPassword123!
+--
+-- Test User Emails & UUIDs:
+-- Candidates:
+--   alex.chen@test.com         -> 02286b62-311d-4e7a-bdd6-b4135c6c4e95
+--   sarah.johnson@test.com     -> 0b80df4d-3d8f-4e3f-b69d-1e8126efb454
+--   marcus.williams@test.com   -> 2b3b0406-4a2b-49b5-97dd-2e55a93610e3
+--   emily.rodriguez@test.com   -> 8388a5ba-132a-4dbd-995c-08a76183ffb3
+--   david.kim@test.com         -> c88178b4-ae93-46ad-9cfb-bfa3873f9a02
+-- Employers:
+--   hr@techstartup.test        -> faec878c-bc59-4eda-ae03-1af945b55cd6
+--   talent@innovatecorp.test   -> c5c8b111-e7f0-42c4-b483-571e974ad6fc
+--   hiring@creativelabs.test   -> bcaea40c-c371-4fdf-a1d9-4603771b8fa6
+--   careers@financeplus.test   -> b92fe536-3d7a-41de-89a6-7804e953e6a5
+--   people@healthtech.test     -> 82430c1e-5749-40af-8ee1-0da25cf85cc8
 
 -- ============================================
--- CREATE TEST USERS IN AUTH
--- ============================================
--- Note: These users will have password 'TestPassword123!'
--- The password hash below is for 'TestPassword123!'
-
-DO $$
-DECLARE
-  test_password_hash TEXT := '$2a$10$PznXkCAOKkgzCRSlqKPKCeY0Mj.5vaGH9.T0YkVZQqUZQqUZqJZqK';
-
-  -- Job Seeker UUIDs
-  js1_id UUID := 'a1111111-1111-1111-1111-111111111111';
-  js2_id UUID := 'a2222222-2222-2222-2222-222222222222';
-  js3_id UUID := 'a3333333-3333-3333-3333-333333333333';
-  js4_id UUID := 'a4444444-4444-4444-4444-444444444444';
-  js5_id UUID := 'a5555555-5555-5555-5555-555555555555';
-
-  -- Employer UUIDs
-  emp1_id UUID := 'b1111111-1111-1111-1111-111111111111';
-  emp2_id UUID := 'b2222222-2222-2222-2222-222222222222';
-  emp3_id UUID := 'b3333333-3333-3333-3333-333333333333';
-  emp4_id UUID := 'b4444444-4444-4444-4444-444444444444';
-  emp5_id UUID := 'b5555555-5555-5555-5555-555555555555';
-
-BEGIN
-  -- ============================================
-  -- INSERT AUTH USERS (Job Seekers)
-  -- ============================================
-
-  INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_user_meta_data, aud, role)
-  VALUES
-    (js1_id, '00000000-0000-0000-0000-000000000000', 'alex.chen@test.com', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Alex Chen", "role": "candidate"}'::jsonb, 'authenticated', 'authenticated'),
-    (js2_id, '00000000-0000-0000-0000-000000000000', 'sarah.johnson@test.com', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Sarah Johnson", "role": "candidate"}'::jsonb, 'authenticated', 'authenticated'),
-    (js3_id, '00000000-0000-0000-0000-000000000000', 'marcus.williams@test.com', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Marcus Williams", "role": "candidate"}'::jsonb, 'authenticated', 'authenticated'),
-    (js4_id, '00000000-0000-0000-0000-000000000000', 'emily.rodriguez@test.com', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Emily Rodriguez", "role": "candidate"}'::jsonb, 'authenticated', 'authenticated'),
-    (js5_id, '00000000-0000-0000-0000-000000000000', 'david.kim@test.com', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "David Kim", "role": "candidate"}'::jsonb, 'authenticated', 'authenticated')
-  ON CONFLICT (id) DO NOTHING;
-
-  -- ============================================
-  -- INSERT AUTH USERS (Employers)
-  -- ============================================
-
-  INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_user_meta_data, aud, role)
-  VALUES
-    (emp1_id, '00000000-0000-0000-0000-000000000000', 'hr@techstartup.test', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Jessica Martinez", "role": "employer"}'::jsonb, 'authenticated', 'authenticated'),
-    (emp2_id, '00000000-0000-0000-0000-000000000000', 'talent@innovatecorp.test', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Michael Thompson", "role": "employer"}'::jsonb, 'authenticated', 'authenticated'),
-    (emp3_id, '00000000-0000-0000-0000-000000000000', 'hiring@creativelabs.test', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Amanda Foster", "role": "employer"}'::jsonb, 'authenticated', 'authenticated'),
-    (emp4_id, '00000000-0000-0000-0000-000000000000', 'careers@financeplus.test', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Robert Chang", "role": "employer"}'::jsonb, 'authenticated', 'authenticated'),
-    (emp5_id, '00000000-0000-0000-0000-000000000000', 'people@healthtech.test', test_password_hash, NOW(), NOW(), NOW(),
-     '{"full_name": "Lisa Patel", "role": "employer"}'::jsonb, 'authenticated', 'authenticated')
-  ON CONFLICT (id) DO NOTHING;
-
-END $$;
-
--- ============================================
--- UPDATE PROFILES (trigger should have created them)
+-- UPDATE PROFILES (trigger should have created them on signup)
 -- ============================================
 
 -- Job Seeker Profiles
-UPDATE public.profiles SET
-  role = 'candidate',
-  onboarding_completed = true
-WHERE id = 'a1111111-1111-1111-1111-111111111111';
+UPDATE public.profiles SET role = 'candidate', onboarding_completed = true
+WHERE id = '02286b62-311d-4e7a-bdd6-b4135c6c4e95';
 
-UPDATE public.profiles SET
-  role = 'candidate',
-  onboarding_completed = true
-WHERE id = 'a2222222-2222-2222-2222-222222222222';
+UPDATE public.profiles SET role = 'candidate', onboarding_completed = true
+WHERE id = '0b80df4d-3d8f-4e3f-b69d-1e8126efb454';
 
-UPDATE public.profiles SET
-  role = 'candidate',
-  onboarding_completed = true
-WHERE id = 'a3333333-3333-3333-3333-333333333333';
+UPDATE public.profiles SET role = 'candidate', onboarding_completed = true
+WHERE id = '2b3b0406-4a2b-49b5-97dd-2e55a93610e3';
 
-UPDATE public.profiles SET
-  role = 'candidate',
-  onboarding_completed = true
-WHERE id = 'a4444444-4444-4444-4444-444444444444';
+UPDATE public.profiles SET role = 'candidate', onboarding_completed = true
+WHERE id = '8388a5ba-132a-4dbd-995c-08a76183ffb3';
 
-UPDATE public.profiles SET
-  role = 'candidate',
-  onboarding_completed = true
-WHERE id = 'a5555555-5555-5555-5555-555555555555';
+UPDATE public.profiles SET role = 'candidate', onboarding_completed = true
+WHERE id = 'c88178b4-ae93-46ad-9cfb-bfa3873f9a02';
 
 -- Employer Profiles
-UPDATE public.profiles SET
-  role = 'employer',
-  onboarding_completed = true
-WHERE id = 'b1111111-1111-1111-1111-111111111111';
+UPDATE public.profiles SET role = 'employer', onboarding_completed = true
+WHERE id = 'faec878c-bc59-4eda-ae03-1af945b55cd6';
 
-UPDATE public.profiles SET
-  role = 'employer',
-  onboarding_completed = true
-WHERE id = 'b2222222-2222-2222-2222-222222222222';
+UPDATE public.profiles SET role = 'employer', onboarding_completed = true
+WHERE id = 'c5c8b111-e7f0-42c4-b483-571e974ad6fc';
 
-UPDATE public.profiles SET
-  role = 'employer',
-  onboarding_completed = true
-WHERE id = 'b3333333-3333-3333-3333-333333333333';
+UPDATE public.profiles SET role = 'employer', onboarding_completed = true
+WHERE id = 'bcaea40c-c371-4fdf-a1d9-4603771b8fa6';
 
-UPDATE public.profiles SET
-  role = 'employer',
-  onboarding_completed = true
-WHERE id = 'b4444444-4444-4444-4444-444444444444';
+UPDATE public.profiles SET role = 'employer', onboarding_completed = true
+WHERE id = 'b92fe536-3d7a-41de-89a6-7804e953e6a5';
 
-UPDATE public.profiles SET
-  role = 'employer',
-  onboarding_completed = true
-WHERE id = 'b5555555-5555-5555-5555-555555555555';
+UPDATE public.profiles SET role = 'employer', onboarding_completed = true
+WHERE id = '82430c1e-5749-40af-8ee1-0da25cf85cc8';
 
 -- ============================================
 -- CREATE/UPDATE CANDIDATES WITH PERSONALITY DATA
@@ -131,7 +65,7 @@ INSERT INTO public.candidates (user_id, headline, bio, location, years_experienc
   top_traits, assessment_status, assessment_completed_at, preferred_work_style, preferred_company_size,
   salary_expectation_min, salary_expectation_max, linkedin_url, github_url, setup_step, setup_completed_at)
 VALUES (
-  'a1111111-1111-1111-1111-111111111111',
+  '02286b62-311d-4e7a-bdd6-b4135c6c4e95',
   'Senior Full Stack Developer | React & Node.js Expert',
   'Passionate about building innovative web applications. 6+ years of experience in startups and scale-ups. Love working on greenfield projects and exploring new technologies.',
   'San Francisco, CA',
@@ -147,24 +81,15 @@ VALUES (
   'https://github.com/alexchen',
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  headline = EXCLUDED.headline,
-  bio = EXCLUDED.bio,
-  location = EXCLUDED.location,
+  headline = EXCLUDED.headline, bio = EXCLUDED.bio, location = EXCLUDED.location,
   years_experience = EXCLUDED.years_experience,
-  openness_score = EXCLUDED.openness_score,
-  conscientiousness_score = EXCLUDED.conscientiousness_score,
-  extraversion_score = EXCLUDED.extraversion_score,
-  agreeableness_score = EXCLUDED.agreeableness_score,
-  neuroticism_score = EXCLUDED.neuroticism_score,
-  top_traits = EXCLUDED.top_traits,
-  assessment_status = EXCLUDED.assessment_status,
-  assessment_completed_at = EXCLUDED.assessment_completed_at,
-  preferred_work_style = EXCLUDED.preferred_work_style,
-  preferred_company_size = EXCLUDED.preferred_company_size,
-  salary_expectation_min = EXCLUDED.salary_expectation_min,
-  salary_expectation_max = EXCLUDED.salary_expectation_max,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  openness_score = EXCLUDED.openness_score, conscientiousness_score = EXCLUDED.conscientiousness_score,
+  extraversion_score = EXCLUDED.extraversion_score, agreeableness_score = EXCLUDED.agreeableness_score,
+  neuroticism_score = EXCLUDED.neuroticism_score, top_traits = EXCLUDED.top_traits,
+  assessment_status = EXCLUDED.assessment_status, assessment_completed_at = EXCLUDED.assessment_completed_at,
+  preferred_work_style = EXCLUDED.preferred_work_style, preferred_company_size = EXCLUDED.preferred_company_size,
+  salary_expectation_min = EXCLUDED.salary_expectation_min, salary_expectation_max = EXCLUDED.salary_expectation_max,
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Candidate 2: Sarah Johnson - The Architect (High conscientiousness, structured)
 INSERT INTO public.candidates (user_id, headline, bio, location, years_experience,
@@ -172,7 +97,7 @@ INSERT INTO public.candidates (user_id, headline, bio, location, years_experienc
   top_traits, assessment_status, assessment_completed_at, preferred_work_style, preferred_company_size,
   salary_expectation_min, salary_expectation_max, linkedin_url, setup_step, setup_completed_at)
 VALUES (
-  'a2222222-2222-2222-2222-222222222222',
+  '0b80df4d-3d8f-4e3f-b69d-1e8126efb454',
   'Product Manager | B2B SaaS Specialist',
   'Detail-oriented PM with 8 years of experience in enterprise software. Expert in roadmap planning, stakeholder management, and data-driven decision making. Thrive in structured environments.',
   'New York, NY',
@@ -187,24 +112,15 @@ VALUES (
   'https://linkedin.com/in/sarahjohnson',
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  headline = EXCLUDED.headline,
-  bio = EXCLUDED.bio,
-  location = EXCLUDED.location,
+  headline = EXCLUDED.headline, bio = EXCLUDED.bio, location = EXCLUDED.location,
   years_experience = EXCLUDED.years_experience,
-  openness_score = EXCLUDED.openness_score,
-  conscientiousness_score = EXCLUDED.conscientiousness_score,
-  extraversion_score = EXCLUDED.extraversion_score,
-  agreeableness_score = EXCLUDED.agreeableness_score,
-  neuroticism_score = EXCLUDED.neuroticism_score,
-  top_traits = EXCLUDED.top_traits,
-  assessment_status = EXCLUDED.assessment_status,
-  assessment_completed_at = EXCLUDED.assessment_completed_at,
-  preferred_work_style = EXCLUDED.preferred_work_style,
-  preferred_company_size = EXCLUDED.preferred_company_size,
-  salary_expectation_min = EXCLUDED.salary_expectation_min,
-  salary_expectation_max = EXCLUDED.salary_expectation_max,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  openness_score = EXCLUDED.openness_score, conscientiousness_score = EXCLUDED.conscientiousness_score,
+  extraversion_score = EXCLUDED.extraversion_score, agreeableness_score = EXCLUDED.agreeableness_score,
+  neuroticism_score = EXCLUDED.neuroticism_score, top_traits = EXCLUDED.top_traits,
+  assessment_status = EXCLUDED.assessment_status, assessment_completed_at = EXCLUDED.assessment_completed_at,
+  preferred_work_style = EXCLUDED.preferred_work_style, preferred_company_size = EXCLUDED.preferred_company_size,
+  salary_expectation_min = EXCLUDED.salary_expectation_min, salary_expectation_max = EXCLUDED.salary_expectation_max,
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Candidate 3: Marcus Williams - The Catalyst (High extraversion, collaborative)
 INSERT INTO public.candidates (user_id, headline, bio, location, years_experience,
@@ -212,7 +128,7 @@ INSERT INTO public.candidates (user_id, headline, bio, location, years_experienc
   top_traits, assessment_status, assessment_completed_at, preferred_work_style, preferred_company_size,
   salary_expectation_min, salary_expectation_max, linkedin_url, setup_step, setup_completed_at)
 VALUES (
-  'a3333333-3333-3333-3333-333333333333',
+  '2b3b0406-4a2b-49b5-97dd-2e55a93610e3',
   'Sales Engineer | Technical Solutions Expert',
   'High-energy professional who loves connecting with customers and solving complex technical challenges. 5 years bridging the gap between sales and engineering teams. Team player who thrives on collaboration.',
   'Austin, TX',
@@ -227,24 +143,15 @@ VALUES (
   'https://linkedin.com/in/marcuswilliams',
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  headline = EXCLUDED.headline,
-  bio = EXCLUDED.bio,
-  location = EXCLUDED.location,
+  headline = EXCLUDED.headline, bio = EXCLUDED.bio, location = EXCLUDED.location,
   years_experience = EXCLUDED.years_experience,
-  openness_score = EXCLUDED.openness_score,
-  conscientiousness_score = EXCLUDED.conscientiousness_score,
-  extraversion_score = EXCLUDED.extraversion_score,
-  agreeableness_score = EXCLUDED.agreeableness_score,
-  neuroticism_score = EXCLUDED.neuroticism_score,
-  top_traits = EXCLUDED.top_traits,
-  assessment_status = EXCLUDED.assessment_status,
-  assessment_completed_at = EXCLUDED.assessment_completed_at,
-  preferred_work_style = EXCLUDED.preferred_work_style,
-  preferred_company_size = EXCLUDED.preferred_company_size,
-  salary_expectation_min = EXCLUDED.salary_expectation_min,
-  salary_expectation_max = EXCLUDED.salary_expectation_max,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  openness_score = EXCLUDED.openness_score, conscientiousness_score = EXCLUDED.conscientiousness_score,
+  extraversion_score = EXCLUDED.extraversion_score, agreeableness_score = EXCLUDED.agreeableness_score,
+  neuroticism_score = EXCLUDED.neuroticism_score, top_traits = EXCLUDED.top_traits,
+  assessment_status = EXCLUDED.assessment_status, assessment_completed_at = EXCLUDED.assessment_completed_at,
+  preferred_work_style = EXCLUDED.preferred_work_style, preferred_company_size = EXCLUDED.preferred_company_size,
+  salary_expectation_min = EXCLUDED.salary_expectation_min, salary_expectation_max = EXCLUDED.salary_expectation_max,
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Candidate 4: Emily Rodriguez - The Craftsperson (Balanced, detail-focused)
 INSERT INTO public.candidates (user_id, headline, bio, location, years_experience,
@@ -252,7 +159,7 @@ INSERT INTO public.candidates (user_id, headline, bio, location, years_experienc
   top_traits, assessment_status, assessment_completed_at, preferred_work_style, preferred_company_size,
   salary_expectation_min, salary_expectation_max, linkedin_url, portfolio_url, setup_step, setup_completed_at)
 VALUES (
-  'a4444444-4444-4444-4444-444444444444',
+  '8388a5ba-132a-4dbd-995c-08a76183ffb3',
   'UX/UI Designer | Design Systems Expert',
   'Meticulous designer with 7 years crafting beautiful, accessible interfaces. Specialist in design systems and component libraries. I believe great design is in the details.',
   'Seattle, WA',
@@ -268,24 +175,15 @@ VALUES (
   'https://emilydesigns.com',
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  headline = EXCLUDED.headline,
-  bio = EXCLUDED.bio,
-  location = EXCLUDED.location,
+  headline = EXCLUDED.headline, bio = EXCLUDED.bio, location = EXCLUDED.location,
   years_experience = EXCLUDED.years_experience,
-  openness_score = EXCLUDED.openness_score,
-  conscientiousness_score = EXCLUDED.conscientiousness_score,
-  extraversion_score = EXCLUDED.extraversion_score,
-  agreeableness_score = EXCLUDED.agreeableness_score,
-  neuroticism_score = EXCLUDED.neuroticism_score,
-  top_traits = EXCLUDED.top_traits,
-  assessment_status = EXCLUDED.assessment_status,
-  assessment_completed_at = EXCLUDED.assessment_completed_at,
-  preferred_work_style = EXCLUDED.preferred_work_style,
-  preferred_company_size = EXCLUDED.preferred_company_size,
-  salary_expectation_min = EXCLUDED.salary_expectation_min,
-  salary_expectation_max = EXCLUDED.salary_expectation_max,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  openness_score = EXCLUDED.openness_score, conscientiousness_score = EXCLUDED.conscientiousness_score,
+  extraversion_score = EXCLUDED.extraversion_score, agreeableness_score = EXCLUDED.agreeableness_score,
+  neuroticism_score = EXCLUDED.neuroticism_score, top_traits = EXCLUDED.top_traits,
+  assessment_status = EXCLUDED.assessment_status, assessment_completed_at = EXCLUDED.assessment_completed_at,
+  preferred_work_style = EXCLUDED.preferred_work_style, preferred_company_size = EXCLUDED.preferred_company_size,
+  salary_expectation_min = EXCLUDED.salary_expectation_min, salary_expectation_max = EXCLUDED.salary_expectation_max,
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Candidate 5: David Kim - The Anchor (High stability, dependable)
 INSERT INTO public.candidates (user_id, headline, bio, location, years_experience,
@@ -293,7 +191,7 @@ INSERT INTO public.candidates (user_id, headline, bio, location, years_experienc
   top_traits, assessment_status, assessment_completed_at, preferred_work_style, preferred_company_size,
   salary_expectation_min, salary_expectation_max, linkedin_url, setup_step, setup_completed_at)
 VALUES (
-  'a5555555-5555-5555-5555-555555555555',
+  'c88178b4-ae93-46ad-9cfb-bfa3873f9a02',
   'DevOps Engineer | Cloud Infrastructure Specialist',
   'Reliable and methodical engineer with 10 years keeping systems running smoothly. AWS and Kubernetes certified. I value stability, clear processes, and continuous improvement.',
   'Chicago, IL',
@@ -308,24 +206,15 @@ VALUES (
   'https://linkedin.com/in/davidkim',
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  headline = EXCLUDED.headline,
-  bio = EXCLUDED.bio,
-  location = EXCLUDED.location,
+  headline = EXCLUDED.headline, bio = EXCLUDED.bio, location = EXCLUDED.location,
   years_experience = EXCLUDED.years_experience,
-  openness_score = EXCLUDED.openness_score,
-  conscientiousness_score = EXCLUDED.conscientiousness_score,
-  extraversion_score = EXCLUDED.extraversion_score,
-  agreeableness_score = EXCLUDED.agreeableness_score,
-  neuroticism_score = EXCLUDED.neuroticism_score,
-  top_traits = EXCLUDED.top_traits,
-  assessment_status = EXCLUDED.assessment_status,
-  assessment_completed_at = EXCLUDED.assessment_completed_at,
-  preferred_work_style = EXCLUDED.preferred_work_style,
-  preferred_company_size = EXCLUDED.preferred_company_size,
-  salary_expectation_min = EXCLUDED.salary_expectation_min,
-  salary_expectation_max = EXCLUDED.salary_expectation_max,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  openness_score = EXCLUDED.openness_score, conscientiousness_score = EXCLUDED.conscientiousness_score,
+  extraversion_score = EXCLUDED.extraversion_score, agreeableness_score = EXCLUDED.agreeableness_score,
+  neuroticism_score = EXCLUDED.neuroticism_score, top_traits = EXCLUDED.top_traits,
+  assessment_status = EXCLUDED.assessment_status, assessment_completed_at = EXCLUDED.assessment_completed_at,
+  preferred_work_style = EXCLUDED.preferred_work_style, preferred_company_size = EXCLUDED.preferred_company_size,
+  salary_expectation_min = EXCLUDED.salary_expectation_min, salary_expectation_max = EXCLUDED.salary_expectation_max,
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- ============================================
 -- CREATE/UPDATE EMPLOYERS WITH CULTURE DATA
@@ -336,7 +225,7 @@ INSERT INTO public.employers (user_id, company_name, company_website, company_si
   culture_values, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference,
   culture_quiz_completed, setup_step, setup_completed_at)
 VALUES (
-  'b1111111-1111-1111-1111-111111111111',
+  'faec878c-bc59-4eda-ae03-1af945b55cd6',
   'TechStartup Inc',
   'https://techstartup.test',
   '1-10',
@@ -348,28 +237,22 @@ VALUES (
   true,
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  company_name = EXCLUDED.company_name,
-  company_website = EXCLUDED.company_website,
-  company_size = EXCLUDED.company_size,
-  industry = EXCLUDED.industry,
-  description = EXCLUDED.description,
-  location = EXCLUDED.location,
+  company_name = EXCLUDED.company_name, company_website = EXCLUDED.company_website,
+  company_size = EXCLUDED.company_size, industry = EXCLUDED.industry,
+  description = EXCLUDED.description, location = EXCLUDED.location,
   culture_values = EXCLUDED.culture_values,
-  openness_preference = EXCLUDED.openness_preference,
-  conscientiousness_preference = EXCLUDED.conscientiousness_preference,
-  extraversion_preference = EXCLUDED.extraversion_preference,
-  agreeableness_preference = EXCLUDED.agreeableness_preference,
+  openness_preference = EXCLUDED.openness_preference, conscientiousness_preference = EXCLUDED.conscientiousness_preference,
+  extraversion_preference = EXCLUDED.extraversion_preference, agreeableness_preference = EXCLUDED.agreeableness_preference,
   neuroticism_preference = EXCLUDED.neuroticism_preference,
   culture_quiz_completed = EXCLUDED.culture_quiz_completed,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Employer 2: InnovateCorp - Balanced mid-size company
 INSERT INTO public.employers (user_id, company_name, company_website, company_size, industry, description, location,
   culture_values, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference,
   culture_quiz_completed, setup_step, setup_completed_at)
 VALUES (
-  'b2222222-2222-2222-2222-222222222222',
+  'c5c8b111-e7f0-42c4-b483-571e974ad6fc',
   'InnovateCorp',
   'https://innovatecorp.test',
   '51-200',
@@ -381,28 +264,22 @@ VALUES (
   true,
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  company_name = EXCLUDED.company_name,
-  company_website = EXCLUDED.company_website,
-  company_size = EXCLUDED.company_size,
-  industry = EXCLUDED.industry,
-  description = EXCLUDED.description,
-  location = EXCLUDED.location,
+  company_name = EXCLUDED.company_name, company_website = EXCLUDED.company_website,
+  company_size = EXCLUDED.company_size, industry = EXCLUDED.industry,
+  description = EXCLUDED.description, location = EXCLUDED.location,
   culture_values = EXCLUDED.culture_values,
-  openness_preference = EXCLUDED.openness_preference,
-  conscientiousness_preference = EXCLUDED.conscientiousness_preference,
-  extraversion_preference = EXCLUDED.extraversion_preference,
-  agreeableness_preference = EXCLUDED.agreeableness_preference,
+  openness_preference = EXCLUDED.openness_preference, conscientiousness_preference = EXCLUDED.conscientiousness_preference,
+  extraversion_preference = EXCLUDED.extraversion_preference, agreeableness_preference = EXCLUDED.agreeableness_preference,
   neuroticism_preference = EXCLUDED.neuroticism_preference,
   culture_quiz_completed = EXCLUDED.culture_quiz_completed,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Employer 3: Creative Labs - Design-focused agency
 INSERT INTO public.employers (user_id, company_name, company_website, company_size, industry, description, location,
   culture_values, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference,
   culture_quiz_completed, setup_step, setup_completed_at)
 VALUES (
-  'b3333333-3333-3333-3333-333333333333',
+  'bcaea40c-c371-4fdf-a1d9-4603771b8fa6',
   'Creative Labs',
   'https://creativelabs.test',
   '11-50',
@@ -414,28 +291,22 @@ VALUES (
   true,
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  company_name = EXCLUDED.company_name,
-  company_website = EXCLUDED.company_website,
-  company_size = EXCLUDED.company_size,
-  industry = EXCLUDED.industry,
-  description = EXCLUDED.description,
-  location = EXCLUDED.location,
+  company_name = EXCLUDED.company_name, company_website = EXCLUDED.company_website,
+  company_size = EXCLUDED.company_size, industry = EXCLUDED.industry,
+  description = EXCLUDED.description, location = EXCLUDED.location,
   culture_values = EXCLUDED.culture_values,
-  openness_preference = EXCLUDED.openness_preference,
-  conscientiousness_preference = EXCLUDED.conscientiousness_preference,
-  extraversion_preference = EXCLUDED.extraversion_preference,
-  agreeableness_preference = EXCLUDED.agreeableness_preference,
+  openness_preference = EXCLUDED.openness_preference, conscientiousness_preference = EXCLUDED.conscientiousness_preference,
+  extraversion_preference = EXCLUDED.extraversion_preference, agreeableness_preference = EXCLUDED.agreeableness_preference,
   neuroticism_preference = EXCLUDED.neuroticism_preference,
   culture_quiz_completed = EXCLUDED.culture_quiz_completed,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Employer 4: FinancePlus - Traditional finance company
 INSERT INTO public.employers (user_id, company_name, company_website, company_size, industry, description, location,
   culture_values, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference,
   culture_quiz_completed, setup_step, setup_completed_at)
 VALUES (
-  'b4444444-4444-4444-4444-444444444444',
+  'b92fe536-3d7a-41de-89a6-7804e953e6a5',
   'FinancePlus',
   'https://financeplus.test',
   '500+',
@@ -447,28 +318,22 @@ VALUES (
   true,
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  company_name = EXCLUDED.company_name,
-  company_website = EXCLUDED.company_website,
-  company_size = EXCLUDED.company_size,
-  industry = EXCLUDED.industry,
-  description = EXCLUDED.description,
-  location = EXCLUDED.location,
+  company_name = EXCLUDED.company_name, company_website = EXCLUDED.company_website,
+  company_size = EXCLUDED.company_size, industry = EXCLUDED.industry,
+  description = EXCLUDED.description, location = EXCLUDED.location,
   culture_values = EXCLUDED.culture_values,
-  openness_preference = EXCLUDED.openness_preference,
-  conscientiousness_preference = EXCLUDED.conscientiousness_preference,
-  extraversion_preference = EXCLUDED.extraversion_preference,
-  agreeableness_preference = EXCLUDED.agreeableness_preference,
+  openness_preference = EXCLUDED.openness_preference, conscientiousness_preference = EXCLUDED.conscientiousness_preference,
+  extraversion_preference = EXCLUDED.extraversion_preference, agreeableness_preference = EXCLUDED.agreeableness_preference,
   neuroticism_preference = EXCLUDED.neuroticism_preference,
   culture_quiz_completed = EXCLUDED.culture_quiz_completed,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- Employer 5: HealthTech Solutions - Mission-driven healthcare
 INSERT INTO public.employers (user_id, company_name, company_website, company_size, industry, description, location,
   culture_values, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference,
   culture_quiz_completed, setup_step, setup_completed_at)
 VALUES (
-  'b5555555-5555-5555-5555-555555555555',
+  '82430c1e-5749-40af-8ee1-0da25cf85cc8',
   'HealthTech Solutions',
   'https://healthtech.test',
   '201-500',
@@ -480,21 +345,15 @@ VALUES (
   true,
   4, NOW()
 ) ON CONFLICT (user_id) DO UPDATE SET
-  company_name = EXCLUDED.company_name,
-  company_website = EXCLUDED.company_website,
-  company_size = EXCLUDED.company_size,
-  industry = EXCLUDED.industry,
-  description = EXCLUDED.description,
-  location = EXCLUDED.location,
+  company_name = EXCLUDED.company_name, company_website = EXCLUDED.company_website,
+  company_size = EXCLUDED.company_size, industry = EXCLUDED.industry,
+  description = EXCLUDED.description, location = EXCLUDED.location,
   culture_values = EXCLUDED.culture_values,
-  openness_preference = EXCLUDED.openness_preference,
-  conscientiousness_preference = EXCLUDED.conscientiousness_preference,
-  extraversion_preference = EXCLUDED.extraversion_preference,
-  agreeableness_preference = EXCLUDED.agreeableness_preference,
+  openness_preference = EXCLUDED.openness_preference, conscientiousness_preference = EXCLUDED.conscientiousness_preference,
+  extraversion_preference = EXCLUDED.extraversion_preference, agreeableness_preference = EXCLUDED.agreeableness_preference,
   neuroticism_preference = EXCLUDED.neuroticism_preference,
   culture_quiz_completed = EXCLUDED.culture_quiz_completed,
-  setup_step = EXCLUDED.setup_step,
-  setup_completed_at = EXCLUDED.setup_completed_at;
+  setup_step = EXCLUDED.setup_step, setup_completed_at = EXCLUDED.setup_completed_at;
 
 -- ============================================
 -- VERIFY CREATED DATA
