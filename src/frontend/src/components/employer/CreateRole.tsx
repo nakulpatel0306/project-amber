@@ -10,17 +10,23 @@ import {
   Clock,
   Users,
   Sparkles,
+  Briefcase,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
+import { JOB_SECTORS } from '../../utils/constants';
 
 type CreateRoleStep = 'basics' | 'details' | 'culture' | 'review' | 'saving' | 'complete';
 
 interface RoleFormData {
   title: string;
-  department: string;
+  sector: string;
   location: string;
   locationType: 'remote' | 'hybrid' | 'onsite';
-  employmentType: 'full-time' | 'part-time' | 'contract';
+  employmentType: 'full_time' | 'part_time' | 'contract';
   salaryMin: string;
   salaryMax: string;
   description: string;
@@ -45,15 +51,30 @@ const traitOptions = [
   { value: 'structured', label: 'prefers structure' },
 ];
 
+function parseSalary(value: string): number | null {
+  if (!value) return null;
+  const cleaned = value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return null;
+  // If value looks like "80k" or "80", treat as thousands
+  if (value.toLowerCase().includes('k') || num < 1000) {
+    return num * 1000;
+  }
+  return num;
+}
+
 export function CreateRole() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [step, setStep] = useState<CreateRoleStep>('basics');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState<RoleFormData>({
     title: '',
-    department: '',
+    sector: '',
     location: '',
     locationType: 'remote',
-    employmentType: 'full-time',
+    employmentType: 'full_time',
     salaryMin: '',
     salaryMax: '',
     description: '',
@@ -77,15 +98,63 @@ export function CreateRole() {
   };
 
   const handleSubmit = async () => {
+    if (!user) return;
+
     setStep('saving');
-    // TODO: Save to API
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setStep('complete');
+    setSubmitError(null);
+
+    try {
+      // Get employer record
+      const { data: employer, error: employerError } = await supabase
+        .from('employers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (employerError || !employer) {
+        throw new Error('No employer profile found. Please complete your company setup first.');
+      }
+
+      // Parse requirements into array (split by newlines)
+      const requirementsArray = formData.requirements
+        .split('\n')
+        .map(r => r.trim())
+        .filter(Boolean);
+
+      const { error: insertError } = await supabase
+        .from('roles')
+        .insert({
+          employer_id: employer.id,
+          title: formData.title,
+          description: formData.description,
+          requirements: requirementsArray,
+          nice_to_have: formData.preferredTraits,
+          location: formData.location,
+          work_style: formData.locationType,
+          salary_min: parseSalary(formData.salaryMin),
+          salary_max: parseSalary(formData.salaryMax),
+          employment_type: formData.employmentType,
+          status: 'active',
+        });
+
+      if (insertError) throw insertError;
+
+      success('Role created!', `${formData.title} is now live and ready for matching.`);
+      setStep('complete');
+    } catch (err) {
+      console.error('Error creating role:', err);
+      const message = err instanceof Error ? err.message : 'Failed to create role. Please try again.';
+      setSubmitError(message);
+      showError('Failed to create role', message);
+      setStep('review');
+    }
   };
 
-  const canProceedFromBasics = formData.title && formData.department && formData.location;
+  const canProceedFromBasics = formData.title && formData.sector && formData.location;
   const canProceedFromDetails = formData.description && formData.requirements;
   const canProceedFromCulture = formData.preferredTraits.length >= 2;
+
+  const sectorLabel = JOB_SECTORS.find(s => s.id === formData.sector)?.label || formData.sector;
 
   // Saving screen
   if (step === 'saving') {
@@ -269,20 +338,38 @@ export function CreateRole() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                department
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  sector / department
+                </div>
               </label>
-              <input
-                type="text"
-                value={formData.department}
-                onChange={e => updateField('department', e.target.value)}
-                placeholder="e.g. Design, Engineering, Marketing"
-                className="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: 'var(--color-background)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text)',
-                }}
-              />
+              <div className="flex flex-wrap gap-2">
+                {JOB_SECTORS.map(sector => {
+                  const isSelected = formData.sector === sector.id;
+                  return (
+                    <button
+                      key={sector.id}
+                      type="button"
+                      onClick={() => updateField('sector', sector.id)}
+                      className="px-4 py-2 rounded-lg border text-sm transition-all"
+                      style={{
+                        backgroundColor: isSelected
+                          ? 'rgba(217, 119, 6, 0.1)'
+                          : 'transparent',
+                        borderColor: isSelected
+                          ? 'var(--color-accent)'
+                          : 'var(--color-border)',
+                        color: isSelected
+                          ? 'var(--color-accent)'
+                          : 'var(--color-textSecondary)',
+                      }}
+                    >
+                      {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                      {sector.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
@@ -353,8 +440,8 @@ export function CreateRole() {
                     color: 'var(--color-text)',
                   }}
                 >
-                  <option value="full-time">full-time</option>
-                  <option value="part-time">part-time</option>
+                  <option value="full_time">full-time</option>
+                  <option value="part_time">part-time</option>
                   <option value="contract">contract</option>
                 </select>
               </div>
@@ -426,12 +513,12 @@ export function CreateRole() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                requirements
+                requirements (one per line)
               </label>
               <textarea
                 value={formData.requirements}
                 onChange={e => updateField('requirements', e.target.value)}
-                placeholder="list the skills, experience, and qualifications needed..."
+                placeholder={"3+ years experience in product design\nProficiency with Figma\nStrong communication skills"}
                 rows={4}
                 className="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 resize-none"
                 style={{
@@ -551,6 +638,16 @@ export function CreateRole() {
 
         {step === 'review' && (
           <div className="space-y-6">
+            {submitError && (
+              <div
+                className="p-4 rounded-xl flex items-start gap-3"
+                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+              >
+                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--color-error)' }} />
+                <p className="text-sm" style={{ color: 'var(--color-error)' }}>{submitError}</p>
+              </div>
+            )}
+
             <div>
               <h3
                 className="text-lg font-semibold mb-1"
@@ -562,7 +659,7 @@ export function CreateRole() {
                 className="text-sm"
                 style={{ color: 'var(--color-textSecondary)' }}
               >
-                {formData.department}
+                {sectorLabel}
               </p>
             </div>
 
@@ -576,7 +673,7 @@ export function CreateRole() {
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
                 <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                  {formData.employmentType}
+                  {formData.employmentType.replace('_', '-')}
                 </span>
               </div>
               {(formData.salaryMin || formData.salaryMax) && (

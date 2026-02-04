@@ -33,9 +33,11 @@ interface EmployerData {
 }
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup', description: '1-100 employees' },
-  { id: 'midsize', label: 'Mid-size', description: '100-1000 employees' },
-  { id: 'enterprise', label: 'Enterprise', description: '1000+ employees' },
+  { id: '1-10', label: 'Startup', description: '1-10 employees' },
+  { id: '11-50', label: 'Small', description: '11-50 employees' },
+  { id: '51-200', label: 'Growing', description: '51-200 employees' },
+  { id: '201-500', label: 'Mid-size', description: '201-500 employees' },
+  { id: '500+', label: 'Enterprise', description: '500+ employees' },
 ];
 
 const INDUSTRIES = [
@@ -180,6 +182,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
   const handleSkip = async () => {
     // Mark setup as completed even if skipped
     if (user) {
+      // Ensure an employer record exists so culture quiz can work
+      await supabase
+        .from('employers')
+        .upsert({ user_id: user.id, company_name: 'My Company' }, { onConflict: 'user_id' });
+
       await supabase
         .from('profiles')
         .update({ onboarding_completed: true })
@@ -248,7 +255,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-scale-in"
+          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl animate-scale-in"
           style={{
             backgroundColor: 'var(--color-background)',
             border: '1px solid var(--color-border)',
@@ -438,7 +445,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                   >
                     Company Size
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {COMPANY_SIZES.map((size) => (
                       <button
                         key={size.id}

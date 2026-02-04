@@ -83,8 +83,8 @@ export function Assessment() {
           .eq('user_id', user.id)
           .single();
 
-        // Dev mode bypasses profile requirement
-        const profileComplete = isDevMode() || !!(candidate?.headline || candidate?.bio);
+        // Profile is complete if candidate record exists (or in dev mode)
+        const profileComplete = isDevMode() || !!candidate;
         setHasCompletedProfile(profileComplete);
 
         // Check cooldown (24 hours = 86400000 ms)

@@ -167,17 +167,89 @@ export function JobSeekerDashboard() {
     },
   ];
 
-  // Mock data for matched jobs
-  const topMatches = [
-    { company: 'TechCorp', role: 'Product Designer', matchScore: 94, location: 'Remote' },
-    { company: 'StartupHub', role: 'UX Researcher', matchScore: 89, location: 'San Francisco' },
-    { company: 'InnovateCo', role: 'Design Lead', matchScore: 85, location: 'New York' },
-  ];
+  // Real data from Supabase
+  const [topMatches, setTopMatches] = useState<Array<{ company: string; role: string; matchScore: number; location: string }>>([]);
+  const [upcomingChats, setUpcomingChats] = useState<Array<{ company: string; person: string; role: string; time: string }>>([]);
 
-  // Mock upcoming chats
-  const upcomingChats = [
-    { company: 'TechCorp', person: 'Sarah M.', role: 'Hiring Manager', time: 'Tomorrow, 2pm' },
-  ];
+  useEffect(() => {
+    if (!user || !hasCompletedAssessment || !personalityScores) return;
+
+    const loadMatches = async () => {
+      try {
+        // Get active roles with employer data
+        const { data: roles } = await supabase
+          .from('roles')
+          .select('*, employers!inner(company_name, location, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_quiz_completed)')
+          .eq('status', 'active');
+
+        if (roles && personalityScores) {
+          const matches = roles
+            .filter(r => {
+              const emp = r.employers as Record<string, unknown> | null;
+              return emp?.culture_quiz_completed;
+            })
+            .map(role => {
+              const emp = role.employers as Record<string, unknown>;
+              // Simple trait distance scoring
+              const traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'] as const;
+              let totalDiff = 0;
+              for (const t of traits) {
+                const candidateVal = personalityScores[t] || 50;
+                const empVal = (emp?.[`${t}_preference`] as number) || 50;
+                totalDiff += Math.abs(candidateVal - empVal);
+              }
+              const maxDiff = 500;
+              const matchScore = Math.round((1 - totalDiff / maxDiff) * 100);
+
+              return {
+                company: (emp?.company_name as string) || 'Unknown',
+                role: role.title,
+                matchScore,
+                location: role.location || (emp?.location as string) || 'Remote',
+              };
+            })
+            .sort((a, b) => b.matchScore - a.matchScore)
+            .slice(0, 5);
+
+          setTopMatches(matches);
+        }
+
+        // Get upcoming coffee chats
+        const { data: candidate } = await supabase
+          .from('candidates')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (candidate) {
+          const { data: chats } = await supabase
+            .from('coffee_chats')
+            .select('*, employers!inner(company_name, profiles:user_id(full_name))')
+            .eq('candidate_id', candidate.id)
+            .in('status', ['accepted', 'pending'])
+            .order('scheduled_at', { ascending: true })
+            .limit(3);
+
+          if (chats) {
+            setUpcomingChats(chats.map(c => {
+              const emp = c.employers as Record<string, unknown> | null;
+              const empProfile = emp?.profiles as Record<string, unknown> | null;
+              return {
+                company: (emp?.company_name as string) || 'Unknown',
+                person: (empProfile?.full_name as string) || 'Unknown',
+                role: 'Hiring Manager',
+                time: c.scheduled_at ? new Date(c.scheduled_at).toLocaleDateString() : 'TBD',
+              };
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error loading matches:', err);
+      }
+    };
+
+    loadMatches();
+  }, [user, hasCompletedAssessment, personalityScores]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
