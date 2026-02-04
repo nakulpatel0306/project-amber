@@ -170,24 +170,94 @@ export function EmployerDashboard() {
     },
   ];
 
-  // Mock data
-  const topCandidates = [
-    { name: 'Sarah K.', role: 'Product Designer', matchScore: 96, topTrait: 'Creative' },
-    { name: 'Marcus T.', role: 'Software Engineer', matchScore: 92, topTrait: 'Analytical' },
-    { name: 'Alex R.', role: 'UX Researcher', matchScore: 88, topTrait: 'Empathetic' },
-  ];
+  // Real data from Supabase
+  const [topCandidates, setTopCandidates] = useState<Array<{ name: string; role: string; matchScore: number; topTrait: string }>>([]);
+  const [activeRoles, setActiveRoles] = useState<Array<{ title: string; applicants: number; newThisWeek: number }>>([]);
+  const [stats, setStats] = useState([
+    { label: 'active roles', value: '0', change: '' },
+    { label: 'total applicants', value: '0', change: '' },
+    { label: 'pending chats', value: '0', change: '' },
+    { label: 'avg. match score', value: '--', change: '' },
+  ]);
 
-  const activeRoles = [
-    { title: 'Senior Product Designer', applicants: 24, newThisWeek: 8 },
-    { title: 'Frontend Engineer', applicants: 31, newThisWeek: 12 },
-  ];
+  useEffect(() => {
+    if (!user) return;
 
-  const stats = [
-    { label: 'active roles', value: '2', change: '+1 this week' },
-    { label: 'total applicants', value: '55', change: '+20 this week' },
-    { label: 'pending chats', value: '3', change: '2 new requests' },
-    { label: 'avg. match score', value: '84%', change: 'above average' },
-  ];
+    const loadDashboardData = async () => {
+      try {
+        const { data: employer } = await supabase
+          .from('employers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!employer) return;
+
+        // Get roles
+        const { data: roles } = await supabase
+          .from('roles')
+          .select('*')
+          .eq('employer_id', employer.id)
+          .order('created_at', { ascending: false });
+
+        const activeRolesList = (roles || []).filter(r => r.status === 'active');
+
+        // Get applications for these roles
+        const roleIds = (roles || []).map(r => r.id);
+        let totalApps = 0;
+        const roleCandidates: Array<{ name: string; role: string; matchScore: number; topTrait: string }> = [];
+
+        if (roleIds.length > 0) {
+          const { data: apps } = await supabase
+            .from('applications')
+            .select('*, candidates(*, profiles:user_id(full_name)), roles!inner(title, employer_id)')
+            .eq('roles.employer_id', employer.id)
+            .order('overall_match_score', { ascending: false })
+            .limit(10);
+
+          totalApps = apps?.length || 0;
+
+          if (apps) {
+            for (const app of apps.slice(0, 3)) {
+              const candidate = app.candidates as Record<string, unknown> | null;
+              const profiles = candidate?.profiles as Record<string, unknown> | null;
+              const role = app.roles as Record<string, unknown> | null;
+              roleCandidates.push({
+                name: (profiles?.full_name as string) || 'Unknown',
+                role: (role?.title as string) || 'Unknown Role',
+                matchScore: app.overall_match_score || 0,
+                topTrait: ((candidate?.top_traits as string[]) || ['--'])[0],
+              });
+            }
+          }
+        }
+
+        // Get pending coffee chats
+        const { data: chats } = await supabase
+          .from('coffee_chats')
+          .select('id')
+          .eq('employer_id', employer.id)
+          .eq('status', 'pending');
+
+        setTopCandidates(roleCandidates);
+        setActiveRoles(activeRolesList.map(r => ({
+          title: r.title,
+          applicants: totalApps,
+          newThisWeek: 0,
+        })));
+        setStats([
+          { label: 'active roles', value: String(activeRolesList.length), change: '' },
+          { label: 'total applicants', value: String(totalApps), change: '' },
+          { label: 'pending chats', value: String(chats?.length || 0), change: '' },
+          { label: 'avg. match score', value: roleCandidates.length > 0 ? `${Math.round(roleCandidates.reduce((s, c) => s + c.matchScore, 0) / roleCandidates.length)}%` : '--', change: '' },
+        ]);
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      }
+    };
+
+    loadDashboardData();
+  }, [user]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">

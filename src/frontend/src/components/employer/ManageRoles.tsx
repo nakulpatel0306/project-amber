@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Briefcase,
@@ -6,107 +6,167 @@ import {
   Search,
   MoreVertical,
   Users,
-  Eye,
   Pause,
   Play,
   Trash2,
-  Edit,
   MapPin,
   Clock,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
 
-type RoleStatus = 'active' | 'paused' | 'closed';
+type RoleStatus = 'active' | 'paused' | 'closed' | 'draft';
 
 interface Role {
   id: string;
   title: string;
-  department: string;
-  location: string;
-  locationType: 'remote' | 'hybrid' | 'onsite';
-  employmentType: 'full-time' | 'part-time' | 'contract';
+  description: string | null;
+  requirements: string[] | null;
+  nice_to_have: string[] | null;
+  location: string | null;
+  work_style: string | null;
+  employment_type: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
   status: RoleStatus;
-  applicants: number;
-  newApplicants: number;
-  avgMatchScore: number;
-  createdAt: string;
+  created_at: string;
+  applicant_count: number;
 }
 
-// Mock data
-const mockRoles: Role[] = [
-  {
-    id: '1',
-    title: 'Senior Product Designer',
-    department: 'Design',
-    location: 'San Francisco, CA',
-    locationType: 'hybrid',
-    employmentType: 'full-time',
-    status: 'active',
-    applicants: 24,
-    newApplicants: 8,
-    avgMatchScore: 86,
-    createdAt: '2024-01-15',
-  },
-  {
-    id: '2',
-    title: 'Frontend Engineer',
-    department: 'Engineering',
-    location: 'Remote (US)',
-    locationType: 'remote',
-    employmentType: 'full-time',
-    status: 'active',
-    applicants: 31,
-    newApplicants: 12,
-    avgMatchScore: 82,
-    createdAt: '2024-01-10',
-  },
-  {
-    id: '3',
-    title: 'UX Researcher',
-    department: 'Design',
-    location: 'New York, NY',
-    locationType: 'onsite',
-    employmentType: 'full-time',
-    status: 'paused',
-    applicants: 18,
-    newApplicants: 0,
-    avgMatchScore: 79,
-    createdAt: '2024-01-05',
-  },
-  {
-    id: '4',
-    title: 'Product Marketing Manager',
-    department: 'Marketing',
-    location: 'Remote (Worldwide)',
-    locationType: 'remote',
-    employmentType: 'contract',
-    status: 'closed',
-    applicants: 42,
-    newApplicants: 0,
-    avgMatchScore: 84,
-    createdAt: '2023-12-20',
-  },
-];
-
 export function ManageRoles() {
+  const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoleStatus | 'all'>('all');
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredRoles = mockRoles.filter(role => {
+  useEffect(() => {
+    if (!user) return;
+    loadRoles();
+  }, [user]);
+
+  const loadRoles = async () => {
+    if (!user) return;
+
+    try {
+      // Get employer record
+      const { data: employer } = await supabase
+        .from('employers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!employer) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Get roles with application counts
+      const { data: rolesData, error } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('employer_id', employer.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get application counts per role
+      const roleIds = (rolesData || []).map(r => r.id);
+      let appCounts: Record<string, number> = {};
+
+      if (roleIds.length > 0) {
+        const { data: apps } = await supabase
+          .from('applications')
+          .select('role_id')
+          .in('role_id', roleIds);
+
+        if (apps) {
+          appCounts = apps.reduce((acc: Record<string, number>, app) => {
+            acc[app.role_id] = (acc[app.role_id] || 0) + 1;
+            return acc;
+          }, {});
+        }
+      }
+
+      const formattedRoles: Role[] = (rolesData || []).map(r => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        requirements: r.requirements,
+        nice_to_have: r.nice_to_have,
+        location: r.location,
+        work_style: r.work_style,
+        employment_type: r.employment_type,
+        salary_min: r.salary_min,
+        salary_max: r.salary_max,
+        status: r.status as RoleStatus,
+        created_at: r.created_at,
+        applicant_count: appCounts[r.id] || 0,
+      }));
+
+      setRoles(formattedRoles);
+    } catch (err) {
+      console.error('Error loading roles:', err);
+      showError('Failed to load roles', 'Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (roleId: string, newStatus: RoleStatus) => {
+    try {
+      const { error } = await supabase
+        .from('roles')
+        .update({ status: newStatus })
+        .eq('id', roleId);
+
+      if (error) throw error;
+
+      setRoles(prev => prev.map(r => r.id === roleId ? { ...r, status: newStatus } : r));
+      setOpenMenu(null);
+      success('Role updated', `Role has been ${newStatus === 'active' ? 'activated' : newStatus}.`);
+    } catch (err) {
+      console.error('Error updating role:', err);
+      showError('Failed to update role', 'Please try again.');
+    }
+  };
+
+  const handleDelete = async (roleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('roles')
+        .delete()
+        .eq('id', roleId);
+
+      if (error) throw error;
+
+      setRoles(prev => prev.filter(r => r.id !== roleId));
+      setOpenMenu(null);
+      success('Role deleted', 'The role has been removed.');
+    } catch (err) {
+      console.error('Error deleting role:', err);
+      showError('Failed to delete role', 'Please try again.');
+    }
+  };
+
+  const filteredRoles = roles.filter(role => {
     const matchesSearch =
-      role.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      role.department.toLowerCase().includes(searchQuery.toLowerCase());
+      role.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || role.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
-    active: mockRoles.filter(r => r.status === 'active').length,
-    paused: mockRoles.filter(r => r.status === 'paused').length,
-    totalApplicants: mockRoles.reduce((sum, r) => sum + r.applicants, 0),
-    newThisWeek: mockRoles.reduce((sum, r) => sum + r.newApplicants, 0),
+    active: roles.filter(r => r.status === 'active').length,
+    paused: roles.filter(r => r.status === 'paused').length,
+    totalApplicants: roles.reduce((sum, r) => sum + r.applicant_count, 0),
+    totalRoles: roles.length,
   };
 
   const getStatusColor = (status: RoleStatus) => {
@@ -117,8 +177,18 @@ export function ManageRoles() {
         return { bg: 'rgba(245, 158, 11, 0.1)', text: 'var(--color-accent)' };
       case 'closed':
         return { bg: 'rgba(107, 114, 128, 0.1)', text: 'var(--color-textMuted)' };
+      case 'draft':
+        return { bg: 'rgba(107, 114, 128, 0.1)', text: 'var(--color-textMuted)' };
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--color-accent)' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -194,10 +264,10 @@ export function ManageRoles() {
           }}
         >
           <p className="text-2xl font-bold" style={{ color: 'var(--color-accent)' }}>
-            +{stats.newThisWeek}
+            {stats.totalRoles}
           </p>
           <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            new this week
+            total roles
           </p>
         </div>
       </div>
@@ -307,43 +377,35 @@ export function ManageRoles() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 text-sm mb-4">
-                      <span style={{ color: 'var(--color-textSecondary)' }}>
-                        {role.department}
-                      </span>
-                      <span className="flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
-                        <MapPin className="w-3.5 h-3.5" />
-                        {role.locationType} · {role.location}
-                      </span>
-                      <span className="flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
-                        <Clock className="w-3.5 h-3.5" />
-                        {role.employmentType}
-                      </span>
+                      {role.location && (
+                        <span className="flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
+                          <MapPin className="w-3.5 h-3.5" />
+                          {role.work_style && `${role.work_style} · `}{role.location}
+                        </span>
+                      )}
+                      {role.employment_type && (
+                        <span className="flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
+                          <Clock className="w-3.5 h-3.5" />
+                          {role.employment_type.replace('_', '-')}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-6">
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
                         <span className="text-sm" style={{ color: 'var(--color-text)' }}>
-                          {role.applicants} applicants
+                          {role.applicant_count} applicant{role.applicant_count !== 1 ? 's' : ''}
                         </span>
-                        {role.newApplicants > 0 && (
-                          <span
-                            className="text-xs px-1.5 py-0.5 rounded-full"
-                            style={{
-                              backgroundColor: 'rgba(217, 119, 6, 0.1)',
-                              color: 'var(--color-accent)',
-                            }}
-                          >
-                            +{role.newApplicants} new
+                      </div>
+                      {role.salary_min && role.salary_max && (
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            ${(role.salary_min / 1000).toFixed(0)}k - ${(role.salary_max / 1000).toFixed(0)}k
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
-                        <span className="text-sm" style={{ color: 'var(--color-text)' }}>
-                          {role.avgMatchScore}% avg match
-                        </span>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -376,22 +438,9 @@ export function ManageRoles() {
                               borderColor: 'var(--color-border)',
                             }}
                           >
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[var(--color-background)]"
-                              style={{ color: 'var(--color-text)' }}
-                            >
-                              <Eye className="w-4 h-4" />
-                              view details
-                            </button>
-                            <button
-                              className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[var(--color-background)]"
-                              style={{ color: 'var(--color-text)' }}
-                            >
-                              <Edit className="w-4 h-4" />
-                              edit role
-                            </button>
                             {role.status === 'active' ? (
                               <button
+                                onClick={() => handleStatusChange(role.id, 'paused')}
                                 className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[var(--color-background)]"
                                 style={{ color: 'var(--color-accent)' }}
                               >
@@ -400,6 +449,7 @@ export function ManageRoles() {
                               </button>
                             ) : role.status === 'paused' ? (
                               <button
+                                onClick={() => handleStatusChange(role.id, 'active')}
                                 className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[var(--color-background)]"
                                 style={{ color: 'var(--color-success)' }}
                               >
@@ -407,7 +457,18 @@ export function ManageRoles() {
                                 activate role
                               </button>
                             ) : null}
+                            {role.status !== 'closed' && (
+                              <button
+                                onClick={() => handleStatusChange(role.id, 'closed')}
+                                className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[var(--color-background)]"
+                                style={{ color: 'var(--color-textMuted)' }}
+                              >
+                                <Pause className="w-4 h-4" />
+                                close role
+                              </button>
+                            )}
                             <button
+                              onClick={() => handleDelete(role.id)}
                               className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[var(--color-background)]"
                               style={{ color: 'var(--color-error)' }}
                             >

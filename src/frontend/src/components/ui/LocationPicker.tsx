@@ -260,7 +260,7 @@ export function LocationPicker({
         {/* Dropdown */}
         {isOpen && (
           <div
-            className="absolute z-50 mt-2 w-full rounded-xl border shadow-lg overflow-hidden"
+            className="absolute z-[9999] mt-2 w-full rounded-xl border shadow-lg overflow-hidden"
             style={{
               backgroundColor: 'var(--color-background)',
               borderColor: 'var(--color-border)',

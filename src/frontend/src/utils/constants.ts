@@ -52,6 +52,26 @@ export const COMPANY_SIZES = [
   { id: '500+', label: '500+ employees', description: 'Enterprise' },
 ] as const;
 
+// Job sectors / categories for employer role creation
+export const JOB_SECTORS = [
+  { id: 'product_management', label: 'Product Management' },
+  { id: 'software_engineering', label: 'Software Development' },
+  { id: 'ui_development', label: 'UI/UX Development' },
+  { id: 'ml_engineering', label: 'ML/AI Engineering' },
+  { id: 'data_science', label: 'Data Science' },
+  { id: 'devops', label: 'DevOps / Infrastructure' },
+  { id: 'investing', label: 'Investing & Finance' },
+  { id: 'accounting', label: 'Accounting' },
+  { id: 'marketing', label: 'Marketing' },
+  { id: 'sales', label: 'Sales' },
+  { id: 'design', label: 'Design' },
+  { id: 'operations', label: 'Operations' },
+  { id: 'hr', label: 'Human Resources' },
+  { id: 'consulting', label: 'Consulting' },
+  { id: 'legal', label: 'Legal' },
+  { id: 'other', label: 'Other' },
+] as const;
+
 // Employment types
 export const EMPLOYMENT_TYPES = [
   { id: 'full_time', label: 'Full-time' },
