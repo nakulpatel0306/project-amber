@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Users,
@@ -16,102 +16,66 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { Spinner } from '../ui/Spinner';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
+import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
 
-interface Candidate {
+interface CandidateData {
   id: string;
-  name: string;
-  headline: string;
-  location: string;
-  matchScore: number;
-  topTraits: string[];
-  experience: string;
-  appliedRole: string;
-  appliedRoleId: string;
-  status: 'new' | 'reviewed' | 'shortlisted' | 'rejected';
-  avatar?: string;
+  user_id: string;
+  headline: string | null;
+  location: string | null;
+  work_style: string | null;
+  openness_score: number | null;
+  conscientiousness_score: number | null;
+  extraversion_score: number | null;
+  agreeableness_score: number | null;
+  neuroticism_score: number | null;
+  top_traits: string[] | null;
+  profiles: {
+    full_name: string | null;
+    email: string;
+  };
 }
 
-// Mock data
-const mockCandidates: Candidate[] = [
-  {
-    id: '1',
-    name: 'Sarah Kim',
-    headline: 'Senior Product Designer with 6+ years experience',
-    location: 'San Francisco, CA',
-    matchScore: 96,
-    topTraits: ['creative', 'collaborative', 'empathetic'],
-    experience: '6 years',
-    appliedRole: 'Senior Product Designer',
-    appliedRoleId: '1',
-    status: 'new',
-  },
-  {
-    id: '2',
-    name: 'Marcus Thompson',
-    headline: 'Full-stack Engineer | React, Node, Python',
-    location: 'Austin, TX',
-    matchScore: 92,
-    topTraits: ['analytical', 'independent', 'detail-oriented'],
-    experience: '5 years',
-    appliedRole: 'Frontend Engineer',
-    appliedRoleId: '2',
-    status: 'new',
-  },
-  {
-    id: '3',
-    name: 'Alex Rivera',
-    headline: 'UX Researcher passionate about user-centered design',
-    location: 'New York, NY',
-    matchScore: 88,
-    topTraits: ['empathetic', 'methodical', 'collaborative'],
-    experience: '4 years',
-    appliedRole: 'Senior Product Designer',
-    appliedRoleId: '1',
-    status: 'reviewed',
-  },
-  {
-    id: '4',
-    name: 'Jordan Chen',
-    headline: 'Frontend Developer specializing in React & TypeScript',
-    location: 'Seattle, WA',
-    matchScore: 85,
-    topTraits: ['fast-paced', 'adaptable', 'creative'],
-    experience: '3 years',
-    appliedRole: 'Frontend Engineer',
-    appliedRoleId: '2',
-    status: 'shortlisted',
-  },
-  {
-    id: '5',
-    name: 'Taylor Morgan',
-    headline: 'Product Designer with startup experience',
-    location: 'Remote',
-    matchScore: 82,
-    topTraits: ['independent', 'big-picture', 'fast-paced'],
-    experience: '4 years',
-    appliedRole: 'Senior Product Designer',
-    appliedRoleId: '1',
-    status: 'new',
-  },
-  {
-    id: '6',
-    name: 'Casey Williams',
-    headline: 'Software Engineer | Backend focused',
-    location: 'Chicago, IL',
-    matchScore: 78,
-    topTraits: ['structured', 'analytical', 'methodical'],
-    experience: '7 years',
-    appliedRole: 'Frontend Engineer',
-    appliedRoleId: '2',
-    status: 'rejected',
-  },
-];
+interface RoleData {
+  id: string;
+  title: string;
+  work_style: string | null;
+  required_openness_min: number | null;
+  required_openness_max: number | null;
+  required_conscientiousness_min: number | null;
+  required_conscientiousness_max: number | null;
+  required_extraversion_min: number | null;
+  required_extraversion_max: number | null;
+  required_agreeableness_min: number | null;
+  required_agreeableness_max: number | null;
+  required_neuroticism_min: number | null;
+  required_neuroticism_max: number | null;
+}
 
-const roles = [
-  { id: 'all', title: 'all roles' },
-  { id: '1', title: 'Senior Product Designer' },
-  { id: '2', title: 'Frontend Engineer' },
-];
+interface EmployerData {
+  id: string;
+  openness_preference: number | null;
+  conscientiousness_preference: number | null;
+  extraversion_preference: number | null;
+  agreeableness_preference: number | null;
+  neuroticism_preference: number | null;
+  culture_values: string[] | null;
+}
+
+interface CandidateMatch {
+  candidate: CandidateData;
+  traitMatchScore: number;
+  cultureMatchScore: number;
+  overallMatchScore: number;
+  topTraits: string[];
+  status: 'new' | 'reviewed' | 'shortlisted' | 'rejected';
+  roleId: string | null;
+  roleTitle: string | null;
+}
 
 const statusOptions = [
   { value: 'all', label: 'all status' },
@@ -122,9 +86,12 @@ const statusOptions = [
 ];
 
 export function BrowseCandidates() {
+  const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialRole = searchParams.get('role') || 'all';
 
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -132,23 +99,185 @@ export function BrowseCandidates() {
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCandidate, setExpandedCandidate] = useState<string | null>(null);
 
-  const filteredCandidates = mockCandidates.filter(candidate => {
+  const [employer, setEmployer] = useState<EmployerData | null>(null);
+  const [roles, setRoles] = useState<RoleData[]>([]);
+  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    loadData();
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      // Fetch employer data
+      const { data: employerData } = await supabase
+        .from('employers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!employerData) {
+        setIsLoading(false);
+        return;
+      }
+
+      setEmployer(employerData);
+
+      // Fetch employer's roles
+      const { data: rolesData } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('employer_id', employerData.id)
+        .eq('status', 'active');
+
+      setRoles(rolesData || []);
+
+      // Fetch all candidates with OCEAN scores
+      const { data: candidatesData } = await supabase
+        .from('candidates')
+        .select('*, profiles!inner(full_name, email)')
+        .not('openness_score', 'is', null);
+
+      if (!candidatesData) {
+        setCandidates([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch existing applications to get status
+      const { data: applications } = await supabase
+        .from('applications')
+        .select('candidate_id, role_id, status')
+        .eq('employer_id', employerData.id);
+
+      const applicationMap = new Map(
+        (applications || []).map(app => [`${app.candidate_id}-${app.role_id}`, app.status])
+      );
+
+      // Calculate match scores for each candidate
+      const employerOcean: OCEANScores = {
+        openness: employerData.openness_preference || 50,
+        conscientiousness: employerData.conscientiousness_preference || 50,
+        extraversion: employerData.extraversion_preference || 50,
+        agreeableness: employerData.agreeableness_preference || 50,
+        neuroticism: employerData.neuroticism_preference || 50,
+      };
+
+      const matchedCandidates: CandidateMatch[] = candidatesData.map((candidate: CandidateData) => {
+        const candidateOcean: OCEANScores = {
+          openness: candidate.openness_score || 50,
+          conscientiousness: candidate.conscientiousness_score || 50,
+          extraversion: candidate.extraversion_score || 50,
+          agreeableness: candidate.agreeableness_score || 50,
+          neuroticism: candidate.neuroticism_score || 50,
+        };
+
+        // Use employer-level scoring (without role-specific requirements)
+        const result = calculateCompatibility({
+          candidateOCEAN: candidateOcean,
+          employerPreferences: {
+            ...employerOcean,
+            cultureValues: employerData.culture_values || [],
+          },
+          candidateWorkStyle: candidate.work_style || undefined,
+        });
+
+        // Find if candidate has applied to any of employer's roles
+        let status: CandidateMatch['status'] = 'new';
+        let roleId: string | null = null;
+        let roleTitle: string | null = null;
+
+        for (const role of rolesData || []) {
+          const appStatus = applicationMap.get(`${candidate.id}-${role.id}`);
+          if (appStatus) {
+            status = appStatus as CandidateMatch['status'];
+            roleId = role.id;
+            roleTitle = role.title;
+            break;
+          }
+        }
+
+        return {
+          candidate,
+          traitMatchScore: result.traitMatchScore,
+          cultureMatchScore: result.cultureMatchScore,
+          overallMatchScore: result.overallMatchScore,
+          topTraits: candidate.top_traits || [],
+          status,
+          roleId,
+          roleTitle,
+        };
+      });
+
+      // Sort by match score
+      matchedCandidates.sort((a, b) => b.overallMatchScore - a.overallMatchScore);
+      setCandidates(matchedCandidates);
+    } catch (err) {
+      console.error('Error loading data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (candidateId: string, newStatus: string) => {
+    if (!employer) return;
+
+    try {
+      // Find the role to use (first active role or null)
+      const roleId = roles.length > 0 ? roles[0].id : null;
+
+      if (roleId) {
+        await supabase.from('applications').upsert({
+          candidate_id: candidateId,
+          role_id: roleId,
+          employer_id: employer.id,
+          status: newStatus,
+        }, {
+          onConflict: 'candidate_id,role_id',
+        });
+      }
+
+      // Update local state
+      setCandidates(prev =>
+        prev.map(c =>
+          c.candidate.id === candidateId
+            ? { ...c, status: newStatus as CandidateMatch['status'] }
+            : c
+        )
+      );
+
+      success('Status updated', `Candidate marked as ${newStatus}`);
+    } catch (err) {
+      console.error('Error updating status:', err);
+      showError('Failed to update', 'Please try again');
+    }
+  };
+
+  const filteredCandidates = candidates.filter(match => {
+    const candidate = match.candidate;
+    const name = candidate.profiles?.full_name || '';
+    const headline = candidate.headline || '';
+
     const matchesSearch =
-      candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.headline.toLowerCase().includes(searchQuery.toLowerCase());
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      headline.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesRole =
-      selectedRole === 'all' || candidate.appliedRoleId === selectedRole;
+      selectedRole === 'all' || match.roleId === selectedRole;
+
     const matchesStatus =
-      selectedStatus === 'all' || candidate.status === selectedStatus;
-    const matchesScore = candidate.matchScore >= minMatchScore;
+      selectedStatus === 'all' || match.status === selectedStatus;
+
+    const matchesScore = match.overallMatchScore >= minMatchScore;
+
     return matchesSearch && matchesRole && matchesStatus && matchesScore;
   });
 
-  const sortedCandidates = [...filteredCandidates].sort(
-    (a, b) => b.matchScore - a.matchScore
-  );
-
-  const getStatusColor = (status: Candidate['status']) => {
+  const getStatusColor = (status: CandidateMatch['status']) => {
     switch (status) {
       case 'new':
         return { bg: 'rgba(59, 130, 246, 0.1)', text: '#3B82F6' };
@@ -162,10 +291,32 @@ export function BrowseCandidates() {
   };
 
   const getMatchScoreColor = (score: number) => {
-    if (score >= 90) return 'var(--color-success)';
-    if (score >= 80) return 'var(--color-accent)';
+    if (score >= 85) return 'var(--color-success)';
+    if (score >= 70) return 'var(--color-accent)';
     return 'var(--color-textMuted)';
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!employer) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8 text-center">
+        <Users className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
+        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+          Complete Your Profile
+        </h2>
+        <p style={{ color: 'var(--color-textMuted)' }}>
+          Please complete your employer profile to browse candidates.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -178,7 +329,7 @@ export function BrowseCandidates() {
           browse candidates
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
-          candidates ranked by culture fit for your roles
+          candidates ranked by culture fit for your company
         </p>
       </div>
 
@@ -204,30 +355,33 @@ export function BrowseCandidates() {
             />
           </div>
 
-          <select
-            value={selectedRole}
-            onChange={e => {
-              setSelectedRole(e.target.value);
-              if (e.target.value === 'all') {
-                searchParams.delete('role');
-              } else {
-                searchParams.set('role', e.target.value);
-              }
-              setSearchParams(searchParams);
-            }}
-            className="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text)',
-            }}
-          >
-            {roles.map(role => (
-              <option key={role.id} value={role.id}>
-                {role.title}
-              </option>
-            ))}
-          </select>
+          {roles.length > 0 && (
+            <select
+              value={selectedRole}
+              onChange={e => {
+                setSelectedRole(e.target.value);
+                if (e.target.value === 'all') {
+                  searchParams.delete('role');
+                } else {
+                  searchParams.set('role', e.target.value);
+                }
+                setSearchParams(searchParams);
+              }}
+              className="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text)',
+              }}
+            >
+              <option value="all">all roles</option>
+              {roles.map(role => (
+                <option key={role.id} value={role.id}>
+                  {role.title}
+                </option>
+              ))}
+            </select>
+          )}
 
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -325,12 +479,12 @@ export function BrowseCandidates() {
         className="text-sm mb-4"
         style={{ color: 'var(--color-textMuted)' }}
       >
-        {sortedCandidates.length} candidate{sortedCandidates.length !== 1 ? 's' : ''} found
+        {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? 's' : ''} found
       </p>
 
       {/* Candidates List */}
       <div className="space-y-4">
-        {sortedCandidates.length === 0 ? (
+        {filteredCandidates.length === 0 ? (
           <div
             className="text-center py-12 rounded-xl border"
             style={{
@@ -343,17 +497,20 @@ export function BrowseCandidates() {
               style={{ color: 'var(--color-textMuted)' }}
             />
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-              no candidates match your filters
+              {candidates.length === 0
+                ? 'no candidates have completed their assessments yet'
+                : 'no candidates match your filters'}
             </p>
           </div>
         ) : (
-          sortedCandidates.map(candidate => {
-            const statusColors = getStatusColor(candidate.status);
-            const isExpanded = expandedCandidate === candidate.id;
+          filteredCandidates.map(match => {
+            const statusColors = getStatusColor(match.status);
+            const isExpanded = expandedCandidate === match.candidate.id;
+            const name = match.candidate.profiles?.full_name || 'Unknown';
 
             return (
               <div
-                key={candidate.id}
+                key={match.candidate.id}
                 className="rounded-xl border transition-all"
                 style={{
                   backgroundColor: 'var(--color-surface)',
@@ -363,7 +520,7 @@ export function BrowseCandidates() {
                 <div
                   className="p-5 cursor-pointer"
                   onClick={() =>
-                    setExpandedCandidate(isExpanded ? null : candidate.id)
+                    setExpandedCandidate(isExpanded ? null : match.candidate.id)
                   }
                 >
                   <div className="flex items-start gap-4">
@@ -376,7 +533,7 @@ export function BrowseCandidates() {
                       }}
                     >
                       <span className="text-lg font-medium text-white">
-                        {candidate.name.charAt(0)}
+                        {name.charAt(0).toUpperCase()}
                       </span>
                     </div>
 
@@ -387,7 +544,7 @@ export function BrowseCandidates() {
                           className="font-semibold"
                           style={{ color: 'var(--color-text)' }}
                         >
-                          {candidate.name}
+                          {name}
                         </h3>
                         <span
                           className="px-2 py-0.5 rounded-full text-xs font-medium"
@@ -396,39 +553,47 @@ export function BrowseCandidates() {
                             color: statusColors.text,
                           }}
                         >
-                          {candidate.status}
+                          {match.status}
                         </span>
                       </div>
 
-                      <p
-                        className="text-sm mb-2 truncate"
-                        style={{ color: 'var(--color-textSecondary)' }}
-                      >
-                        {candidate.headline}
-                      </p>
+                      {match.candidate.headline && (
+                        <p
+                          className="text-sm mb-2 truncate"
+                          style={{ color: 'var(--color-textSecondary)' }}
+                        >
+                          {match.candidate.headline}
+                        </p>
+                      )}
 
                       <div className="flex flex-wrap items-center gap-3 text-xs">
-                        <span
-                          className="flex items-center gap-1"
-                          style={{ color: 'var(--color-textMuted)' }}
-                        >
-                          <MapPin className="w-3 h-3" />
-                          {candidate.location}
-                        </span>
-                        <span
-                          className="flex items-center gap-1"
-                          style={{ color: 'var(--color-textMuted)' }}
-                        >
-                          <Briefcase className="w-3 h-3" />
-                          {candidate.experience}
-                        </span>
-                        <span
-                          className="flex items-center gap-1"
-                          style={{ color: 'var(--color-textMuted)' }}
-                        >
-                          <Star className="w-3 h-3" />
-                          applied for {candidate.appliedRole}
-                        </span>
+                        {match.candidate.location && (
+                          <span
+                            className="flex items-center gap-1"
+                            style={{ color: 'var(--color-textMuted)' }}
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {match.candidate.location}
+                          </span>
+                        )}
+                        {match.candidate.work_style && (
+                          <span
+                            className="flex items-center gap-1"
+                            style={{ color: 'var(--color-textMuted)' }}
+                          >
+                            <Briefcase className="w-3 h-3" />
+                            {match.candidate.work_style}
+                          </span>
+                        )}
+                        {match.roleTitle && (
+                          <span
+                            className="flex items-center gap-1"
+                            style={{ color: 'var(--color-textMuted)' }}
+                          >
+                            <Star className="w-3 h-3" />
+                            {match.roleTitle}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -436,9 +601,9 @@ export function BrowseCandidates() {
                     <div className="text-right flex-shrink-0">
                       <div
                         className="text-2xl font-bold mb-1"
-                        style={{ color: getMatchScoreColor(candidate.matchScore) }}
+                        style={{ color: getMatchScoreColor(match.overallMatchScore) }}
                       >
-                        {candidate.matchScore}%
+                        {match.overallMatchScore}%
                       </div>
                       <p
                         className="text-xs"
@@ -450,26 +615,28 @@ export function BrowseCandidates() {
                   </div>
 
                   {/* Top Traits */}
-                  <div className="mt-4 flex items-center gap-2">
-                    <Sparkles
-                      className="w-3.5 h-3.5"
-                      style={{ color: 'var(--color-accent)' }}
-                    />
-                    <div className="flex gap-1.5">
-                      {candidate.topTraits.map(trait => (
-                        <span
-                          key={trait}
-                          className="px-2 py-0.5 rounded-full text-xs"
-                          style={{
-                            backgroundColor: 'rgba(217, 119, 6, 0.1)',
-                            color: 'var(--color-accent)',
-                          }}
-                        >
-                          {trait}
-                        </span>
-                      ))}
+                  {match.topTraits.length > 0 && (
+                    <div className="mt-4 flex items-center gap-2">
+                      <Sparkles
+                        className="w-3.5 h-3.5"
+                        style={{ color: 'var(--color-accent)' }}
+                      />
+                      <div className="flex gap-1.5">
+                        {match.topTraits.slice(0, 3).map(trait => (
+                          <span
+                            key={trait}
+                            className="px-2 py-0.5 rounded-full text-xs"
+                            style={{
+                              backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                              color: 'var(--color-accent)',
+                            }}
+                          >
+                            {trait}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Expanded Actions */}
@@ -483,6 +650,10 @@ export function BrowseCandidates() {
                         variant="outline"
                         size="sm"
                         leftIcon={<Heart className="w-4 h-4" />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusChange(match.candidate.id, 'shortlisted');
+                        }}
                       >
                         shortlist
                       </Button>
@@ -502,6 +673,10 @@ export function BrowseCandidates() {
                           color: 'var(--color-textMuted)',
                         }}
                         title="mark as reviewed"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusChange(match.candidate.id, 'reviewed');
+                        }}
                       >
                         <Check className="w-4 h-4" />
                       </button>
@@ -512,6 +687,10 @@ export function BrowseCandidates() {
                           color: 'var(--color-error)',
                         }}
                         title="reject"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusChange(match.candidate.id, 'rejected');
+                        }}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -525,7 +704,7 @@ export function BrowseCandidates() {
       </div>
 
       {/* Load More */}
-      {sortedCandidates.length > 0 && (
+      {filteredCandidates.length > 0 && filteredCandidates.length >= 10 && (
         <div className="text-center mt-8">
           <Button variant="outline">load more candidates</Button>
         </div>

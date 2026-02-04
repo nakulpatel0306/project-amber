@@ -14,11 +14,12 @@ import {
   Target,
   Star,
   MessageCircle,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { OCEANScores } from '../../lib/personalityEngine';
+import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
 import { cn } from '../../utils/cn';
 
 interface CandidateData {
@@ -30,36 +31,62 @@ interface CandidateData {
   agreeableness_score: number;
   neuroticism_score: number;
   top_traits: string[];
+  work_style: string | null;
 }
 
-interface EmployerData {
+interface RoleData {
   id: string;
-  user_id: string;
-  company_name: string;
+  title: string;
   description: string;
-  company_size: string;
-  industry: string;
   location: string;
-  company_website: string;
-  culture_values: string[];
-  culture_quiz_completed: boolean;
-  openness_preference: number;
-  conscientiousness_preference: number;
-  extraversion_preference: number;
-  agreeableness_preference: number;
-  neuroticism_preference: number;
+  work_style: string | null;
+  employment_type: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  required_openness_min: number | null;
+  required_openness_max: number | null;
+  required_conscientiousness_min: number | null;
+  required_conscientiousness_max: number | null;
+  required_extraversion_min: number | null;
+  required_extraversion_max: number | null;
+  required_agreeableness_min: number | null;
+  required_agreeableness_max: number | null;
+  required_neuroticism_min: number | null;
+  required_neuroticism_max: number | null;
+  employers: {
+    id: string;
+    company_name: string;
+    description: string;
+    company_size: string;
+    industry: string;
+    location: string;
+    company_website: string;
+    culture_values: string[];
+    openness_preference: number;
+    conscientiousness_preference: number;
+    extraversion_preference: number;
+    agreeableness_preference: number;
+    neuroticism_preference: number;
+  };
 }
 
 interface MatchResult {
-  employer: EmployerData;
-  matchScore: number;
+  role: RoleData;
+  traitMatchScore: number;
+  cultureMatchScore: number;
+  overallMatchScore: number;
   breakdown: {
-    personalityFit: number;
-    valueAlignment: number;
-    workStyleMatch: number;
+    opennessFit: number;
+    conscientiousnessFit: number;
+    extraversionFit: number;
+    agreeablenessFit: number;
+    neuroticismFit: number;
+    workStyleFit: number;
+    valuesFit: number;
+    roleFit?: number;
   };
   highlights: string[];
-  compatibilityInsights: string[];
+  insights: string[];
 }
 
 export function MatchingAgent() {
@@ -76,12 +103,12 @@ export function MatchingAgent() {
 
   const agentMessages = [
     "Analyzing your personality profile...",
-    "Scanning company cultures across industries...",
-    "Calculating compatibility scores...",
-    "Finding your ideal work environments...",
-    "Identifying value alignments...",
-    "Discovering hidden connections...",
+    "Scanning open roles across companies...",
+    "Calculating trait compatibility...",
+    "Evaluating culture fit...",
+    "Analyzing work style alignment...",
     "Ranking your best matches...",
+    "Generating insights...",
   ];
 
   useEffect(() => {
@@ -94,7 +121,6 @@ export function MatchingAgent() {
 
     setIsLoading(true);
     try {
-      // Fetch candidate's personality data
       const { data: candidate, error } = await supabase
         .from('candidates')
         .select('*')
@@ -107,7 +133,6 @@ export function MatchingAgent() {
         setCandidateData(candidate);
         await findMatches(candidate);
       } else {
-        // No assessment completed
         setCandidateData(null);
       }
     } catch (err) {
@@ -124,22 +149,22 @@ export function MatchingAgent() {
     // Animate through agent messages
     for (let i = 0; i < agentMessages.length; i++) {
       setAgentMessage(agentMessages[i]);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 400));
     }
 
     try {
-      // Fetch all employers with culture data (those who completed the culture quiz)
-      const { data: employers, error } = await supabase
-        .from('employers')
-        .select('*')
-        .eq('culture_quiz_completed', true);
+      // Fetch all active roles with employer data
+      const { data: roles, error } = await supabase
+        .from('roles')
+        .select('*, employers!inner(*)')
+        .eq('status', 'active');
 
       if (error) throw error;
 
-      if (!employers || employers.length === 0) {
+      if (!roles || roles.length === 0) {
         setMatches([]);
         setAgentThinking(false);
-        setAgentMessage("No employers have completed their culture assessment yet. Check back soon!");
+        setAgentMessage("No active roles available yet. Check back soon!");
         return;
       }
 
@@ -151,36 +176,56 @@ export function MatchingAgent() {
         neuroticism: candidate.neuroticism_score || 50,
       };
 
-      // Calculate matches for each employer
-      const matchResults: MatchResult[] = employers.map(employer => {
-        const idealOcean: OCEANScores = {
-          openness: employer.openness_preference || 50,
-          conscientiousness: employer.conscientiousness_preference || 50,
-          extraversion: employer.extraversion_preference || 50,
-          agreeableness: employer.agreeableness_preference || 50,
-          neuroticism: employer.neuroticism_preference || 50,
-        };
+      // Calculate matches for each role using the compatibility engine
+      const matchResults: MatchResult[] = roles.map((role: RoleData) => {
+        const employer = role.employers;
 
-        // Calculate match score directly
-        const matchScore = calculateMatchScore(candidateOcean, idealOcean);
-        const breakdown = calculateBreakdown(candidateOcean, idealOcean);
-        const highlights = generateHighlights(candidateOcean, idealOcean, employer);
-        const compatibilityInsights = generateInsights(candidateOcean, idealOcean, employer);
+        const result = calculateCompatibility({
+          candidateOCEAN: candidateOcean,
+          employerPreferences: {
+            openness: employer.openness_preference || 50,
+            conscientiousness: employer.conscientiousness_preference || 50,
+            extraversion: employer.extraversion_preference || 50,
+            agreeableness: employer.agreeableness_preference || 50,
+            neuroticism: employer.neuroticism_preference || 50,
+            cultureValues: employer.culture_values || [],
+          },
+          candidateWorkStyle: candidate.work_style || undefined,
+          roleWorkStyle: role.work_style || undefined,
+          roleRequirements: {
+            required_openness_min: role.required_openness_min,
+            required_openness_max: role.required_openness_max,
+            required_conscientiousness_min: role.required_conscientiousness_min,
+            required_conscientiousness_max: role.required_conscientiousness_max,
+            required_extraversion_min: role.required_extraversion_min,
+            required_extraversion_max: role.required_extraversion_max,
+            required_agreeableness_min: role.required_agreeableness_min,
+            required_agreeableness_max: role.required_agreeableness_max,
+            required_neuroticism_min: role.required_neuroticism_min,
+            required_neuroticism_max: role.required_neuroticism_max,
+            work_style: role.work_style,
+          },
+        });
+
+        const highlights = generateHighlights(candidateOcean, employer, result.breakdown);
+        const insights = generateInsights(candidateOcean, employer, role);
 
         return {
-          employer,
-          matchScore,
-          breakdown,
+          role,
+          traitMatchScore: result.traitMatchScore,
+          cultureMatchScore: result.cultureMatchScore,
+          overallMatchScore: result.overallMatchScore,
+          breakdown: result.breakdown,
           highlights,
-          compatibilityInsights,
+          insights,
         };
       });
 
-      // Sort by match score
-      matchResults.sort((a, b) => b.matchScore - a.matchScore);
+      // Sort by overall match score
+      matchResults.sort((a, b) => b.overallMatchScore - a.overallMatchScore);
 
       setMatches(matchResults);
-      setAgentMessage(`Found ${matchResults.length} potential matches! Here are your top recommendations.`);
+      setAgentMessage(`Found ${matchResults.length} matching roles! Here are your top recommendations.`);
     } catch (err) {
       console.error('Error finding matches:', err);
       setAgentMessage("Had trouble finding matches. Please try again.");
@@ -190,77 +235,39 @@ export function MatchingAgent() {
     }
   };
 
-  const calculateMatchScore = (candidate: OCEANScores, ideal: OCEANScores): number => {
-    // Calculate OCEAN distance and convert to a score
-    const oceanDiff =
-      Math.abs(candidate.openness - ideal.openness) +
-      Math.abs(candidate.conscientiousness - ideal.conscientiousness) +
-      Math.abs(candidate.extraversion - ideal.extraversion) +
-      Math.abs(candidate.agreeableness - ideal.agreeableness) +
-      Math.abs(candidate.neuroticism - ideal.neuroticism);
-
-    // Max possible difference is 500 (5 dimensions * 100)
-    // Convert to percentage match (0-100)
-    return Math.round(100 - (oceanDiff / 5));
-  };
-
-  const calculateBreakdown = (candidate: OCEANScores, ideal: OCEANScores): MatchResult['breakdown'] => {
-    // Personality fit based on OCEAN distance
-    const oceanDiff =
-      Math.abs(candidate.openness - ideal.openness) +
-      Math.abs(candidate.conscientiousness - ideal.conscientiousness) +
-      Math.abs(candidate.extraversion - ideal.extraversion) +
-      Math.abs(candidate.agreeableness - ideal.agreeableness) +
-      Math.abs(candidate.neuroticism - ideal.neuroticism);
-
-    const personalityFit = Math.round(100 - (oceanDiff / 5));
-
-    // Value alignment based on how close key traits are
-    const valueAlignment = Math.round(
-      100 - (Math.abs(candidate.openness - ideal.openness) +
-             Math.abs(candidate.conscientiousness - ideal.conscientiousness)) / 2
-    );
-
-    // Work style match based on extraversion and conscientiousness alignment
-    const workStyleMatch = Math.round(
-      100 - (Math.abs(candidate.extraversion - ideal.extraversion) +
-             Math.abs(candidate.agreeableness - ideal.agreeableness)) / 2
-    );
-
-    return { personalityFit, valueAlignment, workStyleMatch };
-  };
-
   const generateHighlights = (
     candidate: OCEANScores,
-    ideal: OCEANScores,
-    employer: EmployerData
+    employer: RoleData['employers'],
+    breakdown: MatchResult['breakdown']
   ): string[] => {
     const highlights: string[] = [];
 
-    if (candidate.openness > 60 && ideal.openness > 60) {
-      highlights.push("Shared love for innovation and new ideas");
+    if (breakdown.opennessFit >= 85) {
+      highlights.push("Strong alignment on innovation and creativity");
     }
-    if (candidate.conscientiousness > 65 && ideal.conscientiousness > 65) {
-      highlights.push("Strong alignment on quality and attention to detail");
+    if (breakdown.conscientiousnessFit >= 85) {
+      highlights.push("Excellent match on attention to detail");
     }
-    if (candidate.extraversion > 55 && ideal.extraversion > 55) {
+    if (breakdown.extraversionFit >= 85) {
       highlights.push("Compatible communication and collaboration styles");
     }
-    if (candidate.agreeableness > 60 && ideal.agreeableness > 60) {
-      highlights.push("Values teamwork and supportive relationships");
+    if (breakdown.agreeablenessFit >= 85) {
+      highlights.push("Shared values on teamwork and support");
     }
-    if (Math.abs(candidate.neuroticism - ideal.neuroticism) < 15) {
-      highlights.push("Similar approach to handling pressure and stress");
+    if (breakdown.neuroticismFit >= 85) {
+      highlights.push("Similar approach to handling pressure");
+    }
+    if (breakdown.workStyleFit >= 85) {
+      highlights.push("Work style preferences align perfectly");
+    }
+    if (breakdown.valuesFit >= 80) {
+      highlights.push("Strong culture values alignment");
     }
 
     if (employer.company_size === '1-10' || employer.company_size === '11-50') {
-      highlights.push("Thrives in fast-paced, dynamic environments");
-    }
-    if (ideal.openness > 65) {
-      highlights.push("Culture that celebrates creative thinking");
-    }
-    if (ideal.agreeableness > 65 && ideal.extraversion > 55) {
-      highlights.push("Team-oriented environment with strong support");
+      if (candidate.openness > 60) {
+        highlights.push("Thrives in dynamic, fast-paced environments");
+      }
     }
 
     return highlights.slice(0, 4);
@@ -268,29 +275,37 @@ export function MatchingAgent() {
 
   const generateInsights = (
     candidate: OCEANScores,
-    ideal: OCEANScores,
-    employer: EmployerData
+    employer: RoleData['employers'],
+    role: RoleData
   ): string[] => {
     const insights: string[] = [];
+    const idealOcean = {
+      openness: employer.openness_preference || 50,
+      conscientiousness: employer.conscientiousness_preference || 50,
+      extraversion: employer.extraversion_preference || 50,
+      agreeableness: employer.agreeableness_preference || 50,
+      neuroticism: employer.neuroticism_preference || 50,
+    };
 
-    if (candidate.openness > ideal.openness + 15) {
+    if (candidate.openness > idealOcean.openness + 15) {
       insights.push("Your creative drive could bring fresh perspectives to this team");
     }
-    if (candidate.conscientiousness > ideal.conscientiousness + 10) {
-      insights.push("Your attention to detail exceeds their expectations");
+    if (candidate.conscientiousness > idealOcean.conscientiousness + 10) {
+      insights.push("Your attention to detail exceeds expectations for this role");
     }
-    if (candidate.extraversion < ideal.extraversion - 15) {
-      insights.push("This role may require more social interaction than you prefer");
-    }
-    if (candidate.agreeableness > 70 && ideal.conscientiousness > 70) {
-      insights.push("Your collaborative nature could help balance their achievement-focused culture");
+    if (candidate.extraversion < idealOcean.extraversion - 15) {
+      insights.push("This role may involve more social interaction than you prefer");
     }
 
     if (employer.industry === 'Technology') {
-      insights.push("Tech industry aligns with innovation-driven personalities");
+      insights.push("Tech industry aligns well with innovation-driven personalities");
     }
     if (employer.industry === 'Healthcare') {
       insights.push("Healthcare sector values empathy and conscientiousness");
+    }
+
+    if (role.work_style === 'remote' && candidate.openness > 60) {
+      insights.push("Remote work can complement your independent working style");
     }
 
     return insights.slice(0, 3);
@@ -308,6 +323,17 @@ export function MatchingAgent() {
     if (score >= 70) return 'Strong Match';
     if (score >= 55) return 'Good Match';
     return 'Potential Match';
+  };
+
+  const formatSalary = (min: number | null, max: number | null) => {
+    if (!min && !max) return null;
+    const formatNum = (n: number) => {
+      if (n >= 1000) return `$${(n / 1000).toFixed(0)}k`;
+      return `$${n}`;
+    };
+    if (min && max) return `${formatNum(min)} - ${formatNum(max)}`;
+    if (min) return `From ${formatNum(min)}`;
+    return `Up to ${formatNum(max!)}`;
   };
 
   if (isLoading) {
@@ -337,7 +363,7 @@ export function MatchingAgent() {
             Complete Your Assessment First
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Take our personality assessment to discover your unique traits and find companies that match your values and work style.
+            Take our personality assessment to discover your unique traits and find roles that match your values and work style.
           </p>
           <Button onClick={() => navigate('/app/personality')}>
             Start Assessment
@@ -370,7 +396,7 @@ export function MatchingAgent() {
                 Match Agent
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                {agentThinking ? agentMessage : `${matches.length} companies analyzed`}
+                {agentThinking ? agentMessage : `${matches.length} roles analyzed`}
               </p>
             </div>
           </div>
@@ -410,19 +436,19 @@ export function MatchingAgent() {
                 className="p-8 rounded-2xl text-center"
                 style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
               >
-                <Users className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
+                <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
                 <p style={{ color: 'var(--color-textMuted)' }}>
-                  No employers have completed their culture assessment yet. Check back soon!
+                  No active roles available yet. Check back soon!
                 </p>
               </div>
             ) : (
               matches.map((match, index) => (
                 <button
-                  key={match.employer.id}
+                  key={match.role.id}
                   onClick={() => setSelectedMatch(match)}
                   className={cn(
                     "w-full p-5 rounded-2xl text-left transition-all",
-                    selectedMatch?.employer.id === match.employer.id
+                    selectedMatch?.role.id === match.role.id
                       ? "ring-2 ring-[var(--color-accent)]"
                       : "hover:bg-[var(--color-surfaceHover)]"
                   )}
@@ -442,18 +468,21 @@ export function MatchingAgent() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                            {match.employer.company_name || 'Unnamed Company'}
+                            {match.role.title}
                           </h3>
+                          <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+                            {match.role.employers.company_name || 'Company'}
+                          </p>
                           <div className="flex items-center gap-3 mt-1">
-                            {match.employer.industry && (
+                            {match.role.employers.industry && (
                               <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                                {match.employer.industry}
+                                {match.role.employers.industry}
                               </span>
                             )}
-                            {match.employer.location && (
+                            {match.role.location && (
                               <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                 <MapPin className="w-3 h-3" />
-                                {match.employer.location}
+                                {match.role.location}
                               </span>
                             )}
                           </div>
@@ -461,18 +490,18 @@ export function MatchingAgent() {
                         <div className="text-right flex-shrink-0">
                           <div
                             className="text-xl font-bold"
-                            style={{ color: getMatchColor(match.matchScore) }}
+                            style={{ color: getMatchColor(match.overallMatchScore) }}
                           >
-                            {match.matchScore}%
+                            {match.overallMatchScore}%
                           </div>
                           <div
                             className="text-xs px-2 py-0.5 rounded-full"
                             style={{
-                              backgroundColor: `${getMatchColor(match.matchScore)}20`,
-                              color: getMatchColor(match.matchScore),
+                              backgroundColor: `${getMatchColor(match.overallMatchScore)}20`,
+                              color: getMatchColor(match.overallMatchScore),
                             }}
                           >
-                            {getMatchLabel(match.matchScore)}
+                            {getMatchLabel(match.overallMatchScore)}
                           </div>
                         </div>
                       </div>
@@ -482,21 +511,23 @@ export function MatchingAgent() {
                         <div className="flex items-center gap-1.5">
                           <Heart className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
                           <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                            {match.breakdown.personalityFit}% Personality
+                            {match.traitMatchScore}% Traits
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Star className="w-3.5 h-3.5" style={{ color: 'var(--color-warning)' }} />
                           <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                            {match.breakdown.valueAlignment}% Values
+                            {match.cultureMatchScore}% Culture
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Zap className="w-3.5 h-3.5" style={{ color: 'var(--color-success)' }} />
-                          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                            {match.breakdown.workStyleMatch}% Work Style
-                          </span>
-                        </div>
+                        {match.breakdown.workStyleFit && (
+                          <div className="flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5" style={{ color: 'var(--color-success)' }} />
+                            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                              {match.breakdown.workStyleFit}% Work Style
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {index < 3 && match.highlights.length > 0 && (
@@ -544,19 +575,22 @@ export function MatchingAgent() {
                     <Building2 className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
                   </div>
                   <h3 className="font-semibold text-lg" style={{ color: 'var(--color-text)' }}>
-                    {selectedMatch.employer.company_name || 'Unnamed Company'}
+                    {selectedMatch.role.title}
                   </h3>
-                  <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                    {selectedMatch.employer.industry}
+                  <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+                    {selectedMatch.role.employers.company_name}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    {selectedMatch.role.employers.industry}
                   </p>
                   <div
                     className="text-3xl font-bold mt-3"
-                    style={{ color: getMatchColor(selectedMatch.matchScore) }}
+                    style={{ color: getMatchColor(selectedMatch.overallMatchScore) }}
                   >
-                    {selectedMatch.matchScore}%
+                    {selectedMatch.overallMatchScore}%
                   </div>
                   <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                    Match Score
+                    Overall Match
                   </p>
                 </div>
 
@@ -567,9 +601,10 @@ export function MatchingAgent() {
                   </h4>
                   <div className="space-y-3">
                     {[
-                      { label: 'Personality Fit', value: selectedMatch.breakdown.personalityFit, icon: Heart, color: 'var(--color-accent)' },
-                      { label: 'Value Alignment', value: selectedMatch.breakdown.valueAlignment, icon: Star, color: 'var(--color-warning)' },
-                      { label: 'Work Style', value: selectedMatch.breakdown.workStyleMatch, icon: Zap, color: 'var(--color-success)' },
+                      { label: 'Trait Match', value: selectedMatch.traitMatchScore, icon: Heart, color: 'var(--color-accent)' },
+                      { label: 'Culture Fit', value: selectedMatch.cultureMatchScore, icon: Star, color: 'var(--color-warning)' },
+                      { label: 'Work Style', value: selectedMatch.breakdown.workStyleFit, icon: Zap, color: 'var(--color-success)' },
+                      { label: 'Values Alignment', value: selectedMatch.breakdown.valuesFit, icon: TrendingUp, color: 'var(--color-accent)' },
                     ].map((item) => (
                       <div key={item.label}>
                         <div className="flex items-center justify-between mb-1">
@@ -622,13 +657,13 @@ export function MatchingAgent() {
                 )}
 
                 {/* Insights */}
-                {selectedMatch.compatibilityInsights.length > 0 && (
+                {selectedMatch.insights.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
                       Insights
                     </h4>
                     <ul className="space-y-2">
-                      {selectedMatch.compatibilityInsights.map((insight, i) => (
+                      {selectedMatch.insights.map((insight, i) => (
                         <li
                           key={i}
                           className="text-xs p-2 rounded-lg"
@@ -644,24 +679,36 @@ export function MatchingAgent() {
                   </div>
                 )}
 
-                {/* Company Info */}
+                {/* Role & Company Info */}
                 <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
                   <div className="space-y-2 text-sm">
-                    {selectedMatch.employer.location && (
+                    {selectedMatch.role.location && (
                       <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
                         <MapPin className="w-4 h-4" />
-                        {selectedMatch.employer.location}
+                        {selectedMatch.role.location}
                       </div>
                     )}
-                    {selectedMatch.employer.company_size && (
+                    {selectedMatch.role.work_style && (
+                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
+                        <Briefcase className="w-4 h-4" />
+                        {selectedMatch.role.work_style.charAt(0).toUpperCase() + selectedMatch.role.work_style.slice(1)}
+                      </div>
+                    )}
+                    {formatSalary(selectedMatch.role.salary_min, selectedMatch.role.salary_max) && (
+                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
+                        <span className="w-4 h-4 text-center">$</span>
+                        {formatSalary(selectedMatch.role.salary_min, selectedMatch.role.salary_max)}
+                      </div>
+                    )}
+                    {selectedMatch.role.employers.company_size && (
                       <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
                         <Users className="w-4 h-4" />
-                        {selectedMatch.employer.company_size.charAt(0).toUpperCase() + selectedMatch.employer.company_size.slice(1)} company
+                        {selectedMatch.role.employers.company_size} employees
                       </div>
                     )}
-                    {selectedMatch.employer.company_website && (
+                    {selectedMatch.role.employers.company_website && (
                       <a
-                        href={selectedMatch.employer.company_website}
+                        href={selectedMatch.role.employers.company_website}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 hover:underline"
@@ -675,7 +722,7 @@ export function MatchingAgent() {
                 </div>
 
                 <Button className="w-full" rightIcon={<MessageCircle className="w-4 h-4" />}>
-                  Request Coffee Chat
+                  Express Interest
                 </Button>
               </div>
             ) : (
@@ -686,7 +733,7 @@ export function MatchingAgent() {
                   border: '1px solid var(--color-border)',
                 }}
               >
-                <Building2 className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
+                <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
                 <p style={{ color: 'var(--color-textMuted)' }}>
                   Select a match to see detailed compatibility insights
                 </p>

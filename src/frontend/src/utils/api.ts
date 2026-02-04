@@ -192,3 +192,133 @@ export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
   return response.json();
 }
+
+// ============ Matching Types ============
+
+export interface MatchBreakdown {
+  openness_fit: number;
+  conscientiousness_fit: number;
+  extraversion_fit: number;
+  agreeableness_fit: number;
+  neuroticism_fit: number;
+  work_style_fit: number;
+  values_alignment?: number;
+  role_fit?: number;
+}
+
+export interface MatchResult {
+  candidate_id: string;
+  role_id: string;
+  trait_match_score: number;
+  culture_match_score: number;
+  overall_match_score: number;
+  breakdown: MatchBreakdown;
+}
+
+export interface CandidateMatchResult {
+  candidate_id: string;
+  candidate_name: string;
+  candidate_email: string;
+  trait_match_score: number;
+  culture_match_score: number;
+  overall_match_score: number;
+  breakdown: MatchBreakdown;
+}
+
+export interface RoleMatchResult {
+  role_id: string;
+  role_title: string;
+  employer_name: string;
+  trait_match_score: number;
+  culture_match_score: number;
+  overall_match_score: number;
+  breakdown: MatchBreakdown;
+}
+
+// ============ Matching API ============
+
+export async function calculateMatch(
+  candidateId: string,
+  roleId: string
+): Promise<MatchResult> {
+  const response = await fetch(`${API_BASE_URL}/api/matching/calculate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      candidate_id: candidateId,
+      role_id: roleId,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `API error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getCandidatesForRole(
+  roleId: string
+): Promise<CandidateMatchResult[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/matching/candidates/${roleId}`
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `API error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getRolesForCandidate(
+  candidateId: string
+): Promise<RoleMatchResult[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/matching/roles/${candidateId}`
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `API error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function batchCalculateForRole(
+  roleId: string
+): Promise<{ success: boolean; candidates_scored: number }> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/matching/batch-calculate/${roleId}`,
+    {
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `API error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getEmployerCandidates(): Promise<
+  Array<CandidateMatchResult & { headline?: string }>
+> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/matching/employer-candidates`
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `API error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
