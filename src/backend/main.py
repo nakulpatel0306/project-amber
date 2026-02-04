@@ -25,6 +25,26 @@ from database import (
     save_feedback,
     get_all_feedback,
 )
+from compatibility import (
+    CandidateOCEAN,
+    EmployerPreferences,
+    RoleRequirements,
+    calculate_compatibility,
+)
+from supabase_client import (
+    get_candidate_by_id as get_supabase_candidate,
+    get_candidate_by_user_id,
+    get_employer_by_id,
+    get_employer_by_user_id,
+    get_role,
+    get_all_candidates_with_scores as get_supabase_candidates,
+    get_all_active_roles,
+    get_roles_by_employer_id,
+    upsert_application,
+    get_application,
+    get_applications_for_role,
+    get_applications_for_candidate,
+)
 from questions import get_question, get_all_questions, get_total_questions
 from scoring import calculate_scores, get_score_explanation
 from auth import (
@@ -141,6 +161,53 @@ class CheckEmailRequest(BaseModel):
 class CheckEmailResponse(BaseModel):
     exists: bool
     message: str
+
+
+# ============ Matching Request/Response Models ============
+
+class CalculateMatchRequest(BaseModel):
+    candidate_id: str
+    role_id: str
+
+
+class MatchBreakdown(BaseModel):
+    openness_fit: int
+    conscientiousness_fit: int
+    extraversion_fit: int
+    agreeableness_fit: int
+    neuroticism_fit: int
+    work_style_fit: int
+    values_alignment: Optional[int] = None
+    role_fit: Optional[int] = None
+
+
+class MatchResult(BaseModel):
+    candidate_id: str
+    role_id: str
+    trait_match_score: int
+    culture_match_score: int
+    overall_match_score: int
+    breakdown: dict
+
+
+class CandidateMatchResult(BaseModel):
+    candidate_id: str
+    candidate_name: str
+    candidate_email: str
+    trait_match_score: int
+    culture_match_score: int
+    overall_match_score: int
+    breakdown: dict
+
+
+class RoleMatchResult(BaseModel):
+    role_id: str
+    role_title: str
+    employer_name: str
+    trait_match_score: int
+    culture_match_score: int
+    overall_match_score: int
+    breakdown: dict
 
 
 # ============ Health Check Endpoints ============
@@ -482,6 +549,306 @@ async def submit_feedback(request: FeedbackRequest):
 async def get_feedback():
     """Get all feedback (admin endpoint)."""
     return get_all_feedback()
+
+
+# ============ Matching Endpoints ============
+
+def _build_candidate_ocean(candidate: dict) -> CandidateOCEAN:
+    """Build CandidateOCEAN from Supabase candidate data."""
+    return CandidateOCEAN(
+        openness=candidate.get('openness_score') or 50,
+        conscientiousness=candidate.get('conscientiousness_score') or 50,
+        extraversion=candidate.get('extraversion_score') or 50,
+        agreeableness=candidate.get('agreeableness_score') or 50,
+        neuroticism=candidate.get('neuroticism_score') or 50,
+    )
+
+
+def _build_employer_preferences(employer: dict) -> EmployerPreferences:
+    """Build EmployerPreferences from Supabase employer data."""
+    return EmployerPreferences(
+        openness_preference=employer.get('openness_preference') or 50,
+        conscientiousness_preference=employer.get('conscientiousness_preference') or 50,
+        extraversion_preference=employer.get('extraversion_preference') or 50,
+        agreeableness_preference=employer.get('agreeableness_preference') or 50,
+        neuroticism_preference=employer.get('neuroticism_preference') or 50,
+        culture_values=employer.get('culture_values') or [],
+    )
+
+
+def _build_role_requirements(role: dict) -> RoleRequirements:
+    """Build RoleRequirements from Supabase role data."""
+    return RoleRequirements(
+        required_openness_min=role.get('required_openness_min'),
+        required_openness_max=role.get('required_openness_max'),
+        required_conscientiousness_min=role.get('required_conscientiousness_min'),
+        required_conscientiousness_max=role.get('required_conscientiousness_max'),
+        required_extraversion_min=role.get('required_extraversion_min'),
+        required_extraversion_max=role.get('required_extraversion_max'),
+        required_agreeableness_min=role.get('required_agreeableness_min'),
+        required_agreeableness_max=role.get('required_agreeableness_max'),
+        required_neuroticism_min=role.get('required_neuroticism_min'),
+        required_neuroticism_max=role.get('required_neuroticism_max'),
+        work_style=role.get('work_style'),
+    )
+
+
+@app.post("/api/matching/calculate", response_model=MatchResult)
+async def calculate_match(
+    request: CalculateMatchRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Calculate compatibility score between a candidate and a role.
+    Stores the result in the applications table.
+    """
+    # Get candidate data
+    candidate = get_supabase_candidate(request.candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    # Get role with employer data
+    role_data = get_role(request.role_id)
+    if not role_data:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    employer = role_data.get('employers', {})
+
+    # Build scoring inputs
+    candidate_ocean = _build_candidate_ocean(candidate)
+    employer_prefs = _build_employer_preferences(employer)
+    role_reqs = _build_role_requirements(role_data)
+
+    # Calculate compatibility
+    result = calculate_compatibility(
+        candidate=candidate_ocean,
+        employer=employer_prefs,
+        candidate_work_style=candidate.get('work_style'),
+        role=role_reqs,
+    )
+
+    # Store in applications table
+    upsert_application({
+        'candidate_id': request.candidate_id,
+        'role_id': request.role_id,
+        'trait_match_score': result.trait_match_score,
+        'culture_match_score': result.culture_match_score,
+        'overall_match_score': result.overall_match_score,
+        'match_breakdown': result.breakdown,
+        'status': 'scored',
+    })
+
+    return MatchResult(
+        candidate_id=request.candidate_id,
+        role_id=request.role_id,
+        trait_match_score=result.trait_match_score,
+        culture_match_score=result.culture_match_score,
+        overall_match_score=result.overall_match_score,
+        breakdown=result.breakdown,
+    )
+
+
+@app.get("/api/matching/candidates/{role_id}", response_model=List[CandidateMatchResult])
+async def get_candidates_for_role(
+    role_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Get all candidates ranked by match score for a specific role.
+    Requires employer role when auth is enabled.
+    """
+    if user and not user.is_employer:
+        raise HTTPException(status_code=403, detail="Only employers can view candidates for roles")
+
+    # Get role with employer
+    role_data = get_role(role_id)
+    if not role_data:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    employer = role_data.get('employers', {})
+    employer_prefs = _build_employer_preferences(employer)
+    role_reqs = _build_role_requirements(role_data)
+
+    # Get all candidates with OCEAN scores
+    candidates = get_supabase_candidates()
+    results = []
+
+    for candidate in candidates:
+        candidate_ocean = _build_candidate_ocean(candidate)
+
+        # Calculate compatibility
+        result = calculate_compatibility(
+            candidate=candidate_ocean,
+            employer=employer_prefs,
+            candidate_work_style=candidate.get('work_style'),
+            role=role_reqs,
+        )
+
+        profile = candidate.get('profiles', {})
+        results.append(CandidateMatchResult(
+            candidate_id=candidate['id'],
+            candidate_name=profile.get('full_name') or 'Unknown',
+            candidate_email=profile.get('email') or '',
+            trait_match_score=result.trait_match_score,
+            culture_match_score=result.culture_match_score,
+            overall_match_score=result.overall_match_score,
+            breakdown=result.breakdown,
+        ))
+
+    # Sort by overall match score descending
+    results.sort(key=lambda x: x.overall_match_score, reverse=True)
+    return results
+
+
+@app.get("/api/matching/roles/{candidate_id}", response_model=List[RoleMatchResult])
+async def get_roles_for_candidate(
+    candidate_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Get all active roles ranked by match score for a specific candidate.
+    """
+    # Get candidate
+    candidate = get_supabase_candidate(candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    candidate_ocean = _build_candidate_ocean(candidate)
+
+    # Get all active roles
+    roles = get_all_active_roles()
+    results = []
+
+    for role_data in roles:
+        employer = role_data.get('employers', {})
+        employer_prefs = _build_employer_preferences(employer)
+        role_reqs = _build_role_requirements(role_data)
+
+        # Calculate compatibility
+        result = calculate_compatibility(
+            candidate=candidate_ocean,
+            employer=employer_prefs,
+            candidate_work_style=candidate.get('work_style'),
+            role=role_reqs,
+        )
+
+        results.append(RoleMatchResult(
+            role_id=role_data['id'],
+            role_title=role_data.get('title') or 'Unknown Role',
+            employer_name=employer.get('company_name') or 'Unknown Company',
+            trait_match_score=result.trait_match_score,
+            culture_match_score=result.culture_match_score,
+            overall_match_score=result.overall_match_score,
+            breakdown=result.breakdown,
+        ))
+
+    # Sort by overall match score descending
+    results.sort(key=lambda x: x.overall_match_score, reverse=True)
+    return results
+
+
+@app.post("/api/matching/batch-calculate/{role_id}")
+async def batch_calculate_for_role(
+    role_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Calculate and store match scores for all candidates against a specific role.
+    Requires employer role when auth is enabled.
+    """
+    if user and not user.is_employer:
+        raise HTTPException(status_code=403, detail="Only employers can run batch calculations")
+
+    # Get role with employer
+    role_data = get_role(role_id)
+    if not role_data:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    employer = role_data.get('employers', {})
+    employer_prefs = _build_employer_preferences(employer)
+    role_reqs = _build_role_requirements(role_data)
+
+    # Get all candidates with OCEAN scores
+    candidates = get_supabase_candidates()
+    count = 0
+
+    for candidate in candidates:
+        candidate_ocean = _build_candidate_ocean(candidate)
+
+        # Calculate compatibility
+        result = calculate_compatibility(
+            candidate=candidate_ocean,
+            employer=employer_prefs,
+            candidate_work_style=candidate.get('work_style'),
+            role=role_reqs,
+        )
+
+        # Store in applications table
+        upsert_application({
+            'candidate_id': candidate['id'],
+            'role_id': role_id,
+            'trait_match_score': result.trait_match_score,
+            'culture_match_score': result.culture_match_score,
+            'overall_match_score': result.overall_match_score,
+            'match_breakdown': result.breakdown,
+            'status': 'scored',
+        })
+        count += 1
+
+    return {
+        "success": True,
+        "message": f"Calculated scores for {count} candidates",
+        "candidates_scored": count,
+    }
+
+
+@app.get("/api/matching/employer-candidates")
+async def get_employer_candidates(
+    user: AuthUser = Depends(require_auth)
+):
+    """
+    Get candidates ranked by culture fit for the authenticated employer.
+    No specific role - just overall employer culture match.
+    """
+    if not user.is_employer:
+        raise HTTPException(status_code=403, detail="Only employers can access this endpoint")
+
+    # Get employer data
+    employer = get_employer_by_user_id(user.id)
+    if not employer:
+        raise HTTPException(status_code=404, detail="Employer profile not found")
+
+    employer_prefs = _build_employer_preferences(employer)
+
+    # Get all candidates with OCEAN scores
+    candidates = get_supabase_candidates()
+    results = []
+
+    for candidate in candidates:
+        candidate_ocean = _build_candidate_ocean(candidate)
+
+        # Calculate compatibility without role-specific requirements
+        result = calculate_compatibility(
+            candidate=candidate_ocean,
+            employer=employer_prefs,
+            candidate_work_style=candidate.get('work_style'),
+        )
+
+        profile = candidate.get('profiles', {})
+        results.append({
+            'candidate_id': candidate['id'],
+            'candidate_name': profile.get('full_name') or 'Unknown',
+            'candidate_email': profile.get('email') or '',
+            'headline': candidate.get('headline'),
+            'trait_match_score': result.trait_match_score,
+            'culture_match_score': result.culture_match_score,
+            'overall_match_score': result.overall_match_score,
+            'breakdown': result.breakdown,
+        })
+
+    # Sort by overall match score descending
+    results.sort(key=lambda x: x['overall_match_score'], reverse=True)
+    return results
 
 
 # ============ Main Entry Point ============
