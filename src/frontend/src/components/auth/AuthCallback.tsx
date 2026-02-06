@@ -30,15 +30,14 @@ export function AuthCallback() {
           throw error;
         }
 
-        // Handle email verification callback
-        if (type === 'signup' || type === 'email_change') {
-          if (session) {
-            success('Email verified', 'Your email has been verified successfully.');
-          } else {
-            info('Email verified', 'Your email has been verified. Please sign in.');
-            navigate('/auth/login', { replace: true });
-            return;
-          }
+        // Track if this is an email verification callback (to avoid duplicate toasts)
+        const isEmailVerification = type === 'signup' || type === 'email_change';
+
+        // Handle email verification callback when no session
+        if (isEmailVerification && !session) {
+          info('Email verified', 'Your email has been verified. Please sign in.');
+          navigate('/auth/login', { replace: true });
+          return;
         }
 
         if (!session) {
@@ -109,7 +108,12 @@ export function AuthCallback() {
             // Small delay to ensure React state updates
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            success('Welcome!', 'Your account has been created successfully.');
+            // Show appropriate message (only one toast)
+            if (isEmailVerification) {
+              success('Email verified', 'Your email has been verified. Welcome!');
+            } else {
+              success('Welcome!', 'Your account has been created successfully.');
+            }
             console.log('AuthCallback: Navigating to', getDashboardPath(storedRole));
             navigate(getDashboardPath(storedRole), { replace: true });
           }

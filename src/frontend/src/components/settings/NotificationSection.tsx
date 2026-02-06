@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { Bell, Mail, MessageSquare, Sparkles, Users, Briefcase, Phone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { getUserSettings, updateUserSettings } from '../../lib/supabase';
+import { getUserSettings, updateUserSettings, supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
+import { Input } from '../ui/Input';
 
 interface NotificationSettings {
   // Communication channels
   sms_enabled: boolean;
+  phone_number: string;
   // Email preferences
   email_daily_digest: boolean;
   email_product_updates: boolean;
@@ -19,6 +21,7 @@ interface NotificationSettings {
 
 const defaultSettings: NotificationSettings = {
   sms_enabled: false,
+  phone_number: '',
   email_daily_digest: true,
   email_product_updates: true,
   email_matches: true,
@@ -50,19 +53,27 @@ export function NotificationSection() {
       if (!user) return;
 
       try {
-        const data = await getUserSettings(user.id) as NotificationSettings | null;
-        if (data) {
-          const loadedSettings = {
-            sms_enabled: data.sms_enabled ?? false,
-            email_daily_digest: data.email_daily_digest ?? true,
-            email_product_updates: data.email_product_updates ?? true,
-            email_matches: data.email_matches ?? true,
-            email_messages: data.email_messages ?? true,
-            email_tips: data.email_tips ?? false,
-          };
-          setSettings(loadedSettings);
-          setOriginalSettings(loadedSettings);
-        }
+        // Load notification settings
+        const data = await getUserSettings(user.id) as Partial<NotificationSettings> | null;
+
+        // Load phone number from profiles table
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('phone_number')
+          .eq('id', user.id)
+          .single();
+
+        const loadedSettings = {
+          sms_enabled: data?.sms_enabled ?? false,
+          phone_number: profileData?.phone_number ?? '',
+          email_daily_digest: data?.email_daily_digest ?? true,
+          email_product_updates: data?.email_product_updates ?? true,
+          email_matches: data?.email_matches ?? true,
+          email_messages: data?.email_messages ?? true,
+          email_tips: data?.email_tips ?? false,
+        };
+        setSettings(loadedSettings);
+        setOriginalSettings(loadedSettings);
       } catch (err) {
         console.error('Error loading settings:', err);
       } finally {
@@ -73,9 +84,17 @@ export function NotificationSection() {
     loadSettings();
   }, [user]);
 
-  const handleToggle = (key: keyof NotificationSettings) => {
+  const handleToggle = (key: keyof Omit<NotificationSettings, 'phone_number'>) => {
     setSettings(prev => {
       const newSettings = { ...prev, [key]: !prev[key] };
+      setHasChanges(JSON.stringify(newSettings) !== JSON.stringify(originalSettings));
+      return newSettings;
+    });
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setSettings(prev => {
+      const newSettings = { ...prev, phone_number: value };
       setHasChanges(JSON.stringify(newSettings) !== JSON.stringify(originalSettings));
       return newSettings;
     });
@@ -86,10 +105,19 @@ export function NotificationSection() {
 
     setIsSaving(true);
     try {
-      await updateUserSettings(user.id, settings);
+      // Save notification settings (excluding phone_number)
+      const { phone_number, ...notificationSettings } = settings;
+      await updateUserSettings(user.id, notificationSettings);
+
+      // Save phone number to profiles table
+      await supabase
+        .from('profiles')
+        .update({ phone_number })
+        .eq('id', user.id);
+
       setOriginalSettings(settings);
       setHasChanges(false);
-      success('Settings saved', 'Your notification preferences have been updated.');
+      success('Settings Saved', 'Your notification preferences have been updated.');
     } catch (err) {
       showError('Failed to save', 'Please try again later.');
     } finally {
@@ -260,15 +288,22 @@ export function NotificationSection() {
           </button>
         </div>
         {settings.sms_enabled && (
-          <p
-            className="mt-3 text-xs px-3 py-2 rounded-lg"
-            style={{
-              backgroundColor: 'var(--color-background)',
-              color: 'var(--color-textMuted)',
-            }}
-          >
-            You'll receive SMS at the phone number in your profile. Standard messaging rates may apply.
-          </p>
+          <div className="mt-4 space-y-3">
+            <Input
+              label="Phone Number"
+              type="tel"
+              value={settings.phone_number}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="+1 (555) 123-4567"
+              leftIcon={<Phone className="w-4 h-4" />}
+            />
+            <p
+              className="text-xs"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              Standard messaging rates may apply. We'll only text you for urgent updates.
+            </p>
+          </div>
         )}
       </div>
 

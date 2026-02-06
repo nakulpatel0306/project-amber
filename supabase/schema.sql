@@ -12,12 +12,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
+  phone_number TEXT,
   role TEXT CHECK (role IN ('candidate', 'employer')),  -- NULL until user chooses
   email_verified BOOLEAN DEFAULT FALSE,
   onboarding_completed BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add phone_number column if it doesn't exist (for existing databases)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'phone_number') THEN
+    ALTER TABLE public.profiles ADD COLUMN phone_number TEXT;
+  END IF;
+END $$;
 
 -- ============================================
 -- CANDIDATES TABLE

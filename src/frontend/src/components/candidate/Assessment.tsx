@@ -79,12 +79,19 @@ export function Assessment() {
       try {
         const { data: candidate } = await supabase
           .from('candidates')
-          .select('headline, bio, assessment_completed_at')
+          .select('headline, bio, location, years_experience, preferred_work_style, preferred_company_size, assessment_completed_at')
           .eq('user_id', user.id)
           .single();
 
-        // Dev mode bypasses profile requirement
-        const profileComplete = isDevMode() || !!(candidate?.headline || candidate?.bio);
+        // All mandatory fields must be filled (everything except salary expectations and links)
+        const profileComplete = isDevMode() || !!(
+          candidate?.headline &&
+          candidate?.bio &&
+          candidate?.location &&
+          candidate?.years_experience !== null &&
+          candidate?.preferred_work_style &&
+          candidate?.preferred_company_size
+        );
         setHasCompletedProfile(profileComplete);
 
         // Check cooldown (24 hours = 86400000 ms)
@@ -412,7 +419,7 @@ export function Assessment() {
   if (!hasCompletedProfile) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center px-4"
+        className="h-screen overflow-hidden flex items-center justify-center px-4"
         style={{ backgroundColor: 'var(--color-background)' }}
       >
         <div
@@ -432,24 +439,24 @@ export function Assessment() {
             className="text-2xl font-bold mb-3"
             style={{ color: 'var(--color-text)' }}
           >
-            complete your profile first
+            Complete Your Profile First
           </h1>
           <p
             className="mb-6"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            before taking the personality assessment, please set up your candidate profile. this helps us match you with the right opportunities.
+            Before taking the personality assessment, please set up your candidate profile. This helps us match you with the right opportunities.
           </p>
           <div className="flex flex-col gap-3">
             <Button
               onClick={() => setShowSetupModal(true)}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              set up profile
+              Set Up Profile
             </Button>
             <Link to="/app/dashboard">
               <Button variant="ghost" className="w-full">
-                back to dashboard
+                Back to Dashboard
               </Button>
             </Link>
           </div>

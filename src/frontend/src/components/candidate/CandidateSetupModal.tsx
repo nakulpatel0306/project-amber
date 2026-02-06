@@ -60,7 +60,7 @@ const STEPS = [
   { id: 'links', title: 'Links', icon: LinkIcon },
 ];
 
-export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAssessment = true }: CandidateSetupModalProps) {
+export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAssessment = false }: CandidateSetupModalProps) {
   const { user, profile, refreshProfile } = useAuth();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
@@ -179,7 +179,23 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
     }
   };
 
+  // Validation for each step
+  const canProceedToNext = () => {
+    if (currentStep === 0) return true; // Intro step
+    if (currentStep === 1) {
+      // Basic info - all mandatory
+      return !!(data.headline && data.bio && data.location && data.years_experience !== null);
+    }
+    if (currentStep === 2) {
+      // Preferences - work style and company size mandatory, salary optional
+      return !!(data.preferred_work_style && data.preferred_company_size);
+    }
+    return true; // Links step is optional
+  };
+
   const handleNext = async () => {
+    if (!canProceedToNext()) return;
+
     if (currentStep < STEPS.length - 1) {
       const nextStep = currentStep + 1;
       // Save current step data before moving to next
@@ -245,7 +261,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
       // Refresh profile to update the onboarding_completed flag in context
       await refreshProfile();
 
-      success('Profile setup complete!', 'Now take the personality assessment to get matched.');
+      success('Profile Setup Complete!', 'Your profile has been saved successfully.');
       onComplete();
 
       // Redirect to assessment page after completing setup
@@ -275,7 +291,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-scale-in"
+          className="relative w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden animate-scale-in flex flex-col"
           style={{
             backgroundColor: 'var(--color-background)',
             border: '1px solid var(--color-border)',
@@ -328,7 +344,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
           </div>
 
           {/* Content */}
-          <div className="p-8">
+          <div className="p-8 overflow-y-auto flex-1">
             {/* Step 0: Intro */}
             {currentStep === 0 && (
               <div className="text-center">
@@ -380,7 +396,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                 </div>
 
                 <Input
-                  label="Professional Headline"
+                  label="Professional Headline *"
                   type="text"
                   value={data.headline}
                   onChange={(e) => setData({ ...data, headline: e.target.value })}
@@ -393,7 +409,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                     className="block text-sm font-medium mb-2"
                     style={{ color: 'var(--color-text)' }}
                   >
-                    Bio
+                    Bio *
                   </label>
                   <textarea
                     value={data.bio}
@@ -411,13 +427,13 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
 
                 <div className="grid grid-cols-2 gap-4">
                   <LocationPicker
-                    label="Location"
+                    label="Location *"
                     value={data.location}
                     onChange={(location) => setData({ ...data, location })}
                     placeholder="Select your location"
                   />
                   <Input
-                    label="Years of Experience"
+                    label="Years of Experience *"
                     type="number"
                     value={data.years_experience?.toString() || ''}
                     onChange={(e) => setData({ ...data, years_experience: e.target.value ? parseInt(e.target.value) : null })}
@@ -425,6 +441,12 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                     leftIcon={<Briefcase className="w-4 h-4" />}
                   />
                 </div>
+
+                {!canProceedToNext() && (
+                  <p className="text-xs text-center" style={{ color: 'var(--color-textMuted)' }}>
+                    Please Fill In All Required Fields (*)
+                  </p>
+                )}
               </div>
             )}
 
@@ -650,6 +672,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
               {currentStep < STEPS.length - 1 ? (
                 <Button
                   onClick={handleNext}
+                  disabled={!canProceedToNext()}
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
                   {currentStep === 0 ? 'Get Started' : 'Continue'}
@@ -660,7 +683,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                   isLoading={isSaving}
                   rightIcon={!isSaving ? <ArrowRight className="w-4 h-4" /> : undefined}
                 >
-                  Complete & Take Assessment
+                  {redirectToAssessment ? 'Complete & Take Assessment' : 'Complete Setup'}
                 </Button>
               )}
             </div>

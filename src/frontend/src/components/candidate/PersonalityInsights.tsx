@@ -273,16 +273,10 @@ export function PersonalityInsights() {
   if (!hasCompletedAssessment) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center px-4"
-        style={{ backgroundColor: 'var(--color-background)' }}
+        className="flex-1 flex items-center justify-center px-4 py-12"
+        style={{ backgroundColor: 'var(--color-background)', minHeight: 'calc(100vh - 80px)' }}
       >
-        <div
-          className="max-w-md w-full p-8 rounded-2xl border text-center"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
+        <div className="text-center">
           <div
             className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center"
             style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
@@ -293,17 +287,17 @@ export function PersonalityInsights() {
             className="text-2xl font-bold mb-3"
             style={{ color: 'var(--color-text)' }}
           >
-            discover your personality
+            Discover Your Personality
           </h1>
           <p
-            className="mb-6"
+            className="mb-6 max-w-sm mx-auto"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            take the personality assessment to unlock your insights and find jobs that truly fit your style.
+            Take the personality assessment to unlock your insights and find jobs that truly fit your style.
           </p>
           <Link to="/app/personality">
             <Button size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
-              start assessment
+              Start Assessment
             </Button>
           </Link>
         </div>
