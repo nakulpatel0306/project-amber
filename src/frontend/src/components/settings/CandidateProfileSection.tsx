@@ -38,9 +38,10 @@ const WORK_STYLES = [
 ];
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup (1-100)' },
-  { id: 'midsize', label: 'Mid-size (100-1000)' },
-  { id: 'enterprise', label: 'Enterprise (1000+)' },
+  { id: 'startup', label: 'Startup (1-50)' },
+  { id: 'small', label: 'Small (50-200)' },
+  { id: 'medium', label: 'Medium (200-1000)' },
+  { id: 'large', label: 'Large (1000+)' },
   { id: 'any', label: 'Any Size' },
 ];
 

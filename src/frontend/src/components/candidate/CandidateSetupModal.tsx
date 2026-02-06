@@ -47,9 +47,10 @@ const WORK_STYLES = [
 ];
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup', description: '1-100 employees' },
-  { id: 'midsize', label: 'Mid-size', description: '100-1000 employees' },
-  { id: 'enterprise', label: 'Enterprise', description: '1000+ employees' },
+  { id: 'startup', label: 'Startup', description: '1-50 employees' },
+  { id: 'small', label: 'Small', description: '50-200 employees' },
+  { id: 'medium', label: 'Medium', description: '200-1000 employees' },
+  { id: 'large', label: 'Large', description: '1000+ employees' },
   { id: 'any', label: 'Any Size', description: 'Open to all' },
 ];
 
@@ -213,6 +214,11 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
   const handleSkip = async () => {
     // Mark setup as completed even if skipped
     if (user) {
+      // Ensure a candidate record exists so assessment can work
+      await supabase
+        .from('candidates')
+        .upsert({ user_id: user.id }, { onConflict: 'user_id' });
+
       await supabase
         .from('profiles')
         .update({ onboarding_completed: true })
@@ -517,7 +523,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                   >
                     Preferred Company Size
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {COMPANY_SIZES.map((size) => (
                       <button
                         key={size.id}

@@ -25,9 +25,11 @@ interface EmployerData {
 }
 
 const COMPANY_SIZES = [
-  { id: 'startup', label: 'Startup (1-100)' },
-  { id: 'midsize', label: 'Mid-size (100-1000)' },
-  { id: 'enterprise', label: 'Enterprise (1000+)' },
+  { id: '1-10', label: 'Startup (1-10)' },
+  { id: '11-50', label: 'Small (11-50)' },
+  { id: '51-200', label: 'Growing (51-200)' },
+  { id: '201-500', label: 'Mid-size (201-500)' },
+  { id: '500+', label: 'Enterprise (500+)' },
 ];
 
 const INDUSTRIES = [
