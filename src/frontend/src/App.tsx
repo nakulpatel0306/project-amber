@@ -21,11 +21,11 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 
 // Pages
-import { WelcomeScreen } from './components/WelcomeScreen';
+import { WelcomeScreen } from './components/landing';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
-import { AssessmentFlow } from './components/AssessmentFlow';
-import { Assessment, MatchingAgent, PersonalityInsights } from './components/candidate';
+import { AssessmentFlow, Assessment, MatchingAgent, PersonalityInsights } from './components/candidate';
 import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
+import { EmberAgent } from './components/ember';
 import { SettingsPage } from './components/settings/SettingsPage';
 
 import './styles/globals.css';
@@ -135,6 +135,14 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="ember"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <EmberAgent />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
                   <Route path="chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
 
@@ -167,6 +175,14 @@ function App() {
                   <Route path="employer/roles" element={<ManageRoles />} />
                   <Route path="employer/roles/new" element={<CreateRole />} />
                   <Route path="employer/candidates" element={<BrowseCandidates />} />
+                  <Route
+                    path="employer/ember"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <EmberAgent />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="employer/chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
 
                   {/* Shared routes */}

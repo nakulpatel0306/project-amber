@@ -15,11 +15,11 @@ import {
   Clock,
   Award,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from './ui/Button';
-import { CoffeeLogo } from './ui/CoffeeLogo';
-import { APP_NAME } from '../utils/constants';
-import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useAuth } from '../../contexts/AuthContext';
+import { Button } from '../ui/Button';
+import { CoffeeLogo } from '../ui/CoffeeLogo';
+import { APP_NAME } from '../../utils/constants';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 import {
   FloatingThemeSelector,
   AnimatedCounter,
@@ -32,7 +32,7 @@ import {
   AnimatedBlobs,
   InteractiveGreeting,
   TypewriterText,
-} from './landing';
+} from '.';
 
 const typewriterWords = [
   'your personality',

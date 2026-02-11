@@ -15,6 +15,7 @@ amber helps candidates and employers find the right culture fit through:
 
 ### for candidates
 - 15-minute personality assessment (Big Five + creative scenarios)
+- **ember agent** - ai mascot that analyzes personality compatibility with employers
 - personalized job recommendations with match scores
 - culture compatibility breakdown before applying
 - one-click coffee chat scheduling with employers
@@ -22,7 +23,7 @@ amber helps candidates and employers find the right culture fit through:
 ### for employers
 - culture quiz to define company values
 - create roles with personality requirements
-- ai-ranked candidates by culture fit
+- **ember agent** - ai-ranked candidates by culture and personality fit
 - send chat invitations to top matches
 
 ## tech stack
@@ -102,34 +103,51 @@ the app runs at http://localhost:5173
 ```
 amber/
 ├── src/
-│   ├── frontend/              # react web app
+│   ├── frontend/                # react web app
 │   │   ├── src/
 │   │   │   ├── components/
-│   │   │   │   ├── ui/        # reusable ui components
-│   │   │   │   ├── auth/      # authentication pages
-│   │   │   │   ├── layout/    # navbar, app layout
-│   │   │   │   ├── settings/  # settings page sections
-│   │   │   │   ├── candidate/ # candidate features
-│   │   │   │   └── employer/  # employer features
-│   │   │   ├── contexts/      # react context providers
-│   │   │   ├── hooks/         # custom hooks
-│   │   │   ├── lib/           # supabase client
-│   │   │   ├── types/         # typescript definitions
-│   │   │   ├── utils/         # helpers and constants
-│   │   │   └── styles/        # global css
-│   │   ├── tailwind.config.js
+│   │   │   │   ├── ui/          # reusable ui components
+│   │   │   │   ├── auth/        # authentication pages
+│   │   │   │   ├── layout/      # navbar, app layout
+│   │   │   │   ├── landing/     # welcome screen, animations
+│   │   │   │   ├── candidate/   # assessment, insights, matches
+│   │   │   │   ├── employer/    # culture quiz, roles, candidates
+│   │   │   │   ├── dashboard/   # candidate & employer dashboards
+│   │   │   │   ├── ember/       # ember ai agent ui
+│   │   │   │   └── settings/    # settings page sections
+│   │   │   ├── contexts/        # react context providers
+│   │   │   ├── hooks/           # custom hooks
+│   │   │   ├── lib/             # supabase client, engines
+│   │   │   ├── types/           # typescript definitions
+│   │   │   ├── utils/           # helpers and constants
+│   │   │   ├── data/            # assessment questions data
+│   │   │   └── styles/          # global css
 │   │   └── package.json
-│   └── backend/               # python api server
-│       ├── main.py            # fastapi endpoints
-│       ├── auth/              # jwt authentication
-│       │   ├── supabase_auth.py  # token verification
-│       │   └── middleware.py     # fastapi middleware
-│       ├── database.py        # database operations
-│       ├── questions.py       # assessment questions
-│       └── scoring.py         # culture fit algorithm
-└── supabase/                  # database schema
-    ├── schema.sql             # tables and triggers
-    └── rls-policies.sql       # row level security
+│   └── backend/                 # python api server
+│       ├── main.py              # fastapi entry point & routes
+│       ├── agent/               # ember personality matching agent
+│       │   └── ember_agent.py
+│       ├── auth/                # jwt authentication
+│       │   ├── supabase_auth.py
+│       │   └── middleware.py
+│       ├── db/                  # database layer
+│       │   ├── database.py      # local sqlite operations
+│       │   └── supabase_client.py  # supabase api client
+│       ├── engine/              # scoring & compatibility
+│       │   ├── compatibility.py # ocean-based matching
+│       │   ├── scoring.py       # assessment scoring
+│       │   └── questions.py     # assessment questions
+│       └── scripts/             # seed & utility scripts
+│           ├── seed_ember_data.py
+│           └── seed_arsh_nakul.py
+├── supabase/                    # database schema & seeds
+│   ├── schema.sql
+│   ├── rls-policies.sql
+│   └── seed-*.sql
+└── tests/                       # test suites
+    ├── unit/
+    ├── integration/
+    └── e2e/
 ```
 
 ## design system
@@ -212,6 +230,9 @@ row level security (rls) ensures:
 | GET | `/api/assessment/results/{id}` | no | get assessment results |
 | GET | `/api/candidates` | yes* | list candidates (employer only) |
 | GET | `/api/candidates/{id}` | yes* | get candidate details (employer only) |
+| GET | `/api/ember/candidate-matches/{id}` | no | ember: ranked role matches for a candidate |
+| GET | `/api/ember/employer-matches/{id}` | no | ember: ranked candidate matches for an employer |
+| GET | `/api/ember/analysis` | no | ember: detailed candidate-employer pair analysis |
 | POST | `/api/feedback` | no | submit feedback |
 
 *requires `SUPABASE_JWT_SECRET` to be configured
@@ -234,15 +255,18 @@ when auth is not configured, endpoints work without authentication (development 
 - [x] settings page
 - [x] backend auth middleware
 
-### phase 2
-- [ ] candidate assessment flow
-- [ ] employer culture quiz
-- [ ] candidate dashboard
+### phase 2 (complete)
+- [x] candidate assessment flow
+- [x] employer culture quiz
+- [x] candidate & employer dashboards
+- [x] personality insights
+- [x] compatibility scoring engine
+- [x] ember agent (personality matching ai)
 
 ### phase 3
 - [ ] job listings and search
 - [ ] application system
-- [ ] match scoring algorithm
+- [ ] roles table & role management
 
 ### phase 4
 - [ ] coffee chat scheduling

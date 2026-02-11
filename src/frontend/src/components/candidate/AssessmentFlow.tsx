@@ -6,7 +6,7 @@ import {
   getAssessmentResults,
   type Question,
   type AssessmentResults,
-} from '../utils/api';
+} from '../../utils/api';
 
 type AssessmentState = 'welcome' | 'assessment' | 'halfway' | 'calculating' | 'results';
 
