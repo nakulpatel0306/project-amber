@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Briefcase,
   Building2,
+  Crown,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,8 +23,9 @@ import { PrivacySection } from './PrivacySection';
 import { AppearanceSection } from './AppearanceSection';
 import { FeedbackSection } from './FeedbackSection';
 import { AccountSection } from './AccountSection';
+import { SubscriptionSection } from './SubscriptionSection';
 
-type SettingsSection = 'profile' | 'work-profile' | 'company-profile' | 'notifications' | 'privacy' | 'appearance' | 'feedback' | 'account';
+type SettingsSection = 'profile' | 'work-profile' | 'company-profile' | 'subscription' | 'notifications' | 'privacy' | 'appearance' | 'feedback' | 'account';
 
 interface SectionConfig {
   id: SettingsSection;
@@ -38,6 +40,7 @@ const allSections: SectionConfig[] = [
   { id: 'profile', label: 'Profile', icon: User, description: 'Your personal information' },
   { id: 'work-profile', label: 'Work Profile', icon: Briefcase, description: 'Job preferences and experience', candidateOnly: true },
   { id: 'company-profile', label: 'Company Profile', icon: Building2, description: 'Company information', employerOnly: true },
+  { id: 'subscription', label: 'Subscription', icon: Crown, description: 'Plan and billing' },
   { id: 'notifications', label: 'Notifications', icon: Bell, description: 'Email and push preferences' },
   { id: 'privacy', label: 'Privacy', icon: Shield, description: 'Control your visibility' },
   { id: 'appearance', label: 'Appearance', icon: Palette, description: 'Theme and display' },
@@ -71,6 +74,8 @@ export function SettingsPage() {
         return isCandidate ? <CandidateProfileSection /> : <ProfileSection />;
       case 'company-profile':
         return isEmployer ? <EmployerProfileSection /> : <ProfileSection />;
+      case 'subscription':
+        return <SubscriptionSection />;
       case 'notifications':
         return <NotificationSection />;
       case 'privacy':

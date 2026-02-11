@@ -5,15 +5,10 @@ import {
   ArrowLeft,
   Sparkles,
   CheckCircle2,
-  Circle,
   GripVertical,
   Brain,
-  Target,
-  Compass,
-  Lightbulb,
   User,
   Clock,
-  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth, isDevMode } from '../../contexts/AuthContext';

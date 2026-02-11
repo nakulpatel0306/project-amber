@@ -50,6 +50,11 @@ from db.supabase_client import (
     get_application,
     get_applications_for_role,
     get_applications_for_candidate,
+    create_coffee_chat,
+    get_coffee_chats_for_candidate,
+    get_coffee_chats_for_employer,
+    update_coffee_chat,
+    get_coffee_chat_by_id,
 )
 from engine.questions import get_question, get_all_questions, get_total_questions
 from engine.scoring import calculate_scores, get_score_explanation
@@ -167,6 +172,26 @@ class CheckEmailRequest(BaseModel):
 class CheckEmailResponse(BaseModel):
     exists: bool
     message: str
+
+
+# ============ Coffee Chat Request/Response Models ============
+
+class CreateCoffeeChatRequest(BaseModel):
+    candidate_id: str
+    employer_id: str
+    role_id: Optional[str] = None
+    message: Optional[str] = None
+    initiated_by: str  # 'candidate' or 'employer'
+
+
+class ScheduleCoffeeChatRequest(BaseModel):
+    scheduled_at: str  # ISO datetime
+    meeting_link: Optional[str] = None
+
+
+class CoffeeChatFeedbackRequest(BaseModel):
+    rating: int  # 1-5
+    feedback: Optional[str] = None
 
 
 # ============ Matching Request/Response Models ============
@@ -1030,6 +1055,165 @@ async def ember_single_analysis(
         'role_title': role_data.get('title') if role_data else None,
         **analysis,
     }
+
+
+# ============ Coffee Chat Endpoints ============
+
+@app.post("/api/coffee-chats")
+async def create_coffee_chat_endpoint(
+    request: CreateCoffeeChatRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Create a new coffee chat request."""
+    chat = create_coffee_chat({
+        'candidate_id': request.candidate_id,
+        'employer_id': request.employer_id,
+        'role_id': request.role_id,
+        'message': request.message,
+        'initiated_by': request.initiated_by,
+        'status': 'pending',
+    })
+    if not chat:
+        raise HTTPException(status_code=500, detail="Failed to create coffee chat")
+    return chat
+
+
+@app.get("/api/coffee-chats/candidate/{candidate_id}")
+async def get_candidate_coffee_chats(
+    candidate_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Get all coffee chats for a candidate."""
+    return get_coffee_chats_for_candidate(candidate_id)
+
+
+@app.get("/api/coffee-chats/employer/{employer_id}")
+async def get_employer_coffee_chats(
+    employer_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Get all coffee chats for an employer."""
+    return get_coffee_chats_for_employer(employer_id)
+
+
+@app.patch("/api/coffee-chats/{chat_id}/status")
+async def update_coffee_chat_status(
+    chat_id: str,
+    status: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Update coffee chat status (accept, cancel, complete)."""
+    if status not in ['accepted', 'cancelled', 'completed']:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    result = update_coffee_chat(chat_id, {'status': status})
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to update coffee chat")
+    return result
+
+
+@app.patch("/api/coffee-chats/{chat_id}/schedule")
+async def schedule_coffee_chat(
+    chat_id: str,
+    request: ScheduleCoffeeChatRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Schedule a coffee chat with date/time and optional meeting link."""
+    result = update_coffee_chat(chat_id, {
+        'scheduled_at': request.scheduled_at,
+        'meeting_link': request.meeting_link,
+        'status': 'scheduled',
+    })
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to schedule coffee chat")
+    return result
+
+
+@app.patch("/api/coffee-chats/{chat_id}/feedback")
+async def submit_coffee_chat_feedback(
+    chat_id: str,
+    request: CoffeeChatFeedbackRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Submit feedback after a completed coffee chat."""
+    result = update_coffee_chat(chat_id, {
+        'rating': request.rating,
+        'feedback': request.feedback,
+        'status': 'completed',
+    })
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+    return result
+
+
+# ============ Stripe Endpoints ============
+
+class CreateCheckoutRequest(BaseModel):
+    priceId: str
+    userId: str
+
+
+class CreatePortalRequest(BaseModel):
+    userId: str
+
+
+@app.post("/api/stripe/create-checkout-session")
+async def create_checkout_session(request: CreateCheckoutRequest):
+    """
+    Create a Stripe Checkout session for subscription.
+    Requires STRIPE_SECRET_KEY to be set in environment.
+    """
+    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
+    if not stripe_key:
+        # Demo mode
+        return {"sessionId": None, "message": "Stripe not configured. Set STRIPE_SECRET_KEY."}
+
+    try:
+        import stripe
+        stripe.api_key = stripe_key
+
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": request.priceId, "quantity": 1}],
+            success_url=os.environ.get("FRONTEND_URL", "http://localhost:5173") + "/app/settings?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=os.environ.get("FRONTEND_URL", "http://localhost:5173") + "/app/pricing",
+            client_reference_id=request.userId,
+            metadata={"user_id": request.userId},
+        )
+        return {"sessionId": session.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stripe/create-portal-session")
+async def create_portal_session(request: CreatePortalRequest):
+    """
+    Create a Stripe Customer Portal session for managing subscriptions.
+    """
+    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
+    if not stripe_key:
+        return {"url": None, "message": "Stripe not configured."}
+
+    try:
+        import stripe
+        stripe.api_key = stripe_key
+
+        # Look up customer by user_id metadata
+        customers = stripe.Customer.search(
+            query=f"metadata['user_id']:'{request.userId}'"
+        )
+        if not customers.data:
+            raise HTTPException(status_code=404, detail="No subscription found")
+
+        session = stripe.billing_portal.Session.create(
+            customer=customers.data[0].id,
+            return_url=os.environ.get("FRONTEND_URL", "http://localhost:5173") + "/app/settings",
+        )
+        return {"url": session.url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # ============ Main Entry Point ============

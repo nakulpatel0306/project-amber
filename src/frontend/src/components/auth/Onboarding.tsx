@@ -4,7 +4,7 @@ import { User, Building2, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
-import { CoffeeLogo } from '../ui/CoffeeLogo';
+import { AmberLogo } from '../ui/AmberLogo';
 import type { UserRole } from '../../types/auth.types';
 
 const roleOptions = [
@@ -65,7 +65,7 @@ export function Onboarding() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <CoffeeLogo size="lg" />
+            <AmberLogo size="lg" />
           </div>
           <h1
             className="text-2xl font-semibold mb-2"

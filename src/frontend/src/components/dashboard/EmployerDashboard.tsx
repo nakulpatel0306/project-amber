@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Briefcase,
+  Trophy,
   Users,
   Coffee,
   ArrowRight,
@@ -23,6 +24,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
 import { supabase } from '../../lib/supabase';
+import { EmberFirefly } from '../ember/EmberFirefly';
 
 interface CulturePreferences {
   openness: number;
@@ -68,10 +70,10 @@ export function EmployerDashboard() {
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setGreeting('good morning');
-    else if (hour >= 12 && hour < 17) setGreeting('good afternoon');
-    else if (hour >= 17 && hour < 21) setGreeting('good evening');
-    else setGreeting('hey there');
+    if (hour >= 5 && hour < 12) setGreeting('Good morning');
+    else if (hour >= 12 && hour < 17) setGreeting('Good afternoon');
+    else if (hour >= 17 && hour < 21) setGreeting('Good evening');
+    else setGreeting('Hey there');
   }, []);
 
   // Check profile and culture assessment completion status
@@ -139,31 +141,38 @@ export function EmployerDashboard() {
 
   const quickActions: QuickAction[] = [
     {
-      title: 'set up company profile',
-      description: 'add your company details so candidates can learn about you',
+      title: 'Set Up Company Profile',
+      description: 'Add your company details so candidates can learn about you',
       icon: Building2,
       color: '#10B981',
       status: hasCompletedProfile ? 'complete' : 'not-started',
       onClick: () => setShowSetupModal(true),
     },
     {
-      title: hasCompletedCultureQuiz ? 'view culture insights' : 'define company culture',
-      description: hasCompletedCultureQuiz ? 'see your ideal candidate profile' : 'take our quiz to help us find the right candidates',
+      title: hasCompletedCultureQuiz ? 'View Culture Insights' : 'Define Company Culture',
+      description: hasCompletedCultureQuiz ? 'See your ideal candidate profile' : 'Take our quiz to help us find the right candidates',
       icon: Sparkles,
       href: hasCompletedCultureQuiz ? '/app/employer/insights' : '/app/employer/culture-assessment',
       color: '#F59E0B',
       status: hasCompletedCultureQuiz ? 'complete' : 'not-started',
     },
     {
-      title: 'browse candidates',
-      description: 'view candidates ranked by culture fit',
+      title: 'Browse Candidates',
+      description: 'View candidates ranked by culture fit',
       icon: Users,
       href: '/app/employer/candidates',
       color: '#8B5CF6',
     },
     {
-      title: 'coffee chats',
-      description: 'manage conversations with potential hires',
+      title: 'View Top 10 Candidates',
+      description: 'See your best personality-fit candidates ranked',
+      icon: Trophy,
+      href: '/app/employer/top-candidates',
+      color: '#F59E0B',
+    },
+    {
+      title: 'Coffee Chats',
+      description: 'Manage conversations with potential hires',
       icon: Coffee,
       href: '/app/employer/chats',
       color: '#EC4899',
@@ -174,10 +183,10 @@ export function EmployerDashboard() {
   const [topCandidates, setTopCandidates] = useState<Array<{ name: string; role: string; matchScore: number; topTrait: string }>>([]);
   const [activeRoles, setActiveRoles] = useState<Array<{ title: string; applicants: number; newThisWeek: number }>>([]);
   const [stats, setStats] = useState([
-    { label: 'active roles', value: '0', change: '' },
-    { label: 'total applicants', value: '0', change: '' },
-    { label: 'pending chats', value: '0', change: '' },
-    { label: 'avg. match score', value: '--', change: '' },
+    { label: 'Active Roles', value: '0', change: '' },
+    { label: 'Total Applicants', value: '0', change: '' },
+    { label: 'Pending Chats', value: '0', change: '' },
+    { label: 'Avg. Match Score', value: '--', change: '' },
   ]);
 
   useEffect(() => {
@@ -246,10 +255,10 @@ export function EmployerDashboard() {
           newThisWeek: 0,
         })));
         setStats([
-          { label: 'active roles', value: String(activeRolesList.length), change: '' },
-          { label: 'total applicants', value: String(totalApps), change: '' },
-          { label: 'pending chats', value: String(chats?.length || 0), change: '' },
-          { label: 'avg. match score', value: roleCandidates.length > 0 ? `${Math.round(roleCandidates.reduce((s, c) => s + c.matchScore, 0) / roleCandidates.length)}%` : '--', change: '' },
+          { label: 'Active Roles', value: String(activeRolesList.length), change: '' },
+          { label: 'Total Applicants', value: String(totalApps), change: '' },
+          { label: 'Pending Chats', value: String(chats?.length || 0), change: '' },
+          { label: 'Avg. Match Score', value: roleCandidates.length > 0 ? `${Math.round(roleCandidates.reduce((s, c) => s + c.matchScore, 0) / roleCandidates.length)}%` : '--', change: '' },
         ]);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -273,8 +282,8 @@ export function EmployerDashboard() {
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
           {hasCompletedCultureQuiz
-            ? "here's an overview of your hiring activity"
-            : "complete the culture quiz to start matching with candidates who fit your team"}
+            ? "Here's an overview of your hiring activity"
+            : "Complete the culture quiz to start matching with candidates who fit your team"}
         </p>
       </div>
 
@@ -294,12 +303,12 @@ export function EmployerDashboard() {
                 style={{ color: 'var(--color-text)' }}
               >
                 <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                get started with hiring
+                Get Started with Hiring
               </h2>
               <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
                 {!hasCompletedProfile
-                  ? 'start by setting up your company profile, then define your culture to match with candidates.'
-                  : 'define your company culture to start matching with candidates who fit your team.'}
+                  ? 'Start by setting up your company profile, then define your culture to match with candidates.'
+                  : 'Define your company culture to start matching with candidates who fit your team.'}
               </p>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -313,7 +322,7 @@ export function EmployerDashboard() {
                     {hasCompletedProfile && <CheckCircle2 className="w-3 h-3 text-white" />}
                   </div>
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    profile
+                    Profile
                   </span>
                 </div>
                 <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
@@ -328,7 +337,7 @@ export function EmployerDashboard() {
                     {hasCompletedCultureQuiz && <CheckCircle2 className="w-3 h-3 text-white" />}
                   </div>
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    culture
+                    Culture
                   </span>
                 </div>
                 <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
@@ -338,7 +347,7 @@ export function EmployerDashboard() {
                     style={{ borderColor: 'var(--color-border)' }}
                   />
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    candidates
+                    Candidates
                   </span>
                 </div>
               </div>
@@ -346,7 +355,7 @@ export function EmployerDashboard() {
             {hasCompletedProfile ? (
               <Link to="/app/employer/culture-assessment">
                 <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
-                  define culture
+                  Define Culture
                 </Button>
               </Link>
             ) : (
@@ -354,7 +363,7 @@ export function EmployerDashboard() {
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 onClick={() => setShowSetupModal(true)}
               >
-                set up company
+                Set Up Company
               </Button>
             )}
           </div>
@@ -376,7 +385,7 @@ export function EmployerDashboard() {
               style={{ color: 'var(--color-text)' }}
             >
               <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              ideal candidate profile
+              Ideal Candidate Profile
             </h2>
             <div className="flex items-center gap-3">
               {lastCultureUpdate && (
@@ -386,12 +395,12 @@ export function EmployerDashboard() {
               )}
               <Link to="/app/employer/insights">
                 <Button variant="outline" size="sm">
-                  view details
+                  View Details
                 </Button>
               </Link>
               <Link to="/app/employer/culture-assessment">
                 <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="w-3 h-3" />}>
-                  retake
+                  Retake
                 </Button>
               </Link>
             </div>
@@ -448,7 +457,7 @@ export function EmployerDashboard() {
           {cultureValues.length > 0 && (
             <div>
               <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                your culture values
+                Your Culture Values
               </p>
               <div className="flex flex-wrap gap-2">
                 {cultureValues.slice(0, 5).map((value, index) => (
@@ -575,14 +584,14 @@ export function EmployerDashboard() {
               style={{ color: 'var(--color-text)' }}
             >
               <Star className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              top candidates
+              Top Candidates
             </h2>
             <Link
               to="/app/employer/candidates"
               className="text-sm font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
-              view all
+              View All
             </Link>
           </div>
 
@@ -636,7 +645,7 @@ export function EmployerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                define your culture to see matched candidates
+                Define your culture to see matched candidates
               </p>
             </div>
           )}
@@ -656,14 +665,14 @@ export function EmployerDashboard() {
               style={{ color: 'var(--color-text)' }}
             >
               <Briefcase className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              active roles
+              Active Roles
             </h2>
             <Link
               to="/app/employer/roles"
               className="text-sm font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
-              manage
+              Manage
             </Link>
           </div>
 
@@ -692,7 +701,7 @@ export function EmployerDashboard() {
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-textMuted)' }}
               >
                 <Plus className="w-4 h-4" />
-                <span className="text-sm">add new role</span>
+                <span className="text-sm">Add New Role</span>
               </Link>
             </div>
           ) : (
@@ -705,19 +714,104 @@ export function EmployerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
               <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
-                no active roles yet
+                No active roles yet
               </p>
               <Link to="/app/employer/roles/new">
-                <Button size="sm">create your first role</Button>
+                <Button size="sm">Create Your First Role</Button>
               </Link>
             </div>
           )}
         </div>
       </div>
 
+      {/* Hiring Pipeline */}
+      {hasCompletedCultureQuiz && (
+        <div
+          className="mt-6 p-6 rounded-xl border"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <h2
+            className="font-semibold flex items-center gap-2 mb-4"
+            style={{ color: 'var(--color-text)' }}
+          >
+            <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+            Hiring Pipeline
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { stage: 'Matched', count: topCandidates.length > 0 ? topCandidates.length : 0, color: '#8B5CF6', desc: 'Culture-fit candidates' },
+              { stage: 'Coffee Chat', count: parseInt(stats.find(s => s.label === 'Pending Chats')?.value || '0'), color: '#F59E0B', desc: 'In conversation' },
+              { stage: 'Interview', count: 0, color: '#10B981', desc: 'Formal interviews' },
+              { stage: 'Offer', count: 0, color: '#EC4899', desc: 'Offers extended' },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="p-4 rounded-xl text-center relative"
+                style={{ backgroundColor: 'var(--color-background)' }}
+              >
+                <div
+                  className="text-2xl font-bold mb-1"
+                  style={{ color: item.color }}
+                >
+                  {item.count}
+                </div>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  {item.stage}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                  {item.desc}
+                </p>
+                {i < 3 && (
+                  <div
+                    className="hidden md:block absolute top-1/2 -right-2 w-4 text-center"
+                    style={{ color: 'var(--color-border)', transform: 'translateY(-50%)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Ask Ember CTA */}
+      <div
+        className="mt-6 p-6 rounded-2xl border overflow-hidden relative"
+        style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.04))',
+          borderColor: 'rgba(245, 158, 11, 0.2)',
+        }}
+      >
+        <div className="flex items-center gap-6">
+          <div className="flex-shrink-0">
+            <EmberFirefly size="md" mood="happy" animated />
+          </div>
+          <div className="flex-1">
+            <h3
+              className="font-semibold mb-1"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Need Hiring Help?
+            </h3>
+            <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
+              Ember can help you understand candidate profiles, refine your culture preferences, and improve your hiring strategy.
+            </p>
+            <Link to="/app/employer/ember">
+              <Button size="sm" rightIcon={<ArrowRight className="w-3 h-3" />}>
+                Talk to Ember
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Tip */}
       <div
-        className="mt-8 p-4 rounded-xl border flex items-center gap-4"
+        className="mt-6 p-4 rounded-xl border flex items-center gap-4"
         style={{
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-border)',
@@ -731,10 +825,10 @@ export function EmployerDashboard() {
         </div>
         <div>
           <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            tip: coffee chats reduce time-to-hire by 40%
+            Tip: Coffee chats reduce time-to-hire by 40%
           </p>
           <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            candidates who have casual chats before formal interviews are more likely to accept offers.
+            Candidates who have casual chats before formal interviews are more likely to accept offers.
           </p>
         </div>
       </div>

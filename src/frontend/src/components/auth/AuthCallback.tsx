@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { PageLoader } from '../ui/Spinner';
+import { SplashScreen } from '../ui/SplashScreen';
 import { useToast } from '../../contexts/ToastContext';
 
 export function AuthCallback() {
@@ -114,8 +114,9 @@ export function AuthCallback() {
             } else {
               success('Welcome!', 'Your account has been created successfully.');
             }
-            console.log('AuthCallback: Navigating to', getDashboardPath(storedRole));
-            navigate(getDashboardPath(storedRole), { replace: true });
+            // New user — show pricing options first
+            console.log('AuthCallback: New user, showing pricing');
+            navigate('/app/pricing?welcome=true', { replace: true });
           }
         } else if (profile?.role) {
           // User already has a role assigned - they're a returning user
@@ -146,7 +147,7 @@ export function AuthCallback() {
   }, [navigate, showError, success, info, searchParams, refreshProfile]);
 
   if (isProcessing) {
-    return <PageLoader />;
+    return <SplashScreen />;
   }
 
   return null;

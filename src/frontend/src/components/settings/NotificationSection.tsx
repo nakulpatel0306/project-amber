@@ -39,7 +39,7 @@ interface NotificationItem {
 }
 
 export function NotificationSection() {
-  const { user, isCandidate, isEmployer } = useAuth();
+  const { user, isEmployer } = useAuth();
   const { success, error: showError } = useToast();
 
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
@@ -344,14 +344,14 @@ export function NotificationSection() {
                 </div>
               </div>
               <button
-                onClick={() => handleToggle(item.key)}
+                onClick={() => handleToggle(item.key as keyof Omit<NotificationSettings, 'phone_number'>)}
                 className="relative w-11 h-6 rounded-full transition-colors"
                 style={{
                   backgroundColor: settings[item.key]
                     ? 'var(--color-accent)'
                     : 'var(--color-border)',
                 }}
-                aria-pressed={settings[item.key]}
+                aria-pressed={!!settings[item.key]}
               >
                 <span
                   className={`

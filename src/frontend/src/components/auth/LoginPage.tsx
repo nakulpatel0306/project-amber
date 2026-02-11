@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { CoffeeLogo } from '../ui/CoffeeLogo';
+import { AmberLogo } from '../ui/AmberLogo';
 import { APP_NAME } from '../../utils/constants';
 
 export function LoginPage() {
@@ -114,7 +114,7 @@ export function LoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <CoffeeLogo size="md" />
+              <AmberLogo size="md" />
             </div>
             <h1
               className="text-2xl font-semibold"

@@ -19,7 +19,6 @@ import {
   Briefcase,
   TrendingUp,
   Shield,
-  Rocket,
   Scale,
   Palette,
   Award,
