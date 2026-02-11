@@ -6,7 +6,7 @@ Each answer option is assigned a score profile that contributes to different dim
 """
 
 from typing import Dict, List, Tuple
-from questions import ASSESSMENT_QUESTIONS
+from engine.questions import ASSESSMENT_QUESTIONS
 
 # Score profiles for each answer option
 # Format: {question_id: {option_index: {dimension: points}}}

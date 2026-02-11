@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
 
-from database import (
+from db.database import (
     init_database,
     create_candidate,
     get_candidate,
@@ -25,13 +25,19 @@ from database import (
     save_feedback,
     get_all_feedback,
 )
-from compatibility import (
+from engine.compatibility import (
     CandidateOCEAN,
     EmployerPreferences,
     RoleRequirements,
     calculate_compatibility,
 )
-from supabase_client import (
+from agent.ember_agent import (
+    run_ember_analysis,
+    run_ember_employer_analysis,
+    determine_archetype,
+    CandidateOCEAN as EmberCandidateOCEAN,
+)
+from db.supabase_client import (
     get_candidate_by_id as get_supabase_candidate,
     get_candidate_by_user_id,
     get_employer_by_id,
@@ -45,8 +51,8 @@ from supabase_client import (
     get_applications_for_role,
     get_applications_for_candidate,
 )
-from questions import get_question, get_all_questions, get_total_questions
-from scoring import calculate_scores, get_score_explanation
+from engine.questions import get_question, get_all_questions, get_total_questions
+from engine.scoring import calculate_scores, get_score_explanation
 from auth import (
     AuthMiddleware,
     require_auth,
@@ -849,6 +855,181 @@ async def get_employer_candidates(
     # Sort by overall match score descending
     results.sort(key=lambda x: x['overall_match_score'], reverse=True)
     return results
+
+
+# ============ Ember Agent Endpoints ============
+
+@app.get("/api/ember/candidate-matches/{candidate_id}")
+async def ember_candidate_matches(
+    candidate_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Ember Agent: Get personality-based match analysis for a candidate across all active roles.
+    Returns ranked matches with personality insights, archetype, and dimensional analysis.
+    """
+    # Get candidate data
+    candidate = get_supabase_candidate(candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    if not candidate.get('openness_score'):
+        raise HTTPException(status_code=400, detail="Candidate has not completed personality assessment")
+
+    # Get all active roles with employer data
+    roles = get_all_active_roles()
+    if not roles:
+        return {
+            'candidate_id': candidate_id,
+            'archetype': determine_archetype(EmberCandidateOCEAN(
+                openness=candidate.get('openness_score') or 50,
+                conscientiousness=candidate.get('conscientiousness_score') or 50,
+                extraversion=candidate.get('extraversion_score') or 50,
+                agreeableness=candidate.get('agreeableness_score') or 50,
+                neuroticism=candidate.get('neuroticism_score') or 50,
+            )),
+            'matches': [],
+            'ember_message': "No active roles available yet. Check back soon!",
+        }
+
+    # Run Ember analysis for each role
+    matches = []
+    for role_data in roles:
+        employer = role_data.get('employers', {})
+        analysis = run_ember_analysis(candidate, employer, role_data)
+
+        matches.append({
+            'role_id': role_data['id'],
+            'role_title': role_data.get('title', 'Unknown Role'),
+            'company_name': employer.get('company_name', 'Unknown Company'),
+            'company_industry': employer.get('industry', ''),
+            'company_size': employer.get('company_size', ''),
+            'company_location': employer.get('location', ''),
+            'role_location': role_data.get('location', ''),
+            'work_style': role_data.get('work_style', ''),
+            'salary_min': role_data.get('salary_min'),
+            'salary_max': role_data.get('salary_max'),
+            'employment_type': role_data.get('employment_type', ''),
+            **analysis,
+        })
+
+    # Sort by overall score
+    matches.sort(key=lambda x: x['overall_score'], reverse=True)
+
+    # Get candidate archetype
+    archetype = determine_archetype(EmberCandidateOCEAN(
+        openness=candidate.get('openness_score') or 50,
+        conscientiousness=candidate.get('conscientiousness_score') or 50,
+        extraversion=candidate.get('extraversion_score') or 50,
+        agreeableness=candidate.get('agreeableness_score') or 50,
+        neuroticism=candidate.get('neuroticism_score') or 50,
+    ))
+
+    top_score = matches[0]['overall_score'] if matches else 0
+    if top_score >= 85:
+        ember_msg = f"Great news! I found {len(matches)} roles, and your top match is exceptional at {top_score}%!"
+    elif top_score >= 70:
+        ember_msg = f"I analyzed {len(matches)} roles for your personality. Your best match is a solid {top_score}%."
+    else:
+        ember_msg = f"I checked {len(matches)} roles. The matches aren't perfect, but there could be good growth opportunities."
+
+    return {
+        'candidate_id': candidate_id,
+        'archetype': archetype,
+        'matches': matches,
+        'total_matches': len(matches),
+        'ember_message': ember_msg,
+    }
+
+
+@app.get("/api/ember/employer-matches/{employer_id}")
+async def ember_employer_matches(
+    employer_id: str,
+    role_id: Optional[str] = None,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Ember Agent: Get personality-based candidate rankings for an employer.
+    Optionally filtered to a specific role.
+    """
+    # Get employer data
+    employer = get_employer_by_id(employer_id)
+    if not employer:
+        raise HTTPException(status_code=404, detail="Employer not found")
+
+    # Get role data if specified
+    role_data = None
+    if role_id:
+        role_data = get_role(role_id)
+        if not role_data:
+            raise HTTPException(status_code=404, detail="Role not found")
+
+    # Get all candidates with scores
+    candidates = get_supabase_candidates()
+    if not candidates:
+        return {
+            'employer_id': employer_id,
+            'role_id': role_id,
+            'candidates': [],
+            'ember_message': "No candidates with completed assessments yet.",
+        }
+
+    # Run Ember analysis for each candidate
+    results = run_ember_employer_analysis(employer, candidates, role_data)
+
+    company_name = employer.get('company_name', 'your company')
+    top_score = results[0]['overall_score'] if results else 0
+    if top_score >= 80:
+        ember_msg = f"Found {len(results)} candidates for {company_name}. Top personality match: {top_score}%!"
+    else:
+        ember_msg = f"Analyzed {len(results)} candidates for {company_name}. Here are the best personality fits."
+
+    return {
+        'employer_id': employer_id,
+        'role_id': role_id,
+        'candidates': results,
+        'total_candidates': len(results),
+        'ember_message': ember_msg,
+    }
+
+
+@app.get("/api/ember/analysis")
+async def ember_single_analysis(
+    candidate_id: str,
+    employer_id: str,
+    role_id: Optional[str] = None,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """
+    Ember Agent: Get detailed personality analysis for a specific candidate-employer pair.
+    """
+    candidate = get_supabase_candidate(candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    if not candidate.get('openness_score'):
+        raise HTTPException(status_code=400, detail="Candidate has not completed personality assessment")
+
+    employer = get_employer_by_id(employer_id)
+    if not employer:
+        raise HTTPException(status_code=404, detail="Employer not found")
+
+    role_data = None
+    if role_id:
+        role_data = get_role(role_id)
+
+    analysis = run_ember_analysis(candidate, employer, role_data)
+
+    profile = candidate.get('profiles', {})
+    return {
+        'candidate_id': candidate_id,
+        'candidate_name': profile.get('full_name', 'Unknown'),
+        'employer_id': employer_id,
+        'company_name': employer.get('company_name', 'Unknown'),
+        'role_id': role_id,
+        'role_title': role_data.get('title') if role_data else None,
+        **analysis,
+    }
 
 
 # ============ Main Entry Point ============

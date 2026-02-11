@@ -12,6 +12,7 @@ import {
   Coffee,
   Users,
   Sparkles,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -39,6 +40,7 @@ export function Navbar() {
 
   const candidateNavItems = [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/app/ember', label: 'Ember', icon: Flame },
     { path: '/app/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/matches', label: 'Matches', icon: Users },
     { path: '/app/chats', label: 'Coffee Chats', icon: Coffee },
@@ -46,6 +48,7 @@ export function Navbar() {
 
   const employerNavItems = [
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/app/employer/ember', label: 'Ember', icon: Flame },
     { path: '/app/employer/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/employer/candidates', label: 'Candidates', icon: Users },
     { path: '/app/employer/chats', label: 'Coffee Chats', icon: Coffee },

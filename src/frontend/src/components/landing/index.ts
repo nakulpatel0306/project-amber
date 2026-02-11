@@ -1,3 +1,4 @@
+export { WelcomeScreen } from './WelcomeScreen';
 export { FloatingThemeSelector } from './FloatingThemeSelector';
 export { AnimatedCounter } from './AnimatedCounter';
 export { FAQAccordion } from './FAQAccordion';
