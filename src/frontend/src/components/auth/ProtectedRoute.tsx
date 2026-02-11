@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { PageLoader } from '../ui/Spinner';
+import { SplashScreen } from '../ui/SplashScreen';
 import type { UserRole } from '../../types/auth.types';
 
 interface ProtectedRouteProps {
@@ -30,7 +30,7 @@ export function ProtectedRoute({
 
   // Show loading spinner while checking auth
   if (isLoading) {
-    return <PageLoader />;
+    return <SplashScreen />;
   }
 
   // If auth is not enabled (Supabase not configured), allow access
@@ -70,7 +70,7 @@ export function GuestRoute({ children, redirectTo = '/app' }: GuestRouteProps) {
 
   // Show loading spinner while checking auth
   if (isLoading) {
-    return <PageLoader />;
+    return <SplashScreen />;
   }
 
   // If auth is not enabled, allow access

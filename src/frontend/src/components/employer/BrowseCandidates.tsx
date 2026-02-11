@@ -660,6 +660,24 @@ export function BrowseCandidates() {
                       <Button
                         size="sm"
                         leftIcon={<Coffee className="w-4 h-4" />}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!employer) return;
+                          try {
+                            await supabase.from('coffee_chats').insert({
+                              candidate_id: match.candidate.id,
+                              employer_id: employer.id,
+                              role_id: match.roleId,
+                              initiated_by: 'employer',
+                              status: 'pending',
+                              match_score: match.overallMatchScore,
+                              role_title: match.roleTitle,
+                            });
+                            success('Sent!', 'Coffee chat invitation sent');
+                          } catch {
+                            showError('Error', 'Failed to send invitation');
+                          }
+                        }}
                       >
                         request coffee chat
                       </Button>

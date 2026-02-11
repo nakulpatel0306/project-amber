@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { CoffeeLogo } from '../ui/CoffeeLogo';
+import { AmberLogo } from '../ui/AmberLogo';
 import type { UserRole } from '../../types/auth.types';
 import { cn } from '../../utils/cn';
 
@@ -161,7 +161,7 @@ export function RoleSelectionPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <CoffeeLogo size="md" />
+              <AmberLogo size="md" />
             </div>
             <h1
               className="text-2xl font-semibold"

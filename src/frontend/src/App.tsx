@@ -24,9 +24,12 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { WelcomeScreen } from './components/landing';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
 import { AssessmentFlow, Assessment, MatchingAgent, PersonalityInsights } from './components/candidate';
-import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates } from './components/employer';
+import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates, TopCandidates } from './components/employer';
 import { EmberAgent } from './components/ember';
+import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
+import { PricingPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { VisualPerceptionAssessment } from './components/assessments';
 
 import './styles/globals.css';
 
@@ -143,8 +146,23 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="assessments/visual-perception"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <VisualPerceptionAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
-                  <Route path="chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
+                  <Route
+                    path="chats"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <CandidateCoffeeChats />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Employer routes */}
                   <Route
@@ -176,6 +194,14 @@ function App() {
                   <Route path="employer/roles/new" element={<CreateRole />} />
                   <Route path="employer/candidates" element={<BrowseCandidates />} />
                   <Route
+                    path="employer/top-candidates"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <TopCandidates />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="employer/ember"
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
@@ -183,9 +209,17 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="employer/chats" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Coffee chats page coming soon...</div>} />
+                  <Route
+                    path="employer/chats"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <EmployerCoffeeChats />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Shared routes */}
+                  <Route path="pricing" element={<PricingPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="settings/:section" element={<SettingsPage />} />
                 </Route>

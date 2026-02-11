@@ -15,9 +15,11 @@ import {
   Star,
   MessageCircle,
   Briefcase,
+  Coffee,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
 import { cn } from '../../utils/cn';
@@ -91,6 +93,7 @@ interface MatchResult {
 
 export function MatchingAgent() {
   const { user } = useAuth();
+  const { success: showSuccess, error: showError } = useToast();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -721,8 +724,29 @@ export function MatchingAgent() {
                   </div>
                 </div>
 
-                <Button className="w-full" rightIcon={<MessageCircle className="w-4 h-4" />}>
-                  Express Interest
+                <Button
+                  className="w-full"
+                  rightIcon={<Coffee className="w-4 h-4" />}
+                  onClick={async () => {
+                    if (!candidateData || !selectedMatch) return;
+                    try {
+                      await supabase.from('coffee_chats').insert({
+                        candidate_id: candidateData.id,
+                        employer_id: selectedMatch.role.employers.id,
+                        role_id: selectedMatch.role.id,
+                        initiated_by: 'candidate',
+                        status: 'pending',
+                        message: `Interested in ${selectedMatch.role.title}`,
+                        role_title: selectedMatch.role.title,
+                        match_score: selectedMatch.overallMatchScore,
+                      });
+                      showSuccess('Sent!', 'Coffee chat request sent');
+                    } catch {
+                      showError('Error', 'Failed to send request');
+                    }
+                  }}
+                >
+                  Request Coffee Chat
                 </Button>
               </div>
             ) : (

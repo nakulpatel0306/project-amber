@@ -744,3 +744,75 @@ input[type="radio"]:checked {
 .animate-border-gradient {
   animation: borderGradient 3s ease-in-out infinite;
 }
+
+/* Ember Firefly animations */
+@keyframes emberGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4)); }
+  50% { filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.7)); }
+}
+
+@keyframes emberGlowDim {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.2)); }
+  50% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.35)); }
+}
+
+@keyframes emberGlowRapid {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes wingFlutter {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.85); }
+}
+
+@keyframes wingFlutterSlow {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.92); }
+}
+
+.ember-glow {
+  animation: emberGlow 2.5s ease-in-out infinite;
+}
+
+.ember-glow-dim {
+  animation: emberGlowDim 3s ease-in-out infinite;
+}
+
+.ember-glow-rapid {
+  animation: emberGlowRapid 0.8s ease-in-out infinite;
+}
+
+.ember-wing-flutter {
+  animation: wingFlutter 0.4s ease-in-out infinite;
+}
+
+.ember-wing-flutter-slow {
+  animation: wingFlutterSlow 1.5s ease-in-out infinite;
+}
+
+/* Splash screen progress bar */
+@keyframes splashProgress {
+  0% { width: 0%; }
+  20% { width: 30%; }
+  50% { width: 60%; }
+  80% { width: 85%; }
+  100% { width: 100%; }
+}
+
+.animate-splash-progress {
+  animation: splashProgress 3s ease-in-out infinite;
+}
+
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marqueeScroll 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

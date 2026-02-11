@@ -5,3 +5,4 @@ export { CreateRole } from './CreateRole';
 export { ManageRoles } from './ManageRoles';
 export { BrowseCandidates } from './BrowseCandidates';
 export { EmployerSetupModal } from './EmployerSetupModal';
+export { TopCandidates } from './TopCandidates';

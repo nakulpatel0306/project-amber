@@ -6,18 +6,18 @@ import {
   Settings,
   LogOut,
   User,
+  Crown,
   ChevronDown,
-  Bell,
   LayoutDashboard,
   Coffee,
   Users,
   Sparkles,
-  Flame,
+  Trophy,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Avatar } from '../ui/Avatar';
-import { CoffeeLogo } from '../ui/CoffeeLogo';
+import { AmberLogo } from '../ui/AmberLogo';
 import {
   Dropdown,
   DropdownItem,
@@ -25,6 +25,7 @@ import {
 } from '../ui/Dropdown';
 import { cn } from '../../utils/cn';
 import { APP_NAME } from '../../utils/constants';
+import { NotificationDropdown } from './NotificationDropdown';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -40,18 +41,16 @@ export function Navbar() {
 
   const candidateNavItems = [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/ember', label: 'Ember', icon: Flame },
-    { path: '/app/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/matches', label: 'Matches', icon: Users },
-    { path: '/app/chats', label: 'Coffee Chats', icon: Coffee },
+    { path: '/app/insights', label: 'Insights', icon: Sparkles },
+    { path: '/app/chats', label: 'Chats', icon: Coffee },
   ];
 
   const employerNavItems = [
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/employer/ember', label: 'Ember', icon: Flame },
-    { path: '/app/employer/insights', label: 'Insights', icon: Sparkles },
+    { path: '/app/employer/top-candidates', label: 'Top 10', icon: Trophy },
     { path: '/app/employer/candidates', label: 'Candidates', icon: Users },
-    { path: '/app/employer/chats', label: 'Coffee Chats', icon: Coffee },
+    { path: '/app/employer/chats', label: 'Chats', icon: Coffee },
   ];
 
   const navItems = isEmployer ? employerNavItems : candidateNavItems;
@@ -68,12 +67,12 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/app" className="flex items-center gap-2">
-            <CoffeeLogo size="sm" />
+            <AmberLogo size="sm" />
             <span
               className="text-lg font-semibold hidden sm:block"
               style={{ color: 'var(--color-text)' }}
             >
-              {APP_NAME.toLowerCase()}
+              {APP_NAME}
             </span>
           </Link>
 
@@ -98,7 +97,7 @@ export function Navbar() {
                   }}
                 >
                   <item.icon className="w-4 h-4" />
-                  {item.label.toLowerCase()}
+                  {item.label}
                 </Link>
               );
             })}
@@ -107,12 +106,7 @@ export function Navbar() {
           {/* Right section */}
           <div className="flex items-center gap-3">
             {/* Notifications */}
-            <button
-              className="p-2 rounded-lg transition-colors hover:bg-[var(--color-surface)]"
-              style={{ color: 'var(--color-textSecondary)' }}
-            >
-              <Bell className="w-5 h-5" />
-            </button>
+            <NotificationDropdown />
 
             {/* User menu */}
             <Dropdown
@@ -150,13 +144,19 @@ export function Navbar() {
                 icon={<User className="w-4 h-4" />}
                 onClick={() => navigate('/app/settings/profile')}
               >
-                profile
+                Profile
+              </DropdownItem>
+              <DropdownItem
+                icon={<Crown className="w-4 h-4" />}
+                onClick={() => navigate('/app/pricing')}
+              >
+                Upgrade Plan
               </DropdownItem>
               <DropdownItem
                 icon={<Settings className="w-4 h-4" />}
                 onClick={() => navigate('/app/settings')}
               >
-                settings
+                Settings
               </DropdownItem>
               <DropdownDivider />
               <DropdownItem
@@ -164,7 +164,7 @@ export function Navbar() {
                 onClick={handleSignOut}
                 danger
               >
-                sign out
+                Sign Out
               </DropdownItem>
             </Dropdown>
 
@@ -211,7 +211,7 @@ export function Navbar() {
                   }}
                 >
                   <item.icon className="w-5 h-5" />
-                  {item.label.toLowerCase()}
+                  {item.label}
                 </Link>
               );
             })}

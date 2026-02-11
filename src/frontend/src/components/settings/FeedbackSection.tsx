@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Bug, Lightbulb, Star, Send, CheckCircle2, Clock, Zap, ThumbsUp, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+import { Bug, Lightbulb, Star, Send, CheckCircle2, Clock, Zap, ChevronUp } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Input';
 import { supabase } from '../../lib/supabase';

@@ -13,15 +13,17 @@ import {
   ChevronRight,
   Users,
   Brain,
-  RotateCcw,
   Lightbulb,
   Zap,
   Anchor,
+  Eye,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
 import { supabase } from '../../lib/supabase';
+import { EmberFirefly } from '../ember/EmberFirefly';
 
 interface PersonalityScores {
   openness: number;
@@ -65,10 +67,10 @@ export function JobSeekerDashboard() {
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setGreeting('good morning');
-    else if (hour >= 12 && hour < 17) setGreeting('good afternoon');
-    else if (hour >= 17 && hour < 21) setGreeting('good evening');
-    else setGreeting('hey there');
+    if (hour >= 5 && hour < 12) setGreeting('Good morning');
+    else if (hour >= 12 && hour < 17) setGreeting('Good afternoon');
+    else if (hour >= 17 && hour < 21) setGreeting('Good evening');
+    else setGreeting('Hey there');
   }, []);
 
   // Check profile and assessment completion status from candidates table
@@ -134,36 +136,43 @@ export function JobSeekerDashboard() {
 
   const quickActions: QuickAction[] = [
     {
-      title: 'complete your profile',
-      description: 'add your details so employers can learn about you',
+      title: 'Complete Your Profile',
+      description: 'Add your details so employers can learn about you',
       icon: CheckCircle2,
       color: '#10B981',
       status: hasCompletedProfile ? 'complete' : 'not-started',
       onClick: () => setShowSetupModal(true),
     },
     {
-      title: hasCompletedAssessment ? 'view personality insights' : 'take personality assessment',
-      description: hasCompletedAssessment ? 'explore your detailed personality profile' : '15 minutes to discover your work style',
+      title: hasCompletedAssessment ? 'View Personality Insights' : 'Take Personality Assessment',
+      description: hasCompletedAssessment ? 'Explore your detailed personality profile' : '15 minutes to discover your work style',
       icon: Brain,
       href: hasCompletedAssessment ? '/app/insights' : '/app/personality',
       color: '#8B5CF6',
       status: hasCompletedAssessment ? 'complete' : 'not-started',
     },
     {
-      title: 'find your matches',
-      description: 'discover companies that match your personality',
+      title: 'Find Your Matches',
+      description: 'Discover companies that match your personality',
       icon: Users,
       href: '/app/matches',
       color: '#8B5CF6',
       status: hasCompletedAssessment ? 'not-started' : 'not-started',
     },
     {
-      title: 'coffee chats',
-      description: 'connect with teams over casual conversations',
+      title: 'Coffee Chats',
+      description: 'Connect with teams over casual conversations',
       icon: Coffee,
       href: '/app/chats',
       color: '#EC4899',
       status: 'not-started',
+    },
+    {
+      title: 'Talk to Ember',
+      description: 'Get career advice from our AI assistant',
+      icon: Sparkles,
+      href: '/app/ember',
+      color: '#F59E0B',
     },
   ];
 
@@ -265,8 +274,8 @@ export function JobSeekerDashboard() {
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
           {hasCompletedAssessment
-            ? "here's what's happening with your job search"
-            : "complete your personality assessment to get matched with jobs that fit your culture"}
+            ? "Here's what's happening with your job search"
+            : "Complete your personality assessment to get matched with jobs that fit your culture"}
         </p>
       </div>
 
@@ -286,12 +295,12 @@ export function JobSeekerDashboard() {
                 style={{ color: 'var(--color-text)' }}
               >
                 <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                complete your setup
+                Complete Your Setup
               </h2>
               <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
                 {!hasCompletedProfile
-                  ? 'start by setting up your profile, then take the personality assessment to get matched with jobs.'
-                  : 'take the personality assessment to start getting matched with jobs that fit your style.'}
+                  ? 'Start by setting up your profile, then take the personality assessment to get matched with jobs.'
+                  : 'Take the personality assessment to start getting matched with jobs that fit your style.'}
               </p>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -305,7 +314,7 @@ export function JobSeekerDashboard() {
                     {hasCompletedProfile && <CheckCircle2 className="w-3 h-3 text-white" />}
                   </div>
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    profile
+                    Profile
                   </span>
                 </div>
                 <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
@@ -320,7 +329,7 @@ export function JobSeekerDashboard() {
                     {hasCompletedAssessment && <CheckCircle2 className="w-3 h-3 text-white" />}
                   </div>
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    assessment
+                    Assessment
                   </span>
                 </div>
                 <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
@@ -330,7 +339,7 @@ export function JobSeekerDashboard() {
                     style={{ borderColor: 'var(--color-border)' }}
                   />
                   <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    matches
+                    Matches
                   </span>
                 </div>
               </div>
@@ -338,7 +347,7 @@ export function JobSeekerDashboard() {
             {hasCompletedProfile ? (
               <Link to="/app/personality">
                 <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
-                  take assessment
+                  Take Assessment
                 </Button>
               </Link>
             ) : (
@@ -346,7 +355,7 @@ export function JobSeekerDashboard() {
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 onClick={() => setShowSetupModal(true)}
               >
-                set up profile
+                Set Up Profile
               </Button>
             )}
           </div>
@@ -368,7 +377,7 @@ export function JobSeekerDashboard() {
               style={{ color: 'var(--color-text)' }}
             >
               <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              your personality profile
+              Your Personality Profile
             </h2>
             <div className="flex items-center gap-3">
               {lastAssessmentDate && (
@@ -378,7 +387,7 @@ export function JobSeekerDashboard() {
               )}
               <Link to="/app/insights">
                 <Button variant="ghost" size="sm" leftIcon={<ArrowRight className="w-3 h-3" />}>
-                  full insights
+                  Full Insights
                 </Button>
               </Link>
             </div>
@@ -435,7 +444,7 @@ export function JobSeekerDashboard() {
           {topTraits.length > 0 && (
             <div>
               <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                your top traits
+                Your Top Traits
               </p>
               <div className="flex flex-wrap gap-2">
                 {topTraits.slice(0, 5).map((trait, index) => (
@@ -538,14 +547,14 @@ export function JobSeekerDashboard() {
               style={{ color: 'var(--color-text)' }}
             >
               <Heart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              top matches
+              Top Matches
             </h2>
             <Link
               to="/app/jobs"
               className="text-sm font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
-              view all
+              View All
             </Link>
           </div>
 
@@ -587,7 +596,7 @@ export function JobSeekerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                complete your assessment to see job matches
+                Complete your assessment to see job matches
               </p>
             </div>
           )}
@@ -607,14 +616,14 @@ export function JobSeekerDashboard() {
               style={{ color: 'var(--color-text)' }}
             >
               <Coffee className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              upcoming chats
+              Upcoming Chats
             </h2>
             <Link
               to="/app/chats"
               className="text-sm font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
-              view all
+              View All
             </Link>
           </div>
 
@@ -654,16 +663,138 @@ export function JobSeekerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                no upcoming coffee chats yet
+                No upcoming coffee chats yet
               </p>
             </div>
           )}
         </div>
       </div>
 
+      {/* Assessment Progress */}
+      {hasCompletedAssessment && (
+        <div
+          className="mt-6 p-6 rounded-xl border"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2
+              className="font-semibold flex items-center gap-2"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <Shield className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+              Profile Strength
+            </h2>
+            <Link
+              to="/app/insights"
+              className="text-sm font-medium"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              View Insights
+            </Link>
+          </div>
+          <p className="text-sm mb-4" style={{ color: 'var(--color-textMuted)' }}>
+            Complete more assessments to improve your match accuracy
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div
+              className="p-3 rounded-lg flex items-center gap-3"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+              >
+                <Brain className="w-4 h-4" style={{ color: '#10B981' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  OCEAN Assessment
+                </p>
+                <p className="text-xs flex items-center gap-1" style={{ color: '#10B981' }}>
+                  <CheckCircle2 className="w-3 h-3" /> Completed
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/app/assessments/visual-perception"
+              className="p-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-[var(--color-surface)]"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
+              >
+                <Eye className="w-4 h-4" style={{ color: '#8B5CF6' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  Visual Perception
+                </p>
+                <p className="text-xs" style={{ color: '#8B5CF6' }}>
+                  Take Now
+                </p>
+              </div>
+            </Link>
+            <div
+              className="p-3 rounded-lg flex items-center gap-3 opacity-60"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+              >
+                <MessageCircle className="w-4 h-4" style={{ color: '#F59E0B' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  Communication Style
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                  Coming Soon
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ask Ember CTA */}
+      <div
+        className="mt-6 p-6 rounded-2xl border overflow-hidden relative"
+        style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.04))',
+          borderColor: 'rgba(245, 158, 11, 0.2)',
+        }}
+      >
+        <div className="flex items-center gap-6">
+          <div className="flex-shrink-0">
+            <EmberFirefly size="md" mood="happy" animated />
+          </div>
+          <div className="flex-1">
+            <h3
+              className="font-semibold mb-1"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Need Career Advice?
+            </h3>
+            <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
+              Ember can help you understand your personality profile, prepare for coffee chats, and find your ideal career path.
+            </p>
+            <Link to="/app/ember">
+              <Button size="sm" rightIcon={<ArrowRight className="w-3 h-3" />}>
+                Talk to Ember
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Tip of the Day */}
       <div
-        className="mt-8 p-4 rounded-xl border flex items-center gap-4"
+        className="mt-6 p-4 rounded-xl border flex items-center gap-4"
         style={{
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-border)',
@@ -677,10 +808,10 @@ export function JobSeekerDashboard() {
         </div>
         <div>
           <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            tip: be authentic in your assessment
+            Tip: Be authentic in your assessment
           </p>
           <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            there are no right or wrong answers. honest responses lead to better culture matches.
+            There are no right or wrong answers. Honest responses lead to better culture matches.
           </p>
         </div>
       </div>

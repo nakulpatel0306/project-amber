@@ -202,3 +202,74 @@ def get_applications_for_candidate(candidate_id: str) -> list[dict]:
     except Exception as e:
         print(f"Error fetching applications: {e}")
         return []
+
+
+# ============ Coffee Chat Helpers ============
+
+def create_coffee_chat(data: dict) -> Optional[dict]:
+    """Create a new coffee chat request."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('coffee_chats').insert(data).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error creating coffee chat: {e}")
+        return None
+
+
+def get_coffee_chats_for_candidate(candidate_id: str) -> list[dict]:
+    """Get all coffee chats for a candidate with employer data."""
+    client = get_supabase()
+    if not client:
+        return []
+    try:
+        result = client.table('coffee_chats').select(
+            '*, employers!inner(company_name, industry, location, profiles:user_id(full_name))'
+        ).eq('candidate_id', candidate_id).order('created_at', desc=True).execute()
+        return result.data or []
+    except Exception as e:
+        print(f"Error fetching candidate coffee chats: {e}")
+        return []
+
+
+def get_coffee_chats_for_employer(employer_id: str) -> list[dict]:
+    """Get all coffee chats for an employer with candidate data."""
+    client = get_supabase()
+    if not client:
+        return []
+    try:
+        result = client.table('coffee_chats').select(
+            '*, candidates!inner(*, profiles!inner(full_name, email))'
+        ).eq('employer_id', employer_id).order('created_at', desc=True).execute()
+        return result.data or []
+    except Exception as e:
+        print(f"Error fetching employer coffee chats: {e}")
+        return []
+
+
+def update_coffee_chat(chat_id: str, data: dict) -> Optional[dict]:
+    """Update a coffee chat record."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('coffee_chats').update(data).eq('id', chat_id).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error updating coffee chat: {e}")
+        return None
+
+
+def get_coffee_chat_by_id(chat_id: str) -> Optional[dict]:
+    """Get a single coffee chat by ID."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('coffee_chats').select('*').eq('id', chat_id).single().execute()
+        return result.data
+    except Exception as e:
+        print(f"Error fetching coffee chat: {e}")
+        return None

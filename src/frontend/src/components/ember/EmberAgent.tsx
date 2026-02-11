@@ -11,7 +11,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Flame,
   Sparkles,
   Building2,
   Users,
@@ -34,82 +33,17 @@ import {
   Layers,
   Music,
   User,
+  Coffee,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
+import { EmberFirefly } from './EmberFirefly';
 import { cn } from '../../utils/cn';
 
-// ============================================
-// EMBER MASCOT SVG COMPONENT
-// ============================================
-
-function EmberMascot({
-  size = 'md',
-  animated = false,
-  mood = 'neutral',
-}: {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  animated?: boolean;
-  mood?: 'happy' | 'thinking' | 'neutral' | 'excited';
-}) {
-  const sizeMap = { sm: 40, md: 64, lg: 96, xl: 128 };
-  const px = sizeMap[size];
-
-  return (
-    <div
-      className={cn(
-        'relative flex items-center justify-center rounded-2xl',
-        animated && 'animate-pulse'
-      )}
-      style={{
-        width: px,
-        height: px,
-        background: mood === 'excited'
-          ? 'linear-gradient(135deg, #FF6B35, #FFB347, #FF6B35)'
-          : mood === 'happy'
-          ? 'linear-gradient(135deg, #F59E0B, #FF6B35)'
-          : mood === 'thinking'
-          ? 'linear-gradient(135deg, #D97706, #B45309)'
-          : 'linear-gradient(135deg, #F59E0B, #D97706)',
-        boxShadow: mood === 'excited'
-          ? '0 0 30px rgba(245, 158, 11, 0.4)'
-          : '0 0 20px rgba(245, 158, 11, 0.2)',
-      }}
-    >
-      <Flame
-        className="text-white"
-        style={{
-          width: px * 0.55,
-          height: px * 0.55,
-          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-        }}
-      />
-      {/* Eyes */}
-      <div
-        className="absolute flex gap-1"
-        style={{ top: px * 0.28, left: '50%', transform: 'translateX(-50%)' }}
-      >
-        <div
-          className="rounded-full bg-white"
-          style={{
-            width: px * 0.08,
-            height: mood === 'happy' ? px * 0.04 : px * 0.08,
-            borderRadius: mood === 'happy' ? '0 0 100% 100%' : '50%',
-          }}
-        />
-        <div
-          className="rounded-full bg-white"
-          style={{
-            width: px * 0.08,
-            height: mood === 'happy' ? px * 0.04 : px * 0.08,
-            borderRadius: mood === 'happy' ? '0 0 100% 100%' : '50%',
-          }}
-        />
-      </div>
-    </div>
-  );
-}
+// Alias for backward compatibility in this file
+const EmberMascot = EmberFirefly;
 
 // ============================================
 // TYPES
@@ -396,6 +330,7 @@ function DimensionBar({
 
 export function EmberAgent() {
   const { user, isEmployer } = useAuth();
+  const { success: showSuccess, error: showError } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -1022,6 +957,29 @@ export function EmberAgent() {
                       })}
                     </div>
                   )}
+
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    leftIcon={<Coffee className="w-4 h-4" />}
+                    onClick={async () => {
+                      if (!employerId || !selectedCandidate) return;
+                      try {
+                        await supabase.from('coffee_chats').insert({
+                          candidate_id: selectedCandidate.candidate_id,
+                          employer_id: employerId,
+                          initiated_by: 'employer',
+                          status: 'pending',
+                          match_score: selectedCandidate.overall_score,
+                        });
+                        showSuccess('Sent!', 'Coffee chat invitation sent');
+                      } catch {
+                        showError('Error', 'Failed to send invitation');
+                      }
+                    }}
+                  >
+                    invite to coffee chat
+                  </Button>
                 </div>
               ) : (
                 <div className="sticky top-6 p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
@@ -1281,6 +1239,38 @@ export function EmberAgent() {
                 <div className="p-2 rounded-lg text-center text-xs" style={{ backgroundColor: `${getMatchColor(selectedMatch.overall_score)}15`, color: getMatchColor(selectedMatch.overall_score) }}>
                   {selectedMatch.ember_recommendation}
                 </div>
+
+                <Button
+                  className="w-full"
+                  size="sm"
+                  leftIcon={<Coffee className="w-4 h-4" />}
+                  onClick={async () => {
+                    if (!candidateId || !selectedMatch) return;
+                    try {
+                      const { data: employer } = await supabase
+                        .from('roles')
+                        .select('employer_id')
+                        .eq('id', selectedMatch.role_id)
+                        .single();
+                      if (!employer) return;
+                      await supabase.from('coffee_chats').insert({
+                        candidate_id: candidateId,
+                        employer_id: employer.employer_id,
+                        role_id: selectedMatch.role_id,
+                        initiated_by: 'candidate',
+                        status: 'pending',
+                        message: `Interested in ${selectedMatch.role_title}`,
+                        role_title: selectedMatch.role_title,
+                        match_score: selectedMatch.overall_score,
+                      });
+                      showSuccess('Sent!', 'Coffee chat request sent');
+                    } catch {
+                      showError('Error', 'Failed to send request');
+                    }
+                  }}
+                >
+                  request coffee chat
+                </Button>
               </div>
             ) : (
               <div className="sticky top-6 p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
