@@ -424,13 +424,52 @@ export function VisualPerceptionAssessment() {
       }
     }
 
-    // Save to Supabase as supplementary assessment data
+    // Save to Supabase
     if (user) {
       try {
+        // 1. Create assessment record
+        const { data: assessment, error: assessmentError } = await supabase
+          .from('assessments')
+          .insert({
+            user_id: user.id,
+            assessment_type: 'visual_perception',
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+
+        if (assessmentError) throw assessmentError;
+
+        // 2. Save individual responses to assessment_responses
+        const questionCodeMap: Record<string, string> = {
+          'pattern-perception': 'vp1',
+          'depth-perception': 'vp2',
+          'social-scene': 'vp3',
+          'completion-tendency': 'vp4',
+          'movement-energy': 'vp5',
+        };
+
+        const responses = Object.entries(answers).map(([questionId, answerId]) => ({
+          assessment_id: assessment.id,
+          user_id: user.id,
+          question_code: questionCodeMap[questionId],
+          answer: { selected: answerId },
+          answered_at: new Date().toISOString(),
+        }));
+
+        const { error: responsesError } = await supabase
+          .from('assessment_responses')
+          .insert(responses);
+
+        if (responsesError) throw responsesError;
+
+        // 3. Update candidates table with summary data
         await supabase
           .from('candidates')
           .update({
             visual_perception_data: {
+              assessment_id: assessment.id,
               answers,
               trait_modifiers: traitScores,
               completed_at: new Date().toISOString(),

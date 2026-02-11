@@ -418,7 +418,82 @@ VALUES
  NULL,
  '{"min": 0, "max": 100, "minLabel": "Optimize - perfect what works", "maxLabel": "Disrupt - constantly reinvent", "trait": "innovation"}'::jsonb,
  ARRAY['innovation'],
- 16)
+ 16),
+
+-- ============================================
+-- VISUAL PERCEPTION ASSESSMENT QUESTIONS (5 questions)
+-- These assess personality through visual perception preferences
+-- ============================================
+
+-- vp1: Pattern Recognition
+('vp1', 'visual_perception', 'visual', 'Perception',
+ 'Look at this image. What do you notice first?',
+ 'Pattern Recognition - observes attention to order vs. chaos',
+ '[
+   {"id": "vp1_order", "text": "The Organized Pattern", "description": "The neat, aligned circles on the left caught my eye first", "traitScores": {"conscientiousness": 15, "openness": -5}},
+   {"id": "vp1_chaos", "text": "The Scattered Elements", "description": "The colorful, scattered dots on the right drew my attention", "traitScores": {"openness": 15, "conscientiousness": -5}},
+   {"id": "vp1_contrast", "text": "The Contrast Between Both", "description": "I immediately noticed the difference between the two halves", "traitScores": {"openness": 10, "conscientiousness": 10}},
+   {"id": "vp1_whole", "text": "The Overall Composition", "description": "I saw it as one unified image before noticing the parts", "traitScores": {"agreeableness": 10, "openness": 5}}
+ ]'::jsonb,
+ NULL,
+ ARRAY['conscientiousness', 'openness', 'agreeableness'],
+ 1),
+
+-- vp2: Depth & Focus
+('vp2', 'visual_perception', 'visual', 'Focus',
+ 'What stands out to you in this image?',
+ 'Depth Perception - observes attention to detail vs. big picture',
+ '[
+   {"id": "vp2_foreground", "text": "The Small, Bright Shapes", "description": "The vivid, detailed elements in the foreground caught my eye", "traitScores": {"conscientiousness": 10, "neuroticism_inv": 5}},
+   {"id": "vp2_background", "text": "The Large, Soft Shapes", "description": "The big, subtle background shapes are what I noticed", "traitScores": {"openness": 10, "extraversion": 5}},
+   {"id": "vp2_layers", "text": "The Layering Effect", "description": "I noticed how shapes overlap and create depth", "traitScores": {"openness": 12, "conscientiousness": 8}},
+   {"id": "vp2_colors", "text": "The Color Relationships", "description": "The way different colors interact stood out most", "traitScores": {"openness": 15, "agreeableness": 5}}
+ ]'::jsonb,
+ NULL,
+ ARRAY['conscientiousness', 'openness', 'extraversion', 'agreeableness'],
+ 2),
+
+-- vp3: Social Scene
+('vp3', 'visual_perception', 'visual', 'Social',
+ 'Look at this scene. What draws your attention?',
+ 'Social Perception - observes focus on people vs. environment',
+ '[
+   {"id": "vp3_people", "text": "The People", "description": "The human figures and their postures caught my attention first", "traitScores": {"extraversion": 12, "agreeableness": 10}},
+   {"id": "vp3_interaction", "text": "The Connection Between Them", "description": "I noticed the relationship and interaction between the figures", "traitScores": {"agreeableness": 15, "extraversion": 5}},
+   {"id": "vp3_environment", "text": "The Buildings & Setting", "description": "The architectural elements and environment stood out", "traitScores": {"conscientiousness": 10, "openness": 8}},
+   {"id": "vp3_objects", "text": "The Small Details & Objects", "description": "I noticed the smaller objects and details in the scene", "traitScores": {"conscientiousness": 12, "openness": 5}}
+ ]'::jsonb,
+ NULL,
+ ARRAY['extraversion', 'agreeableness', 'conscientiousness', 'openness'],
+ 3),
+
+-- vp4: Completion & Imagination
+('vp4', 'visual_perception', 'visual', 'Imagination',
+ 'What do you see in these incomplete shapes?',
+ 'Completion Tendency - observes closure vs. abstract thinking',
+ '[
+   {"id": "vp4_complete", "text": "Complete Shapes", "description": "I mentally completed the shapes - a circle, square, and triangle", "traitScores": {"conscientiousness": 12, "openness": 5}},
+   {"id": "vp4_abstract", "text": "Abstract Art", "description": "I saw them as artistic, expressive lines - not trying to be shapes", "traitScores": {"openness": 15, "agreeableness": 3}},
+   {"id": "vp4_story", "text": "A Progression or Story", "description": "I saw a sequence or narrative connecting the elements", "traitScores": {"openness": 12, "extraversion": 8}},
+   {"id": "vp4_gaps", "text": "The Missing Pieces", "description": "I focused on what''s absent - the gaps and open ends", "traitScores": {"neuroticism_inv": 10, "conscientiousness": 8}}
+ ]'::jsonb,
+ NULL,
+ ARRAY['conscientiousness', 'openness', 'extraversion'],
+ 4),
+
+-- vp5: Energy & Movement
+('vp5', 'visual_perception', 'visual', 'Energy',
+ 'How does this image make you feel?',
+ 'Energy Perception - observes emotional response to visual energy',
+ '[
+   {"id": "vp5_energized", "text": "Energized & Excited", "description": "The movement and dynamism makes me feel energized", "traitScores": {"extraversion": 15, "openness": 5}},
+   {"id": "vp5_calm", "text": "Calm & Flowing", "description": "I see a peaceful, rhythmic flow that feels calming", "traitScores": {"agreeableness": 10, "neuroticism_inv": 10}},
+   {"id": "vp5_curious", "text": "Curious & Intrigued", "description": "I want to understand the pattern and where it leads", "traitScores": {"openness": 15, "conscientiousness": 5}},
+   {"id": "vp5_focused", "text": "Drawn to the Center", "description": "My eyes go straight to the central point of convergence", "traitScores": {"conscientiousness": 10, "neuroticism_inv": 8}}
+ ]'::jsonb,
+ NULL,
+ ARRAY['extraversion', 'openness', 'agreeableness', 'conscientiousness'],
+ 5)
 
 ON CONFLICT (question_code) DO UPDATE SET
   question_type = EXCLUDED.question_type,

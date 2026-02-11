@@ -59,6 +59,9 @@ CREATE TABLE IF NOT EXISTS public.candidates (
   assessment_status TEXT CHECK (assessment_status IN ('not_started', 'in_progress', 'completed')) DEFAULT 'not_started',
   assessment_completed_at TIMESTAMPTZ,
 
+  -- Visual perception assessment data (supplementary)
+  visual_perception_data JSONB,
+
   -- Profile setup progress tracking
   setup_step INTEGER DEFAULT 0,  -- 0=not started, 1=basic, 2=preferences, 3=links, 4=complete
   setup_completed_at TIMESTAMPTZ,
@@ -204,8 +207,8 @@ CREATE TABLE IF NOT EXISTS public.coffee_chats (
 CREATE TABLE IF NOT EXISTS public.questions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   question_code TEXT UNIQUE NOT NULL,  -- e.g., 'c1', 'c2', 'e1', 'e2'
-  question_type TEXT CHECK (question_type IN ('candidate', 'employer')) NOT NULL,
-  question_format TEXT CHECK (question_format IN ('scenario', 'metaphor', 'tradeoff', 'ranking', 'reflection', 'slider')) NOT NULL,
+  question_type TEXT CHECK (question_type IN ('candidate', 'employer', 'visual_perception')) NOT NULL,
+  question_format TEXT CHECK (question_format IN ('scenario', 'metaphor', 'tradeoff', 'ranking', 'reflection', 'slider', 'visual')) NOT NULL,
   category TEXT NOT NULL,
   question_text TEXT NOT NULL,
   description TEXT,
@@ -224,7 +227,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
 CREATE TABLE IF NOT EXISTS public.assessments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  assessment_type TEXT CHECK (assessment_type IN ('candidate_personality', 'employer_culture')) NOT NULL,
+  assessment_type TEXT CHECK (assessment_type IN ('candidate_personality', 'employer_culture', 'visual_perception')) NOT NULL,
 
   responses JSONB,  -- Final compiled responses (populated on completion)
 
