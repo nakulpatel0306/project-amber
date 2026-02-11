@@ -241,18 +241,19 @@ CREATE TABLE IF NOT EXISTS public.assessment_responses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   assessment_id UUID NOT NULL REFERENCES public.assessments(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  question_code TEXT NOT NULL REFERENCES public.questions(question_code),
 
-  question_id TEXT NOT NULL,  -- Legacy field for backwards compatibility
-  question_code TEXT REFERENCES public.questions(question_code),  -- Foreign key to questions table
-  answer_id TEXT,              -- For multiple choice questions
-  slider_value INTEGER,        -- For slider questions (0-100)
-  ranking_order TEXT[],        -- For ranking questions (array of option IDs)
-  reflection_text TEXT,        -- For open-ended questions
+  -- Single JSONB column for all answer types:
+  -- Slider: {"value": 75}
+  -- Multiple choice: {"selected": "option_a"}
+  -- Ranking: {"order": ["a", "c", "b", "d"]}
+  -- Reflection: {"text": "My response..."}
+  answer JSONB NOT NULL,
 
   answered_at TIMESTAMPTZ DEFAULT NOW(),
 
   -- Ensure one response per question per assessment
-  UNIQUE(assessment_id, question_id)
+  UNIQUE(assessment_id, question_code)
 );
 
 -- ============================================

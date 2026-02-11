@@ -165,26 +165,33 @@ export function Assessment() {
             let lastAnsweredIndex = -1;
 
             savedResponses.forEach((r) => {
+              const questionId = r.question_code;
+              const answer = r.answer as { value?: number; selected?: string; order?: string[]; text?: string } | null;
+
               const response: AssessmentResponse = {
-                questionId: r.question_id,
+                questionId,
                 timestamp: new Date(r.answered_at).getTime(),
               };
-              if (r.answer_id) response.answerId = r.answer_id;
-              if (r.slider_value !== null) response.sliderValue = r.slider_value;
-              if (r.ranking_order) response.rankingOrder = r.ranking_order;
-              if (r.reflection_text) response.reflectionText = r.reflection_text;
 
-              responses[r.question_id] = response;
+              // Extract answer from JSONB based on answer type
+              if (answer) {
+                if (answer.value !== undefined) response.sliderValue = answer.value;
+                if (answer.selected) response.answerId = answer.selected;
+                if (answer.order) response.rankingOrder = answer.order;
+                if (answer.text) response.reflectionText = answer.text;
+              }
+
+              responses[questionId] = response;
 
               // Process in personality engine
-              const question = candidateQuestions.find(q => q.id === r.question_id);
+              const question = candidateQuestions.find(q => q.id === questionId);
               if (question) {
                 personalityEngine.processResponse(response, {
                   type: question.type,
                   options: question.options,
                   sliderConfig: question.sliderConfig,
                 });
-                const questionIndex = candidateQuestions.findIndex(q => q.id === r.question_id);
+                const questionIndex = candidateQuestions.findIndex(q => q.id === questionId);
                 if (questionIndex > lastAnsweredIndex) {
                   lastAnsweredIndex = questionIndex;
                 }
@@ -296,19 +303,30 @@ export function Assessment() {
     // Save response to database incrementally
     if (state.assessmentId && user) {
       try {
+        // Build JSONB answer based on question type
+        let answer: Record<string, unknown>;
+        if (response.sliderValue !== undefined) {
+          answer = { value: response.sliderValue };
+        } else if (response.rankingOrder) {
+          answer = { order: response.rankingOrder };
+        } else if (response.reflectionText) {
+          answer = { text: response.reflectionText };
+        } else if (response.answerId) {
+          answer = { selected: response.answerId };
+        } else {
+          answer = {};
+        }
+
         await supabase
           .from('assessment_responses')
           .upsert({
             assessment_id: state.assessmentId,
             user_id: user.id,
-            question_id: currentQuestion.id,
-            answer_id: response.answerId || null,
-            slider_value: response.sliderValue ?? null,
-            ranking_order: response.rankingOrder || null,
-            reflection_text: response.reflectionText || null,
+            question_code: currentQuestion.id,
+            answer,
             answered_at: new Date().toISOString(),
           }, {
-            onConflict: 'assessment_id,question_id',
+            onConflict: 'assessment_id,question_code',
           });
       } catch (err) {
         console.error('Error saving response:', err);
