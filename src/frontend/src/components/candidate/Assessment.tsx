@@ -8,7 +8,6 @@ import {
   GripVertical,
   Brain,
   User,
-  Clock,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth, isDevMode } from '../../contexts/AuthContext';
@@ -58,10 +57,6 @@ export function Assessment() {
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
 
-  // Cooldown check (24 hours between assessments)
-  const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
-  const [lastAssessmentAt, setLastAssessmentAt] = useState<Date | null>(null);
-
   const currentQuestion = candidateQuestions[state.currentIndex];
   const progress = ((state.currentIndex + 1) / candidateQuestions.length) * 100;
 
@@ -69,12 +64,12 @@ export function Assessment() {
   useEffect(() => {
     if (!user) return;
 
-    const checkProfileAndCooldown = async () => {
+    const checkProfile = async () => {
       setIsCheckingProfile(true);
       try {
         const { data: candidate } = await supabase
           .from('candidates')
-          .select('headline, bio, location, years_experience, preferred_work_style, preferred_company_size, assessment_completed_at')
+          .select('headline, bio, location, years_experience, preferred_work_style, preferred_company_size')
           .eq('user_id', user.id)
           .single();
 
@@ -88,20 +83,6 @@ export function Assessment() {
           candidate?.preferred_company_size
         );
         setHasCompletedProfile(profileComplete);
-
-        // Check cooldown (24 hours = 86400000 ms)
-        if (candidate?.assessment_completed_at) {
-          const lastCompleted = new Date(candidate.assessment_completed_at);
-          setLastAssessmentAt(lastCompleted);
-          const timeSince = Date.now() - lastCompleted.getTime();
-          const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours
-
-          if (timeSince < cooldownMs) {
-            setCooldownRemaining(cooldownMs - timeSince);
-          } else {
-            setCooldownRemaining(null);
-          }
-        }
       } catch (err) {
         console.error('Error checking profile:', err);
         setHasCompletedProfile(isDevMode()); // Dev mode still works
@@ -110,29 +91,12 @@ export function Assessment() {
       }
     };
 
-    checkProfileAndCooldown();
+    checkProfile();
   }, [user]);
-
-  // Update cooldown timer
-  useEffect(() => {
-    if (cooldownRemaining === null || cooldownRemaining <= 0) return;
-
-    const interval = setInterval(() => {
-      setCooldownRemaining(prev => {
-        if (prev === null || prev <= 1000) {
-          clearInterval(interval);
-          return null;
-        }
-        return prev - 1000;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [cooldownRemaining]);
 
   // Initialize or resume assessment session
   useEffect(() => {
-    if (!user || !hasCompletedProfile || isCheckingProfile || cooldownRemaining) return;
+    if (!user || !hasCompletedProfile || isCheckingProfile) return;
 
     const initializeAssessment = async () => {
       try {
@@ -486,98 +450,6 @@ export function Assessment() {
     );
   }
 
-  // Show cooldown screen (24-hour wait between assessments)
-  if (cooldownRemaining && cooldownRemaining > 0) {
-    const hours = Math.floor(cooldownRemaining / (1000 * 60 * 60));
-    const minutes = Math.floor((cooldownRemaining % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((cooldownRemaining % (1000 * 60)) / 1000);
-
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center px-4"
-        style={{ backgroundColor: 'var(--color-background)' }}
-      >
-        <div
-          className="max-w-md w-full p-8 rounded-2xl border text-center"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div
-            className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center"
-            style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
-          >
-            <Clock className="w-10 h-10" style={{ color: '#8B5CF6' }} />
-          </div>
-          <h1
-            className="text-2xl font-bold mb-3"
-            style={{ color: 'var(--color-text)' }}
-          >
-            assessment cooldown
-          </h1>
-          <p
-            className="mb-6"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            you can retake the personality assessment once every 24 hours. this ensures accurate results and prevents assessment fatigue.
-          </p>
-
-          {/* Countdown Timer */}
-          <div
-            className="p-6 rounded-xl mb-6"
-            style={{ backgroundColor: 'var(--color-background)' }}
-          >
-            <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
-              time until next assessment
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-                  {String(hours).padStart(2, '0')}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>hours</p>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-textMuted)' }}>:</p>
-              <div className="text-center">
-                <p className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-                  {String(minutes).padStart(2, '0')}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>minutes</p>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-textMuted)' }}>:</p>
-              <div className="text-center">
-                <p className="text-3xl font-bold" style={{ color: 'var(--color-text)' }}>
-                  {String(seconds).padStart(2, '0')}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>seconds</p>
-              </div>
-            </div>
-          </div>
-
-          {lastAssessmentAt && (
-            <p className="text-xs mb-6" style={{ color: 'var(--color-textMuted)' }}>
-              last completed: {lastAssessmentAt.toLocaleDateString()} at {lastAssessmentAt.toLocaleTimeString()}
-            </p>
-          )}
-
-          <div className="flex flex-col gap-3">
-            <Link to="/app/insights">
-              <Button className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                view your insights
-              </Button>
-            </Link>
-            <Link to="/app/matches">
-              <Button variant="ghost" className="w-full">
-                browse matches
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Show loading while redirecting
   if (isComplete && profile) {
     return (
@@ -812,23 +684,28 @@ function SliderQuestion({
   onChange: (v: number) => void;
 }) {
   const percentage = ((value - config.min) / (config.max - config.min)) * 100;
+  const accentColor = 'var(--color-accent)';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div
-        className="relative pt-12 pb-6 px-4 rounded-2xl"
-        style={{ backgroundColor: 'var(--color-surface)' }}
+        className="relative pt-14 pb-8 px-5 rounded-2xl"
+        style={{ backgroundColor: 'var(--color-surface)', '--slider-color': accentColor } as React.CSSProperties}
       >
-        {/* Floating value indicator that moves with slider */}
+        {/* Floating value indicator */}
         <div
-          className="absolute -top-1 px-4 py-2 rounded-full font-bold text-lg transform -translate-x-1/2 transition-all duration-100"
+          className="absolute top-2 px-3.5 py-1.5 rounded-xl font-bold text-base transform -translate-x-1/2 transition-all duration-150 shadow-md"
           style={{
-            backgroundColor: 'var(--color-accent)',
+            backgroundColor: accentColor,
             color: 'white',
-            left: `calc(${percentage}% + ${(50 - percentage) * 0.16}px)`,
+            left: `calc(${percentage}% + ${(50 - percentage) * 0.2}px)`,
           }}
         >
           {value}
+          <div
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45"
+            style={{ backgroundColor: accentColor }}
+          />
         </div>
         <input
           type="range"
@@ -836,23 +713,27 @@ function SliderQuestion({
           max={config.max}
           value={value}
           onChange={(e) => onChange(parseInt(e.target.value))}
-          className="w-full h-3 rounded-full appearance-none cursor-pointer slider-thumb"
+          className="w-full slider-thumb"
           style={{
-            background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${percentage}%, var(--color-border) ${percentage}%, var(--color-border) 100%)`,
+            background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${percentage}%, var(--color-border) ${percentage}%, var(--color-border) 100%)`,
           }}
         />
+        {/* Tick marks */}
+        <div className="flex justify-between mt-2 px-0.5">
+          {[0, 25, 50, 75, 100].map(tick => (
+            <div
+              key={tick}
+              className="w-0.5 h-1.5 rounded-full"
+              style={{ backgroundColor: percentage >= tick ? accentColor : 'var(--color-border)', opacity: 0.5 }}
+            />
+          ))}
+        </div>
       </div>
-      <div className="flex justify-between text-sm">
-        <p
-          className="max-w-[40%]"
-          style={{ color: 'var(--color-textSecondary)' }}
-        >
+      <div className="flex justify-between text-sm px-1">
+        <p className="max-w-[40%] font-medium" style={{ color: 'var(--color-textSecondary)' }}>
           {config.minLabel}
         </p>
-        <p
-          className="max-w-[40%] text-right"
-          style={{ color: 'var(--color-textSecondary)' }}
-        >
+        <p className="max-w-[40%] text-right font-medium" style={{ color: 'var(--color-textSecondary)' }}>
           {config.maxLabel}
         </p>
       </div>

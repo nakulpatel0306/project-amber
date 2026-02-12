@@ -23,13 +23,13 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 // Pages
 import { WelcomeScreen } from './components/landing';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
-import { AssessmentFlow, Assessment, MatchingAgent, PersonalityInsights } from './components/candidate';
-import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates, TopCandidates } from './components/employer';
+import { AssessmentFlow, Assessment, MatchingAgent, PersonalityInsights, Leaderboard } from './components/candidate';
+import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates, TopCandidates, EmployerLeaderboard } from './components/employer';
 import { EmberAgent } from './components/ember';
 import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
 import { PricingPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
-import { VisualPerceptionAssessment } from './components/assessments';
+import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment } from './components/assessments';
 
 import './styles/globals.css';
 
@@ -154,12 +154,44 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="assessments/work-values"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <WorkValuesAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="assessments/situational-judgment"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <SituationalJudgmentAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="assessments/cognitive-patterns"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <CognitivePatternAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
                   <Route
                     path="chats"
                     element={
                       <ProtectedRoute allowedRoles={['candidate']}>
                         <CandidateCoffeeChats />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="leaderboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <Leaderboard />
                       </ProtectedRoute>
                     }
                   />
@@ -214,6 +246,14 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
                         <EmployerCoffeeChats />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="employer/leaderboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <EmployerLeaderboard />
                       </ProtectedRoute>
                     }
                   />

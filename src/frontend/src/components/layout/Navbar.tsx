@@ -13,6 +13,7 @@ import {
   Users,
   Sparkles,
   Trophy,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -39,16 +40,18 @@ export function Navbar() {
     navigate('/');
   };
 
-  const candidateNavItems = [
+  const candidateNavItems: { path: string; label: string; icon: React.ElementType }[] = [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/app/matches', label: 'Matches', icon: Users },
+    { path: '/app/ember', label: 'Ember', icon: Flame },
     { path: '/app/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/chats', label: 'Chats', icon: Coffee },
   ];
 
-  const employerNavItems = [
+  const employerNavItems: { path: string; label: string; icon: React.ElementType }[] = [
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/app/employer/top-candidates', label: 'Top 10', icon: Trophy },
+    { path: '/app/employer/ember', label: 'Ember', icon: Flame },
     { path: '/app/employer/candidates', label: 'Candidates', icon: Users },
     { path: '/app/employer/chats', label: 'Chats', icon: Coffee },
   ];
@@ -96,7 +99,7 @@ export function Navbar() {
                       : 'var(--color-textSecondary)',
                   }}
                 >
-                  <item.icon className="w-4 h-4" />
+                  {item.icon && <item.icon className="w-4 h-4" />}
                   {item.label}
                 </Link>
               );
@@ -210,7 +213,7 @@ export function Navbar() {
                       : 'var(--color-textSecondary)',
                   }}
                 >
-                  <item.icon className="w-5 h-5" />
+                  {item.icon && <item.icon className="w-5 h-5" />}
                   {item.label}
                 </Link>
               );

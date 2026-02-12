@@ -360,6 +360,186 @@ const VISUAL_QUESTIONS: VisualQuestion[] = [
       },
     ],
   },
+  {
+    id: 'color-emotion',
+    title: 'Color & Emotion',
+    instruction: 'Which color arrangement feels most "right" to you?',
+    svg: (
+      <svg viewBox="0 0 400 300" className="w-full h-full">
+        {/* Option A: Warm gradient, organized */}
+        <rect x="20" y="30" width="170" height="110" rx="12" fill="none" stroke="var(--color-border)" strokeWidth="1" opacity="0.3" />
+        {[0, 1, 2, 3, 4].map(i => (
+          <rect
+            key={`warm-${i}`}
+            x={30 + i * 32}
+            y={45}
+            width={28}
+            height={80}
+            rx="6"
+            fill={['#FEF3C7', '#FDE68A', '#F59E0B', '#D97706', '#B45309'][i]}
+            opacity={0.85}
+          />
+        ))}
+        {/* Option B: Cool palette, scattered */}
+        <rect x="210" y="30" width="170" height="110" rx="12" fill="none" stroke="var(--color-border)" strokeWidth="1" opacity="0.3" />
+        <circle cx="250" cy="70" r="20" fill="#06B6D4" opacity="0.7" />
+        <circle cx="310" cy="90" r="25" fill="#8B5CF6" opacity="0.6" />
+        <circle cx="280" cy="55" r="15" fill="#3B82F6" opacity="0.8" />
+        <circle cx="350" cy="75" r="18" fill="#6366F1" opacity="0.5" />
+        <circle cx="330" cy="115" r="12" fill="#14B8A6" opacity="0.7" />
+        {/* Option C: Complementary contrasts */}
+        <rect x="20" y="160" width="170" height="110" rx="12" fill="none" stroke="var(--color-border)" strokeWidth="1" opacity="0.3" />
+        <rect x="35" y="175" width="60" height="80" rx="8" fill="#EC4899" opacity="0.8" />
+        <rect x="105" y="175" width="60" height="80" rx="8" fill="#10B981" opacity="0.8" />
+        <circle cx="95" cy="215" r="20" fill="#F59E0B" opacity="0.6" />
+        {/* Option D: Monochrome depth */}
+        <rect x="210" y="160" width="170" height="110" rx="12" fill="none" stroke="var(--color-border)" strokeWidth="1" opacity="0.3" />
+        {[0, 1, 2, 3, 4, 5].map(i => (
+          <rect
+            key={`mono-${i}`}
+            x={220 + i * 10}
+            y={175 + i * 5}
+            width={150 - i * 20}
+            height={80 - i * 8}
+            rx="4"
+            fill={`rgba(139, 92, 246, ${0.15 + i * 0.15})`}
+          />
+        ))}
+      </svg>
+    ),
+    options: [
+      {
+        id: 'warm-ordered',
+        label: 'Warm & Organized',
+        description: 'The structured warm gradient feels harmonious and intentional',
+        traits: { conscientiousness: 12, agreeableness: 5 },
+      },
+      {
+        id: 'cool-scattered',
+        label: 'Cool & Expressive',
+        description: 'The scattered cool tones feel creative and freeing',
+        traits: { openness: 15, extraversion: 3 },
+      },
+      {
+        id: 'complementary',
+        label: 'Bold Contrasts',
+        description: 'The complementary colors create exciting visual tension',
+        traits: { extraversion: 10, openness: 8 },
+      },
+      {
+        id: 'monochrome',
+        label: 'Subtle Depth',
+        description: 'The monochrome layers feel sophisticated and calming',
+        traits: { conscientiousness: 8, neuroticism_inv: 10 },
+      },
+    ],
+  },
+  {
+    id: 'spatial-orientation',
+    title: 'Spatial Orientation',
+    instruction: 'How do these shapes relate to each other?',
+    svg: (
+      <svg viewBox="0 0 400 300" className="w-full h-full">
+        {/* Central cluster of shapes with varying spatial relationships */}
+        {/* Large circle - container/context */}
+        <circle cx="200" cy="150" r="100" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeDasharray="8 4" opacity="0.3" />
+        {/* Triangle pointing up */}
+        <polygon points="200,60 240,130 160,130" fill="#F59E0B" opacity="0.6" />
+        {/* Small circles orbiting */}
+        <circle cx="130" cy="180" r="25" fill="#EC4899" opacity="0.5" />
+        <circle cx="270" cy="180" r="25" fill="#10B981" opacity="0.5" />
+        {/* Connecting lines */}
+        <line x1="155" y1="180" x2="245" y2="180" stroke="var(--color-border)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.4" />
+        <line x1="200" y1="130" x2="130" y2="180" stroke="var(--color-border)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.4" />
+        <line x1="200" y1="130" x2="270" y2="180" stroke="var(--color-border)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.4" />
+        {/* Small detail squares */}
+        <rect x="185" y="200" width="30" height="30" rx="4" fill="#06B6D4" opacity="0.6" transform="rotate(45, 200, 215)" />
+        {/* Outer floating elements */}
+        <circle cx="80" cy="80" r="8" fill="#8B5CF6" opacity="0.4" />
+        <circle cx="320" cy="80" r="8" fill="#8B5CF6" opacity="0.4" />
+        <circle cx="80" cy="250" r="6" fill="#8B5CF6" opacity="0.3" />
+        <circle cx="320" cy="250" r="6" fill="#8B5CF6" opacity="0.3" />
+      </svg>
+    ),
+    options: [
+      {
+        id: 'hierarchy',
+        label: 'A Hierarchy',
+        description: 'The triangle leads, the circles support — there\'s a clear structure',
+        traits: { conscientiousness: 12, extraversion: 5 },
+      },
+      {
+        id: 'network',
+        label: 'A Connected Network',
+        description: 'They\'re all linked together, forming a web of relationships',
+        traits: { agreeableness: 12, extraversion: 8 },
+      },
+      {
+        id: 'system',
+        label: 'A System in Motion',
+        description: 'The shapes are orbiting and interacting, like a living system',
+        traits: { openness: 12, conscientiousness: 5 },
+      },
+      {
+        id: 'independent',
+        label: 'Independent Elements',
+        description: 'Each shape exists on its own — the connections are incidental',
+        traits: { openness: 8, neuroticism_inv: 8 },
+      },
+    ],
+  },
+  {
+    id: 'symmetry-balance',
+    title: 'Symmetry & Balance',
+    instruction: 'Which composition do you prefer?',
+    svg: (
+      <svg viewBox="0 0 400 300" className="w-full h-full">
+        {/* Left: Perfect symmetry */}
+        <rect x="10" y="20" width="180" height="260" rx="12" fill="none" stroke="var(--color-border)" strokeWidth="1" opacity="0.3" />
+        <line x1="100" y1="35" x2="100" y2="265" stroke="var(--color-border)" strokeWidth="1" strokeDasharray="3 3" opacity="0.2" />
+        <circle cx="60" cy="80" r="20" fill="#8B5CF6" opacity="0.5" />
+        <circle cx="140" cy="80" r="20" fill="#8B5CF6" opacity="0.5" />
+        <rect x="50" y="120" width="20" height="40" rx="4" fill="#10B981" opacity="0.5" />
+        <rect x="130" y="120" width="20" height="40" rx="4" fill="#10B981" opacity="0.5" />
+        <polygon points="60,200 80,230 40,230" fill="#F59E0B" opacity="0.5" />
+        <polygon points="140,200 160,230 120,230" fill="#F59E0B" opacity="0.5" />
+        {/* Right: Asymmetric but balanced */}
+        <rect x="210" y="20" width="180" height="260" rx="12" fill="none" stroke="var(--color-border)" strokeWidth="1" opacity="0.3" />
+        <circle cx="260" cy="70" r="35" fill="#EC4899" opacity="0.4" />
+        <rect x="320" y="90" width="50" height="50" rx="8" fill="#06B6D4" opacity="0.5" />
+        <circle cx="250" cy="170" r="12" fill="#F59E0B" opacity="0.6" />
+        <rect x="280" y="180" width="80" height="20" rx="4" fill="#8B5CF6" opacity="0.4" />
+        <polygon points="240,230 270,250 230,260" fill="#10B981" opacity="0.5" />
+        <circle cx="340" cy="240" r="15" fill="#EC4899" opacity="0.3" />
+      </svg>
+    ),
+    options: [
+      {
+        id: 'symmetry',
+        label: 'Perfect Symmetry',
+        description: 'The mirrored, balanced composition on the left feels more satisfying',
+        traits: { conscientiousness: 15, neuroticism_inv: 5 },
+      },
+      {
+        id: 'asymmetry',
+        label: 'Dynamic Asymmetry',
+        description: 'The varied, asymmetric layout on the right feels more interesting',
+        traits: { openness: 15, extraversion: 5 },
+      },
+      {
+        id: 'both',
+        label: 'Both Are Appealing',
+        description: 'I appreciate both — order and creative variety each have their place',
+        traits: { agreeableness: 10, openness: 5, conscientiousness: 5 },
+      },
+      {
+        id: 'neither',
+        label: 'Neither Stands Out',
+        description: 'I don\'t feel strongly drawn to either arrangement',
+        traits: { neuroticism_inv: 8, openness: 5 },
+      },
+    ],
+  },
 ];
 
 interface TraitAccumulator {

@@ -166,7 +166,32 @@ const traitToOceanMatrix: Record<string, Partial<Record<keyof OCEANScores, numbe
   // Analytical traits
   analytical: { conscientiousness: 0.5, openness: 0.4 },
   strategic: { openness: 0.5, conscientiousness: 0.4 },
-  thoroughness: { conscientiousness: 0.8 }
+  thoroughness: { conscientiousness: 0.8 },
+
+  // Work Values traits (SDT-based: Deci & Ryan, 2000)
+  purpose: { openness: 0.4, agreeableness: 0.3, conscientiousness: 0.2 },
+  intrinsic_motivation: { openness: 0.5, conscientiousness: 0.3 },
+  financial_security: { conscientiousness: 0.4, neuroticism: 0.3 },
+  self_direction: { openness: 0.5, extraversion: -0.2 },
+  cooperation: { agreeableness: 0.8, extraversion: 0.3 },
+  competition: { extraversion: 0.5, agreeableness: -0.4 },
+  versatility: { openness: 0.6, conscientiousness: -0.2 },
+
+  // Situational Judgment traits (McDaniel et al., 2007)
+  courage: { extraversion: 0.4, agreeableness: -0.2, neuroticism: -0.5 },
+  emotional_stability: { neuroticism: -0.9 },
+  emotional_regulation: { neuroticism: -0.7, conscientiousness: 0.3 },
+  optimism: { extraversion: 0.5, neuroticism: -0.6 },
+  initiative: { extraversion: 0.4, conscientiousness: 0.5, openness: 0.3 },
+  emotional_expression: { extraversion: 0.6, agreeableness: 0.3, neuroticism: 0.2 },
+  process: { conscientiousness: 0.7, openness: -0.2 },
+  boundaries: { conscientiousness: 0.3, agreeableness: -0.2, neuroticism: -0.3 },
+
+  // Cognitive Pattern traits (based on cognitive psychology)
+  intuition: { openness: 0.5, extraversion: 0.2, conscientiousness: -0.2 },
+  multitasking: { extraversion: 0.3, openness: 0.2, conscientiousness: -0.3 },
+  complexity_tolerance: { openness: 0.7, conscientiousness: 0.3 },
+  openness: { openness: 0.9 },
 };
 
 // ============================================
@@ -595,6 +620,99 @@ export class PersonalityEngine {
       calculatedAt: Date.now()
     };
   }
+}
+
+// ============================================
+// COMBINED MULTI-ASSESSMENT SCORING
+// ============================================
+
+/**
+ * Combines OCEAN scores from multiple assessments using weighted averaging.
+ *
+ * Weight distribution:
+ *  - Core Personality: 60% (base OCEAN scores)
+ *  - Visual Perception: 10% (perceptual modifiers)
+ *  - Work Values: 15% (motivational supplement)
+ *  - Situational Judgment: 15% (behavioral supplement)
+ *
+ * If a supplementary assessment isn't taken, its weight redistributes proportionally.
+ */
+export function calculateCombinedOCEAN(
+  coreScores: OCEANScores,
+  supplementaryScores?: {
+    visualPerception?: Partial<Record<keyof OCEANScores, number>>;
+    workValues?: OCEANScores;
+    situationalJudgment?: OCEANScores;
+    cognitivePatterns?: OCEANScores;
+  }
+): OCEANScores {
+  const weights = {
+    core: 0.55,
+    visual: 0.1,
+    workValues: 0.12,
+    situationalJudgment: 0.12,
+    cognitivePatterns: 0.11,
+  };
+
+  // Determine which supplementary assessments are available
+  const hasVisual = !!supplementaryScores?.visualPerception;
+  const hasWorkValues = !!supplementaryScores?.workValues;
+  const hasSJ = !!supplementaryScores?.situationalJudgment;
+  const hasCP = !!supplementaryScores?.cognitivePatterns;
+
+  // Calculate total weight of unavailable assessments to redistribute
+  let redistributeWeight = 0;
+  if (!hasVisual) redistributeWeight += weights.visual;
+  if (!hasWorkValues) redistributeWeight += weights.workValues;
+  if (!hasSJ) redistributeWeight += weights.situationalJudgment;
+  if (!hasCP) redistributeWeight += weights.cognitivePatterns;
+
+  // Calculate total weight of available assessments (excluding core)
+  const availableSupplementary = (hasVisual ? weights.visual : 0)
+    + (hasWorkValues ? weights.workValues : 0)
+    + (hasSJ ? weights.situationalJudgment : 0)
+    + (hasCP ? weights.cognitivePatterns : 0);
+
+  // Redistribute proportionally
+  const totalAvailable = weights.core + availableSupplementary;
+  const coreWeight = weights.core + (availableSupplementary === 0 ? redistributeWeight : redistributeWeight * (weights.core / totalAvailable));
+  const visualWeight = hasVisual ? weights.visual + (redistributeWeight * (weights.visual / totalAvailable)) : 0;
+  const workValuesWeight = hasWorkValues ? weights.workValues + (redistributeWeight * (weights.workValues / totalAvailable)) : 0;
+  const sjWeight = hasSJ ? weights.situationalJudgment + (redistributeWeight * (weights.situationalJudgment / totalAvailable)) : 0;
+  const cpWeight = hasCP ? weights.cognitivePatterns + (redistributeWeight * (weights.cognitivePatterns / totalAvailable)) : 0;
+
+  const dimensions: (keyof OCEANScores)[] = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'];
+
+  const combined: OCEANScores = {
+    openness: 0,
+    conscientiousness: 0,
+    extraversion: 0,
+    agreeableness: 0,
+    neuroticism: 0,
+  };
+
+  for (const dim of dimensions) {
+    let score = coreScores[dim] * coreWeight;
+
+    if (hasVisual && supplementaryScores!.visualPerception![dim] !== undefined) {
+      // Visual perception provides modifiers (additive), not absolute scores
+      // Apply as a modifier to the core score, scaled by weight
+      score += supplementaryScores!.visualPerception![dim]! * visualWeight * 2;
+    }
+    if (hasWorkValues) {
+      score += supplementaryScores!.workValues![dim] * workValuesWeight;
+    }
+    if (hasSJ) {
+      score += supplementaryScores!.situationalJudgment![dim] * sjWeight;
+    }
+    if (hasCP) {
+      score += supplementaryScores!.cognitivePatterns![dim] * cpWeight;
+    }
+
+    combined[dim] = Math.round(Math.max(0, Math.min(100, score)));
+  }
+
+  return combined;
 }
 
 // ============================================
