@@ -1,6 +1,11 @@
 -- Fix Test Data for Matching Feature
 -- Run this in Supabase SQL Editor to diagnose and fix matching data issues
 --
+-- IMPORTANT: Also run migrate-rls-cross-visibility.sql to fix RLS policies!
+-- The matching feature requires both:
+-- 1. This script (to fix test data)
+-- 2. migrate-rls-cross-visibility.sql (to fix RLS policies)
+--
 -- This script will:
 -- 1. Show the current state of test data
 -- 2. Ensure all test candidates have assessment_status = 'completed'

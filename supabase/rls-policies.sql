@@ -23,6 +23,34 @@ CREATE POLICY "Users can view own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
+-- Employers can view candidate profiles (for matching)
+DROP POLICY IF EXISTS "Employers can view candidate profiles" ON public.profiles;
+CREATE POLICY "Employers can view candidate profiles"
+  ON public.profiles FOR SELECT
+  USING (
+    role = 'candidate'
+    AND EXISTS (
+      SELECT 1 FROM public.profiles viewer
+      WHERE viewer.id = auth.uid() AND viewer.role = 'employer'
+    )
+    AND EXISTS (
+      SELECT 1 FROM public.candidates c
+      WHERE c.user_id = profiles.id AND c.assessment_status = 'completed'
+    )
+  );
+
+-- Candidates can view employer profiles (for matching)
+DROP POLICY IF EXISTS "Candidates can view employer profiles" ON public.profiles;
+CREATE POLICY "Candidates can view employer profiles"
+  ON public.profiles FOR SELECT
+  USING (
+    role = 'employer'
+    AND EXISTS (
+      SELECT 1 FROM public.profiles viewer
+      WHERE viewer.id = auth.uid() AND viewer.role = 'candidate'
+    )
+  );
+
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
