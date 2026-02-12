@@ -1,28 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Sparkles,
   Building2,
   Users,
   Heart,
-  TrendingUp,
   MapPin,
   Globe,
-  ChevronRight,
-  RefreshCw,
   Zap,
   Target,
   Star,
-  MessageCircle,
   Briefcase,
   Coffee,
+  Search,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
-import { cn } from '../../utils/cn';
 
 interface CandidateData {
   id: string;
@@ -87,9 +84,10 @@ interface MatchResult {
     valuesFit: number;
     roleFit?: number;
   };
-  highlights: string[];
-  insights: string[];
 }
+
+const WORK_STYLE_OPTIONS = ['remote', 'hybrid', 'onsite'];
+const COMPANY_SIZE_OPTIONS = ['1-10', '11-50', '51-200', '201-500', '500+'];
 
 export function MatchingAgent() {
   const { user } = useAuth();
@@ -97,77 +95,83 @@ export function MatchingAgent() {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [candidateData, setCandidateData] = useState<CandidateData | null>(null);
   const [matches, setMatches] = useState<MatchResult[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
-  const [agentMessage, setAgentMessage] = useState('');
-  const [agentThinking, setAgentThinking] = useState(false);
 
-  const agentMessages = [
-    "Analyzing your personality profile...",
-    "Scanning open roles across companies...",
-    "Calculating trait compatibility...",
-    "Evaluating culture fit...",
-    "Analyzing work style alignment...",
-    "Ranking your best matches...",
-    "Generating insights...",
-  ];
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [selectedWorkStyle, setSelectedWorkStyle] = useState<string | null>(null);
+  const [selectedCompanySize, setSelectedCompanySize] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+  // Derived filter values from data
+  const industries = useMemo(
+    () => [...new Set(matches.map(m => m.role.employers.industry).filter(Boolean))].sort(),
+    [matches]
+  );
+  const locations = useMemo(
+    () => [...new Set(matches.map(m => m.role.location).filter(Boolean))].sort(),
+    [matches]
+  );
+
+  const activeFilterCount = [selectedIndustry, selectedWorkStyle, selectedCompanySize, selectedLocation].filter(Boolean).length;
+
+  const filteredMatches = useMemo(() => {
+    return matches.filter(m => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          m.role.title.toLowerCase().includes(q) ||
+          m.role.employers.company_name.toLowerCase().includes(q) ||
+          (m.role.employers.industry || '').toLowerCase().includes(q) ||
+          (m.role.location || '').toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
+      if (selectedIndustry && m.role.employers.industry !== selectedIndustry) return false;
+      if (selectedWorkStyle && m.role.work_style !== selectedWorkStyle) return false;
+      if (selectedCompanySize && m.role.employers.company_size !== selectedCompanySize) return false;
+      if (selectedLocation && m.role.location !== selectedLocation) return false;
+      return true;
+    });
+  }, [matches, searchQuery, selectedIndustry, selectedWorkStyle, selectedCompanySize, selectedLocation]);
 
   useEffect(() => {
     if (!user) return;
-    loadCandidateData();
+    loadData();
   }, [user]);
 
-  const loadCandidateData = async () => {
+  const loadData = async () => {
     if (!user) return;
-
     setIsLoading(true);
     try {
-      const { data: candidate, error } = await supabase
+      const { data: candidate, error: candErr } = await supabase
         .from('candidates')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (candErr) throw candErr;
 
-      if (candidate && candidate.openness_score !== null) {
-        setCandidateData(candidate);
-        await findMatches(candidate);
-      } else {
+      if (!candidate || candidate.openness_score === null) {
         setCandidateData(null);
+        setIsLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Error loading candidate data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const findMatches = async (candidate: CandidateData) => {
-    setIsAnalyzing(true);
-    setAgentThinking(true);
+      setCandidateData(candidate);
 
-    // Animate through agent messages
-    for (let i = 0; i < agentMessages.length; i++) {
-      setAgentMessage(agentMessages[i]);
-      await new Promise(resolve => setTimeout(resolve, 400));
-    }
-
-    try {
-      // Fetch all active roles with employer data
-      const { data: roles, error } = await supabase
+      const { data: roles, error: roleErr } = await supabase
         .from('roles')
         .select('*, employers!inner(*)')
         .eq('status', 'active');
 
-      if (error) throw error;
+      if (roleErr) throw roleErr;
 
       if (!roles || roles.length === 0) {
         setMatches([]);
-        setAgentThinking(false);
-        setAgentMessage("No active roles available yet. Check back soon!");
+        setIsLoading(false);
         return;
       }
 
@@ -179,10 +183,8 @@ export function MatchingAgent() {
         neuroticism: candidate.neuroticism_score || 50,
       };
 
-      // Calculate matches for each role using the compatibility engine
       const matchResults: MatchResult[] = roles.map((role: RoleData) => {
         const employer = role.employers;
-
         const result = calculateCompatibility({
           candidateOCEAN: candidateOcean,
           employerPreferences: {
@@ -210,108 +212,22 @@ export function MatchingAgent() {
           },
         });
 
-        const highlights = generateHighlights(candidateOcean, employer, result.breakdown);
-        const insights = generateInsights(candidateOcean, employer, role);
-
         return {
           role,
           traitMatchScore: result.traitMatchScore,
           cultureMatchScore: result.cultureMatchScore,
           overallMatchScore: result.overallMatchScore,
           breakdown: result.breakdown,
-          highlights,
-          insights,
         };
       });
 
-      // Sort by overall match score
       matchResults.sort((a, b) => b.overallMatchScore - a.overallMatchScore);
-
       setMatches(matchResults);
-      setAgentMessage(`Found ${matchResults.length} matching roles! Here are your top recommendations.`);
     } catch (err) {
-      console.error('Error finding matches:', err);
-      setAgentMessage("Had trouble finding matches. Please try again.");
+      console.error('Error loading match data:', err);
     } finally {
-      setAgentThinking(false);
-      setIsAnalyzing(false);
+      setIsLoading(false);
     }
-  };
-
-  const generateHighlights = (
-    candidate: OCEANScores,
-    employer: RoleData['employers'],
-    breakdown: MatchResult['breakdown']
-  ): string[] => {
-    const highlights: string[] = [];
-
-    if (breakdown.opennessFit >= 85) {
-      highlights.push("Strong alignment on innovation and creativity");
-    }
-    if (breakdown.conscientiousnessFit >= 85) {
-      highlights.push("Excellent match on attention to detail");
-    }
-    if (breakdown.extraversionFit >= 85) {
-      highlights.push("Compatible communication and collaboration styles");
-    }
-    if (breakdown.agreeablenessFit >= 85) {
-      highlights.push("Shared values on teamwork and support");
-    }
-    if (breakdown.neuroticismFit >= 85) {
-      highlights.push("Similar approach to handling pressure");
-    }
-    if (breakdown.workStyleFit >= 85) {
-      highlights.push("Work style preferences align perfectly");
-    }
-    if (breakdown.valuesFit >= 80) {
-      highlights.push("Strong culture values alignment");
-    }
-
-    if (employer.company_size === '1-10' || employer.company_size === '11-50') {
-      if (candidate.openness > 60) {
-        highlights.push("Thrives in dynamic, fast-paced environments");
-      }
-    }
-
-    return highlights.slice(0, 4);
-  };
-
-  const generateInsights = (
-    candidate: OCEANScores,
-    employer: RoleData['employers'],
-    role: RoleData
-  ): string[] => {
-    const insights: string[] = [];
-    const idealOcean = {
-      openness: employer.openness_preference || 50,
-      conscientiousness: employer.conscientiousness_preference || 50,
-      extraversion: employer.extraversion_preference || 50,
-      agreeableness: employer.agreeableness_preference || 50,
-      neuroticism: employer.neuroticism_preference || 50,
-    };
-
-    if (candidate.openness > idealOcean.openness + 15) {
-      insights.push("Your creative drive could bring fresh perspectives to this team");
-    }
-    if (candidate.conscientiousness > idealOcean.conscientiousness + 10) {
-      insights.push("Your attention to detail exceeds expectations for this role");
-    }
-    if (candidate.extraversion < idealOcean.extraversion - 15) {
-      insights.push("This role may involve more social interaction than you prefer");
-    }
-
-    if (employer.industry === 'Technology') {
-      insights.push("Tech industry aligns well with innovation-driven personalities");
-    }
-    if (employer.industry === 'Healthcare') {
-      insights.push("Healthcare sector values empathy and conscientiousness");
-    }
-
-    if (role.work_style === 'remote' && candidate.openness > 60) {
-      insights.push("Remote work can complement your independent working style");
-    }
-
-    return insights.slice(0, 3);
   };
 
   const getMatchColor = (score: number) => {
@@ -322,31 +238,36 @@ export function MatchingAgent() {
   };
 
   const getMatchLabel = (score: number) => {
-    if (score >= 85) return 'Excellent Match';
-    if (score >= 70) return 'Strong Match';
-    if (score >= 55) return 'Good Match';
-    return 'Potential Match';
+    if (score >= 85) return 'Excellent';
+    if (score >= 70) return 'Strong';
+    if (score >= 55) return 'Good';
+    return 'Potential';
   };
 
   const formatSalary = (min: number | null, max: number | null) => {
     if (!min && !max) return null;
-    const formatNum = (n: number) => {
-      if (n >= 1000) return `$${(n / 1000).toFixed(0)}k`;
-      return `$${n}`;
-    };
-    if (min && max) return `${formatNum(min)} - ${formatNum(max)}`;
-    if (min) return `From ${formatNum(min)}`;
-    return `Up to ${formatNum(max!)}`;
+    const fmt = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`);
+    if (min && max) return `${fmt(min)} - ${fmt(max)}`;
+    if (min) return `From ${fmt(min)}`;
+    return `Up to ${fmt(max!)}`;
+  };
+
+  const clearFilters = () => {
+    setSelectedIndustry(null);
+    setSelectedWorkStyle(null);
+    setSelectedCompanySize(null);
+    setSelectedLocation(null);
+    setSearchQuery('');
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-[var(--color-accent)] mx-auto mb-4 flex items-center justify-center animate-pulse">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse" style={{ backgroundColor: 'var(--color-accent)' }}>
+            <Search className="w-8 h-8 text-white" />
           </div>
-          <p style={{ color: 'var(--color-textMuted)' }}>Loading your profile...</p>
+          <p style={{ color: 'var(--color-textMuted)' }}>Loading roles...</p>
         </div>
       </div>
     );
@@ -368,9 +289,7 @@ export function MatchingAgent() {
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
             Take our personality assessment to discover your unique traits and find roles that match your values and work style.
           </p>
-          <Button onClick={() => navigate('/app/personality')}>
-            Start Assessment
-          </Button>
+          <Button onClick={() => navigate('/app/personality')}>Start Assessment</Button>
         </div>
       </div>
     );
@@ -378,393 +297,252 @@ export function MatchingAgent() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-      {/* Agent Header */}
-      <div
-        className="border-b px-6 py-4"
-        style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
-      >
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div
-              className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                agentThinking && "animate-pulse"
-              )}
-              style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
-            >
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+      {/* Header */}
+      <div className="border-b px-6 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-                Match Agent
-              </h1>
+              <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Browse Roles</h1>
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                {agentThinking ? agentMessage : `${matches.length} roles analyzed`}
+                {filteredMatches.length} role{filteredMatches.length !== 1 ? 's' : ''} found
               </p>
             </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+              style={{
+                backgroundColor: showFilters || activeFilterCount > 0 ? 'var(--color-accent)' : 'var(--color-surface)',
+                color: showFilters || activeFilterCount > 0 ? 'white' : 'var(--color-textSecondary)',
+                border: showFilters || activeFilterCount > 0 ? 'none' : '1px solid var(--color-border)',
+              }}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => findMatches(candidateData)}
-            disabled={isAnalyzing}
-            leftIcon={<RefreshCw className={cn("w-4 h-4", isAnalyzing && "animate-spin")} />}
-          >
-            Refresh Matches
-          </Button>
+
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
+            <input
+              type="text"
+              placeholder="Search by title, company, industry, or location..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none"
+              style={{
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+              }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <X className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
+            )}
+          </div>
+
+          {/* Filter panel */}
+          {showFilters && (
+            <div className="mt-4 p-4 rounded-xl grid grid-cols-2 md:grid-cols-4 gap-3" style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
+              {/* Industry */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-textMuted)' }}>Industry</label>
+                <select
+                  value={selectedIndustry || ''}
+                  onChange={e => setSelectedIndustry(e.target.value || null)}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="">All</option>
+                  {industries.map(i => <option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              {/* Work Style */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-textMuted)' }}>Work Style</label>
+                <select
+                  value={selectedWorkStyle || ''}
+                  onChange={e => setSelectedWorkStyle(e.target.value || null)}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="">All</option>
+                  {WORK_STYLE_OPTIONS.map(ws => <option key={ws} value={ws}>{ws.charAt(0).toUpperCase() + ws.slice(1)}</option>)}
+                </select>
+              </div>
+              {/* Company Size */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-textMuted)' }}>Company Size</label>
+                <select
+                  value={selectedCompanySize || ''}
+                  onChange={e => setSelectedCompanySize(e.target.value || null)}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="">All</option>
+                  {COMPANY_SIZE_OPTIONS.map(cs => <option key={cs} value={cs}>{cs}</option>)}
+                </select>
+              </div>
+              {/* Location */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-textMuted)' }}>Location</label>
+                <select
+                  value={selectedLocation || ''}
+                  onChange={e => setSelectedLocation(e.target.value || null)}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="">All</option>
+                  {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+              {activeFilterCount > 0 && (
+                <div className="col-span-2 md:col-span-4 flex justify-end">
+                  <button onClick={clearFilters} className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>
+                    Clear all filters
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Results Grid */}
       <div className="max-w-6xl mx-auto p-6">
-        {/* Agent Message */}
-        {agentMessage && !agentThinking && (
-          <div
-            className="mb-6 p-4 rounded-2xl flex items-start gap-3"
-            style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-          >
-            <MessageCircle className="w-5 h-5 mt-0.5" style={{ color: 'var(--color-accent)' }} />
-            <p style={{ color: 'var(--color-text)' }}>{agentMessage}</p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Matches List */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
-              Your Top Matches
-            </h2>
-
-            {matches.length === 0 ? (
-              <div
-                className="p-8 rounded-2xl text-center"
-                style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-              >
-                <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-                <p style={{ color: 'var(--color-textMuted)' }}>
-                  No active roles available yet. Check back soon!
-                </p>
-              </div>
-            ) : (
-              matches.map((match, index) => (
-                <button
-                  key={match.role.id}
-                  onClick={() => setSelectedMatch(match)}
-                  className={cn(
-                    "w-full p-5 rounded-2xl text-left transition-all",
-                    selectedMatch?.role.id === match.role.id
-                      ? "ring-2 ring-[var(--color-accent)]"
-                      : "hover:bg-[var(--color-surfaceHover)]"
-                  )}
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                  }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: 'var(--color-background)' }}
-                    >
-                      <Building2 className="w-7 h-7" style={{ color: 'var(--color-accent)' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                            {match.role.title}
-                          </h3>
-                          <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                            {match.role.employers.company_name || 'Company'}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1">
-                            {match.role.employers.industry && (
-                              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                                {match.role.employers.industry}
-                              </span>
-                            )}
-                            {match.role.location && (
-                              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                                <MapPin className="w-3 h-3" />
-                                {match.role.location}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div
-                            className="text-xl font-bold"
-                            style={{ color: getMatchColor(match.overallMatchScore) }}
-                          >
-                            {match.overallMatchScore}%
-                          </div>
-                          <div
-                            className="text-xs px-2 py-0.5 rounded-full"
-                            style={{
-                              backgroundColor: `${getMatchColor(match.overallMatchScore)}20`,
-                              color: getMatchColor(match.overallMatchScore),
-                            }}
-                          >
-                            {getMatchLabel(match.overallMatchScore)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Match Breakdown Mini */}
-                      <div className="flex gap-4 mt-3">
-                        <div className="flex items-center gap-1.5">
-                          <Heart className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
-                          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                            {match.traitMatchScore}% Traits
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Star className="w-3.5 h-3.5" style={{ color: 'var(--color-warning)' }} />
-                          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                            {match.cultureMatchScore}% Culture
-                          </span>
-                        </div>
-                        {match.breakdown.workStyleFit && (
-                          <div className="flex items-center gap-1.5">
-                            <Zap className="w-3.5 h-3.5" style={{ color: 'var(--color-success)' }} />
-                            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                              {match.breakdown.workStyleFit}% Work Style
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {index < 3 && match.highlights.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          {match.highlights.slice(0, 2).map((highlight, i) => (
-                            <span
-                              key={i}
-                              className="text-xs px-2 py-1 rounded-md"
-                              style={{
-                                backgroundColor: 'var(--color-background)',
-                                color: 'var(--color-textSecondary)',
-                              }}
-                            >
-                              {highlight}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <ChevronRight
-                      className="w-5 h-5 flex-shrink-0"
-                      style={{ color: 'var(--color-textMuted)' }}
-                    />
-                  </div>
-                </button>
-              ))
+        {filteredMatches.length === 0 ? (
+          <div className="p-12 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
+            <p className="font-medium mb-1" style={{ color: 'var(--color-text)' }}>No roles found</p>
+            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+              {matches.length === 0 ? 'No active roles available yet. Check back soon!' : 'Try adjusting your filters or search query.'}
+            </p>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters} className="mt-4 text-sm font-medium" style={{ color: 'var(--color-accent)' }}>
+                Clear all filters
+              </button>
             )}
           </div>
-
-          {/* Selected Match Details */}
-          <div className="lg:col-span-1">
-            {selectedMatch ? (
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMatches.map(match => (
               <div
-                className="sticky top-6 p-5 rounded-2xl space-y-5"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                }}
+                key={match.role.id}
+                className="p-5 rounded-2xl border transition-all hover:shadow-md"
+                style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
               >
-                <div className="text-center pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+                {/* Match badge */}
+                <div className="flex items-center justify-between mb-3">
                   <div
-                    className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: 'var(--color-background)' }}
                   >
-                    <Building2 className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
+                    <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                   </div>
-                  <h3 className="font-semibold text-lg" style={{ color: 'var(--color-text)' }}>
-                    {selectedMatch.role.title}
-                  </h3>
-                  <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    {selectedMatch.role.employers.company_name}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    {selectedMatch.role.employers.industry}
-                  </p>
                   <div
-                    className="text-3xl font-bold mt-3"
-                    style={{ color: getMatchColor(selectedMatch.overallMatchScore) }}
+                    className="px-2.5 py-1 rounded-full text-sm font-bold"
+                    style={{
+                      backgroundColor: `${getMatchColor(match.overallMatchScore)}15`,
+                      color: getMatchColor(match.overallMatchScore),
+                    }}
                   >
-                    {selectedMatch.overallMatchScore}%
-                  </div>
-                  <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                    Overall Match
-                  </p>
-                </div>
-
-                {/* Detailed Breakdown */}
-                <div>
-                  <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                    Compatibility Breakdown
-                  </h4>
-                  <div className="space-y-3">
-                    {[
-                      { label: 'Trait Match', value: selectedMatch.traitMatchScore, icon: Heart, color: 'var(--color-accent)' },
-                      { label: 'Culture Fit', value: selectedMatch.cultureMatchScore, icon: Star, color: 'var(--color-warning)' },
-                      { label: 'Work Style', value: selectedMatch.breakdown.workStyleFit, icon: Zap, color: 'var(--color-success)' },
-                      { label: 'Values Alignment', value: selectedMatch.breakdown.valuesFit, icon: TrendingUp, color: 'var(--color-accent)' },
-                    ].map((item) => (
-                      <div key={item.label}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <item.icon className="w-4 h-4" style={{ color: item.color }} />
-                            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                              {item.label}
-                            </span>
-                          </div>
-                          <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
-                            {item.value}%
-                          </span>
-                        </div>
-                        <div
-                          className="h-2 rounded-full overflow-hidden"
-                          style={{ backgroundColor: 'var(--color-background)' }}
-                        >
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                              width: `${item.value}%`,
-                              backgroundColor: item.color,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                    {match.overallMatchScore}% {getMatchLabel(match.overallMatchScore)}
                   </div>
                 </div>
 
-                {/* Highlights */}
-                {selectedMatch.highlights.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                      Why You Match
-                    </h4>
-                    <ul className="space-y-2">
-                      {selectedMatch.highlights.map((highlight, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-sm"
-                          style={{ color: 'var(--color-textSecondary)' }}
-                        >
-                          <TrendingUp className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--color-success)' }} />
-                          {highlight}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Insights */}
-                {selectedMatch.insights.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                      Insights
-                    </h4>
-                    <ul className="space-y-2">
-                      {selectedMatch.insights.map((insight, i) => (
-                        <li
-                          key={i}
-                          className="text-xs p-2 rounded-lg"
-                          style={{
-                            backgroundColor: 'var(--color-background)',
-                            color: 'var(--color-textMuted)',
-                          }}
-                        >
-                          {insight}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Role & Company Info */}
-                <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-                  <div className="space-y-2 text-sm">
-                    {selectedMatch.role.location && (
-                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                        <MapPin className="w-4 h-4" />
-                        {selectedMatch.role.location}
-                      </div>
-                    )}
-                    {selectedMatch.role.work_style && (
-                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                        <Briefcase className="w-4 h-4" />
-                        {selectedMatch.role.work_style.charAt(0).toUpperCase() + selectedMatch.role.work_style.slice(1)}
-                      </div>
-                    )}
-                    {formatSalary(selectedMatch.role.salary_min, selectedMatch.role.salary_max) && (
-                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                        <span className="w-4 h-4 text-center">$</span>
-                        {formatSalary(selectedMatch.role.salary_min, selectedMatch.role.salary_max)}
-                      </div>
-                    )}
-                    {selectedMatch.role.employers.company_size && (
-                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                        <Users className="w-4 h-4" />
-                        {selectedMatch.role.employers.company_size} employees
-                      </div>
-                    )}
-                    {selectedMatch.role.employers.company_website && (
-                      <a
-                        href={selectedMatch.role.employers.company_website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 hover:underline"
-                        style={{ color: 'var(--color-accent)' }}
-                      >
-                        <Globe className="w-4 h-4" />
-                        Visit Website
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full"
-                  rightIcon={<Coffee className="w-4 h-4" />}
-                  onClick={async () => {
-                    if (!candidateData || !selectedMatch) return;
-                    try {
-                      await supabase.from('coffee_chats').insert({
-                        candidate_id: candidateData.id,
-                        employer_id: selectedMatch.role.employers.id,
-                        role_id: selectedMatch.role.id,
-                        initiated_by: 'candidate',
-                        status: 'pending',
-                        message: `Interested in ${selectedMatch.role.title}`,
-                        role_title: selectedMatch.role.title,
-                        match_score: selectedMatch.overallMatchScore,
-                      });
-                      showSuccess('Sent!', 'Coffee chat request sent');
-                    } catch {
-                      showError('Error', 'Failed to send request');
-                    }
-                  }}
-                >
-                  Request Coffee Chat
-                </Button>
-              </div>
-            ) : (
-              <div
-                className="sticky top-6 p-8 rounded-2xl text-center"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-                <p style={{ color: 'var(--color-textMuted)' }}>
-                  Select a match to see detailed compatibility insights
+                {/* Title & Company */}
+                <h3 className="font-semibold mb-0.5 line-clamp-1" style={{ color: 'var(--color-text)' }}>
+                  {match.role.title}
+                </h3>
+                <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
+                  {match.role.employers.company_name}
                 </p>
+
+                {/* Meta */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {match.role.employers.industry && (
+                    <span className="text-xs px-2 py-1 rounded-md" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                      {match.role.employers.industry}
+                    </span>
+                  )}
+                  {match.role.location && (
+                    <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-md" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                      <MapPin className="w-3 h-3" />{match.role.location}
+                    </span>
+                  )}
+                  {match.role.work_style && (
+                    <span className="text-xs px-2 py-1 rounded-md" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                      {match.role.work_style.charAt(0).toUpperCase() + match.role.work_style.slice(1)}
+                    </span>
+                  )}
+                  {match.role.employers.company_size && (
+                    <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-md" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                      <Users className="w-3 h-3" />{match.role.employers.company_size}
+                    </span>
+                  )}
+                </div>
+
+                {/* Score breakdown mini */}
+                <div className="flex gap-3 mb-4 text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                  <span className="flex items-center gap-1"><Heart className="w-3 h-3" style={{ color: 'var(--color-accent)' }} />{match.traitMatchScore}%</span>
+                  <span className="flex items-center gap-1"><Star className="w-3 h-3" style={{ color: 'var(--color-warning)' }} />{match.cultureMatchScore}%</span>
+                  {match.breakdown.workStyleFit > 0 && (
+                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" style={{ color: 'var(--color-success)' }} />{match.breakdown.workStyleFit}%</span>
+                  )}
+                </div>
+
+                {/* Salary */}
+                {formatSalary(match.role.salary_min, match.role.salary_max) && (
+                  <p className="text-sm font-medium mb-4" style={{ color: 'var(--color-text)' }}>
+                    {formatSalary(match.role.salary_min, match.role.salary_max)}
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    rightIcon={<Coffee className="w-3.5 h-3.5" />}
+                    onClick={async () => {
+                      if (!candidateData) return;
+                      try {
+                        await supabase.from('coffee_chats').insert({
+                          candidate_id: candidateData.id,
+                          employer_id: match.role.employers.id,
+                          role_id: match.role.id,
+                          initiated_by: 'candidate',
+                          status: 'pending',
+                          message: `Interested in ${match.role.title}`,
+                          role_title: match.role.title,
+                          match_score: match.overallMatchScore,
+                        });
+                        showSuccess('Sent!', 'Coffee chat request sent');
+                      } catch {
+                        showError('Error', 'Failed to send request');
+                      }
+                    }}
+                  >
+                    Coffee Chat
+                  </Button>
+                  {match.role.employers.company_website && (
+                    <a
+                      href={match.role.employers.company_website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center w-9 h-9 rounded-lg border"
+                      style={{ borderColor: 'var(--color-border)', color: 'var(--color-textMuted)' }}
+                    >
+                      <Globe className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

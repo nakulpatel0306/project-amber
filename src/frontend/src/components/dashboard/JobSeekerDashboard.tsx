@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sparkles,
   Target,
   Coffee,
   ArrowRight,
@@ -10,20 +9,22 @@ import {
   Heart,
   MessageCircle,
   Calendar,
-  ChevronRight,
   Users,
   Brain,
   Lightbulb,
   Zap,
   Anchor,
-  Eye,
-  Shield,
+  Clock,
+  X,
+  MapPin,
+  Briefcase,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
 import { supabase } from '../../lib/supabase';
-import { EmberFirefly } from '../ember/EmberFirefly';
+import { calculateCompatibility } from '../../lib/compatibilityScoring';
 
 interface PersonalityScores {
   openness: number;
@@ -36,6 +37,7 @@ interface PersonalityScores {
 interface CandidateData {
   headline: string | null;
   bio: string | null;
+  location: string | null;
   openness_score: number | null;
   conscientiousness_score: number | null;
   extraversion_score: number | null;
@@ -45,14 +47,19 @@ interface CandidateData {
   assessment_completed_at: string | null;
 }
 
-interface QuickAction {
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  href?: string;
-  color: string;
-  status?: 'complete' | 'in-progress' | 'not-started';
-  onClick?: () => void;
+interface TopMatch {
+  company: string;
+  role: string;
+  matchScore: number;
+  location: string;
+  workStyle: string | null;
+}
+
+interface RecentActivity {
+  company: string;
+  person: string;
+  status: string;
+  time: string;
 }
 
 export function JobSeekerDashboard() {
@@ -64,6 +71,17 @@ export function JobSeekerDashboard() {
   const [personalityScores, setPersonalityScores] = useState<PersonalityScores | null>(null);
   const [topTraits, setTopTraits] = useState<string[]>([]);
   const [lastAssessmentDate, setLastAssessmentDate] = useState<Date | null>(null);
+
+  // Stats
+  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [matchesAvailable, setMatchesAvailable] = useState(0);
+  const [avgMatchScore, setAvgMatchScore] = useState(0);
+  const [pendingChats, setPendingChats] = useState(0);
+
+  // Data
+  const [topMatches, setTopMatches] = useState<TopMatch[]>([]);
+  const [upcomingChats, setUpcomingChats] = useState<Array<{ company: string; person: string; role: string; time: string }>>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -80,7 +98,7 @@ export function JobSeekerDashboard() {
     const checkCompletionStatus = async () => {
       const { data: candidate } = await supabase
         .from('candidates')
-        .select('headline, bio, openness_score, conscientiousness_score, extraversion_score, agreeableness_score, neuroticism_score, top_traits, assessment_completed_at')
+        .select('headline, bio, location, openness_score, conscientiousness_score, extraversion_score, agreeableness_score, neuroticism_score, top_traits, assessment_completed_at')
         .eq('user_id', user.id)
         .single();
 
@@ -89,6 +107,14 @@ export function JobSeekerDashboard() {
       // Profile is complete if they have a headline or bio filled out
       const profileComplete = !!(typedCandidate?.headline || typedCandidate?.bio);
       setHasCompletedProfile(profileComplete);
+
+      // Compute profile completion %
+      let completionParts = 0;
+      if (typedCandidate?.headline) completionParts++;
+      if (typedCandidate?.bio) completionParts++;
+      if (typedCandidate?.location) completionParts++;
+      if (typedCandidate?.openness_score !== null && typedCandidate?.openness_score !== undefined) completionParts++;
+      setProfileCompletion(Math.round((completionParts / 4) * 100));
 
       // Show modal automatically if profile is not complete AND user hasn't skipped this session
       const hasSkippedThisSession = sessionStorage.getItem('profile_setup_skipped');
@@ -134,52 +160,6 @@ export function JobSeekerDashboard() {
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
-  const quickActions: QuickAction[] = [
-    {
-      title: 'Complete Your Profile',
-      description: 'Add your details so employers can learn about you',
-      icon: CheckCircle2,
-      color: '#10B981',
-      status: hasCompletedProfile ? 'complete' : 'not-started',
-      onClick: () => setShowSetupModal(true),
-    },
-    {
-      title: hasCompletedAssessment ? 'View Personality Insights' : 'Take Personality Assessment',
-      description: hasCompletedAssessment ? 'Explore your detailed personality profile' : '15 minutes to discover your work style',
-      icon: Brain,
-      href: hasCompletedAssessment ? '/app/insights' : '/app/personality',
-      color: '#8B5CF6',
-      status: hasCompletedAssessment ? 'complete' : 'not-started',
-    },
-    {
-      title: 'Find Your Matches',
-      description: 'Discover companies that match your personality',
-      icon: Users,
-      href: '/app/matches',
-      color: '#8B5CF6',
-      status: hasCompletedAssessment ? 'not-started' : 'not-started',
-    },
-    {
-      title: 'Coffee Chats',
-      description: 'Connect with teams over casual conversations',
-      icon: Coffee,
-      href: '/app/chats',
-      color: '#EC4899',
-      status: 'not-started',
-    },
-    {
-      title: 'Talk to Ember',
-      description: 'Get career advice from our AI assistant',
-      icon: Sparkles,
-      href: '/app/ember',
-      color: '#F59E0B',
-    },
-  ];
-
-  // Real data from Supabase
-  const [topMatches, setTopMatches] = useState<Array<{ company: string; role: string; matchScore: number; location: string }>>([]);
-  const [upcomingChats, setUpcomingChats] = useState<Array<{ company: string; person: string; role: string; time: string }>>([]);
-
   useEffect(() => {
     if (!user || !hasCompletedAssessment || !personalityScores) return;
 
@@ -188,7 +168,7 @@ export function JobSeekerDashboard() {
         // Get active roles with employer data
         const { data: roles } = await supabase
           .from('roles')
-          .select('*, employers!inner(company_name, location, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_quiz_completed)')
+          .select('*, employers!inner(company_name, location, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_quiz_completed, culture_values)')
           .eq('status', 'active');
 
         if (roles && personalityScores) {
@@ -199,31 +179,55 @@ export function JobSeekerDashboard() {
             })
             .map(role => {
               const emp = role.employers as Record<string, unknown>;
-              // Simple trait distance scoring
-              const traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'] as const;
-              let totalDiff = 0;
-              for (const t of traits) {
-                const candidateVal = personalityScores[t] || 50;
-                const empVal = (emp?.[`${t}_preference`] as number) || 50;
-                totalDiff += Math.abs(candidateVal - empVal);
-              }
-              const maxDiff = 500;
-              const matchScore = Math.round((1 - totalDiff / maxDiff) * 100);
+
+              const result = calculateCompatibility({
+                candidateOCEAN: personalityScores,
+                employerPreferences: {
+                  openness: (emp?.openness_preference as number) || 50,
+                  conscientiousness: (emp?.conscientiousness_preference as number) || 50,
+                  extraversion: (emp?.extraversion_preference as number) || 50,
+                  agreeableness: (emp?.agreeableness_preference as number) || 50,
+                  neuroticism: (emp?.neuroticism_preference as number) || 50,
+                  cultureValues: (emp?.culture_values as string[]) || [],
+                },
+                roleRequirements: {
+                  required_openness_min: role.required_openness_min ?? null,
+                  required_openness_max: role.required_openness_max ?? null,
+                  required_conscientiousness_min: role.required_conscientiousness_min ?? null,
+                  required_conscientiousness_max: role.required_conscientiousness_max ?? null,
+                  required_extraversion_min: role.required_extraversion_min ?? null,
+                  required_extraversion_max: role.required_extraversion_max ?? null,
+                  required_agreeableness_min: role.required_agreeableness_min ?? null,
+                  required_agreeableness_max: role.required_agreeableness_max ?? null,
+                  required_neuroticism_min: role.required_neuroticism_min ?? null,
+                  required_neuroticism_max: role.required_neuroticism_max ?? null,
+                  work_style: role.work_style ?? null,
+                },
+              });
 
               return {
                 company: (emp?.company_name as string) || 'Unknown',
                 role: role.title,
-                matchScore,
+                matchScore: result.overallMatchScore,
                 location: role.location || (emp?.location as string) || 'Remote',
+                workStyle: role.work_style || null,
               };
             })
             .sort((a, b) => b.matchScore - a.matchScore)
             .slice(0, 5);
 
           setTopMatches(matches);
+          setMatchesAvailable(roles.filter(r => {
+            const emp = r.employers as Record<string, unknown> | null;
+            return emp?.culture_quiz_completed;
+          }).length);
+
+          if (matches.length > 0) {
+            setAvgMatchScore(Math.round(matches.reduce((s, m) => s + m.matchScore, 0) / matches.length));
+          }
         }
 
-        // Get upcoming coffee chats
+        // Get candidate id for chat queries
         const { data: candidate } = await supabase
           .from('candidates')
           .select('id')
@@ -231,6 +235,16 @@ export function JobSeekerDashboard() {
           .single();
 
         if (candidate) {
+          // Get pending coffee chats count
+          const { data: pendingChatData } = await supabase
+            .from('coffee_chats')
+            .select('id')
+            .eq('candidate_id', candidate.id)
+            .eq('status', 'pending');
+
+          setPendingChats(pendingChatData?.length || 0);
+
+          // Get upcoming coffee chats (accepted/pending)
           const { data: chats } = await supabase
             .from('coffee_chats')
             .select('*, employers!inner(company_name, profiles:user_id(full_name))')
@@ -251,6 +265,31 @@ export function JobSeekerDashboard() {
               };
             }));
           }
+
+          // Get recent activity (all statuses)
+          const { data: allChats } = await supabase
+            .from('coffee_chats')
+            .select('*, employers!inner(company_name, profiles:user_id(full_name))')
+            .eq('candidate_id', candidate.id)
+            .order('updated_at', { ascending: false })
+            .limit(5);
+
+          if (allChats) {
+            setRecentActivity(allChats.map(c => {
+              const emp = c.employers as Record<string, unknown> | null;
+              const empProfile = emp?.profiles as Record<string, unknown> | null;
+              return {
+                company: (emp?.company_name as string) || 'Unknown',
+                person: (empProfile?.full_name as string) || 'Unknown',
+                status: c.status || 'pending',
+                time: c.updated_at
+                  ? new Date(c.updated_at).toLocaleDateString()
+                  : c.created_at
+                    ? new Date(c.created_at).toLocaleDateString()
+                    : '',
+              };
+            }));
+          }
         }
       } catch (err) {
         console.error('Error loading matches:', err);
@@ -259,6 +298,26 @@ export function JobSeekerDashboard() {
 
     loadMatches();
   }, [user, hasCompletedAssessment, personalityScores]);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 85) return 'var(--color-success)';
+    if (score >= 70) return 'var(--color-accent)';
+    if (score >= 55) return '#F59E0B';
+    return 'var(--color-textMuted)';
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'accepted':
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-success)' }} />;
+      case 'cancelled':
+      case 'declined':
+        return <X className="w-4 h-4" style={{ color: 'var(--color-error, #EF4444)' }} />;
+      default:
+        return <Clock className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />;
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -277,6 +336,35 @@ export function JobSeekerDashboard() {
             ? "Here's what's happening with your job search"
             : "Complete your personality assessment to get matched with jobs that fit your culture"}
         </p>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: 'Profile Completion', value: `${profileCompletion}%`, icon: Users },
+          { label: 'Matches Available', value: String(matchesAvailable), icon: Briefcase },
+          { label: 'Avg Match Score', value: avgMatchScore > 0 ? `${avgMatchScore}%` : '--', icon: BarChart3 },
+          { label: 'Pending Chats', value: String(pendingChats), icon: Coffee },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="p-4 rounded-xl border"
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              borderColor: 'var(--color-border)',
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <stat.icon className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+              <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                {stat.label}
+              </p>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
+              {stat.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Progress Banner (if not complete) */}
@@ -465,125 +553,77 @@ export function JobSeekerDashboard() {
         </div>
       )}
 
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {quickActions.map((action) => {
-          const cardContent = (
-            <div className="flex items-start gap-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${action.color}15` }}
-              >
-                <action.icon className="w-5 h-5" style={{ color: action.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3
-                    className="font-medium"
-                    style={{ color: 'var(--color-text)' }}
-                  >
-                    {action.title}
-                  </h3>
-                  {action.status === 'complete' && (
-                    <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-                  )}
-                </div>
-                <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                  {action.description}
-                </p>
-              </div>
-              <ChevronRight
-                className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
-            </div>
-          );
+      {/* Top Matches (full-width) */}
+      <div
+        className="p-6 rounded-xl border mb-6"
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="font-semibold flex items-center gap-2"
+            style={{ color: 'var(--color-text)' }}
+          >
+            <Heart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+            Top Matches
+          </h2>
+          <Link
+            to="/app/matches"
+            className="text-sm font-medium"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            View All
+          </Link>
+        </div>
 
-          if (action.onClick) {
-            return (
-              <button
-                key={action.title}
-                onClick={action.onClick}
-                className="p-5 rounded-xl border transition-all hover:shadow-md group text-left"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                }}
-              >
-                {cardContent}
-              </button>
-            );
-          }
-
-          return (
-            <Link
-              key={action.title}
-              to={action.href || '#'}
-              className="p-5 rounded-xl border transition-all hover:shadow-md group"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-              }}
-            >
-              {cardContent}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Matches */}
-        <div
-          className="p-6 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="font-semibold flex items-center gap-2"
-              style={{ color: 'var(--color-text)' }}
-            >
-              <Heart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              Top Matches
-            </h2>
-            <Link
-              to="/app/jobs"
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-accent)' }}
-            >
-              View All
-            </Link>
-          </div>
-
-          {hasCompletedAssessment ? (
+        {hasCompletedAssessment ? (
+          topMatches.length > 0 ? (
             <div className="space-y-3">
               {topMatches.map((match, i) => (
-                <div
+                <Link
                   key={i}
-                  className="p-3 rounded-lg flex items-center justify-between"
+                  to="/app/matches"
+                  className="p-4 rounded-lg flex items-center justify-between hover:shadow-sm transition-shadow"
                   style={{ backgroundColor: 'var(--color-background)' }}
                 >
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>
                       {match.role}
                     </p>
-                    <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                      {match.company} · {match.location}
-                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                        {match.company}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                        <MapPin className="w-3 h-3" />
+                        {match.location}
+                      </span>
+                      {match.workStyle && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs capitalize"
+                          style={{
+                            backgroundColor: 'var(--color-background)',
+                            color: 'var(--color-textSecondary)',
+                            border: '1px solid var(--color-border)',
+                          }}
+                        >
+                          {match.workStyle}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div
-                    className="px-2 py-1 rounded-lg text-sm font-semibold"
+                    className="px-3 py-1.5 rounded-lg text-sm font-semibold ml-4"
                     style={{
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      color: 'var(--color-success)',
+                      backgroundColor: `${getScoreColor(match.matchScore)}15`,
+                      color: getScoreColor(match.matchScore),
                     }}
                   >
                     {match.matchScore}%
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
@@ -596,12 +636,28 @@ export function JobSeekerDashboard() {
                 style={{ color: 'var(--color-textMuted)' }}
               />
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                Complete your assessment to see job matches
+                No matches available yet. Check back soon!
               </p>
             </div>
-          )}
-        </div>
+          )
+        ) : (
+          <div
+            className="text-center py-8 rounded-lg"
+            style={{ backgroundColor: 'var(--color-background)' }}
+          >
+            <Target
+              className="w-10 h-10 mx-auto mb-3 opacity-40"
+              style={{ color: 'var(--color-textMuted)' }}
+            />
+            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+              Complete your assessment to see job matches
+            </p>
+          </div>
+        )}
+      </div>
 
+      {/* Two Column: Upcoming Chats + Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Coffee Chats */}
         <div
           className="p-6 rounded-xl border"
@@ -668,12 +724,10 @@ export function JobSeekerDashboard() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Assessment Progress */}
-      {hasCompletedAssessment && (
+        {/* Recent Activity */}
         <div
-          className="mt-6 p-6 rounded-xl border"
+          className="p-6 rounded-xl border"
           style={{
             backgroundColor: 'var(--color-surface)',
             borderColor: 'var(--color-border)',
@@ -684,135 +738,62 @@ export function JobSeekerDashboard() {
               className="font-semibold flex items-center gap-2"
               style={{ color: 'var(--color-text)' }}
             >
-              <Shield className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              Profile Strength
+              <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+              Recent Activity
             </h2>
             <Link
-              to="/app/insights"
+              to="/app/chats"
               className="text-sm font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
-              View Insights
+              View All
             </Link>
           </div>
-          <p className="text-sm mb-4" style={{ color: 'var(--color-textMuted)' }}>
-            Complete more assessments to improve your match accuracy
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div
-              className="p-3 rounded-lg flex items-center gap-3"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
-              >
-                <Brain className="w-4 h-4" style={{ color: '#10B981' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                  OCEAN Assessment
-                </p>
-                <p className="text-xs flex items-center gap-1" style={{ color: '#10B981' }}>
-                  <CheckCircle2 className="w-3 h-3" /> Completed
-                </p>
-              </div>
-            </div>
-            <Link
-              to="/app/assessments/visual-perception"
-              className="p-3 rounded-lg flex items-center gap-3 transition-colors hover:bg-[var(--color-surface)]"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
-              >
-                <Eye className="w-4 h-4" style={{ color: '#8B5CF6' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                  Visual Perception
-                </p>
-                <p className="text-xs" style={{ color: '#8B5CF6' }}>
-                  Take Now
-                </p>
-              </div>
-            </Link>
-            <div
-              className="p-3 rounded-lg flex items-center gap-3 opacity-60"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
-              >
-                <MessageCircle className="w-4 h-4" style={{ color: '#F59E0B' }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                  Communication Style
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                  Coming Soon
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Ask Ember CTA */}
-      <div
-        className="mt-6 p-6 rounded-2xl border overflow-hidden relative"
-        style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.04))',
-          borderColor: 'rgba(245, 158, 11, 0.2)',
-        }}
-      >
-        <div className="flex items-center gap-6">
-          <div className="flex-shrink-0">
-            <EmberFirefly size="md" mood="happy" animated />
-          </div>
-          <div className="flex-1">
-            <h3
-              className="font-semibold mb-1"
-              style={{ color: 'var(--color-text)' }}
+          {recentActivity.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivity.map((activity, i) => (
+                <div
+                  key={i}
+                  className="p-3 rounded-lg flex items-center gap-3"
+                  style={{ backgroundColor: 'var(--color-background)' }}
+                >
+                  {getStatusIcon(activity.status)}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate" style={{ color: 'var(--color-text)' }}>
+                      {activity.person} at {activity.company}
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                      {activity.time}
+                    </p>
+                  </div>
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs capitalize"
+                    style={{
+                      backgroundColor: 'var(--color-background)',
+                      color: 'var(--color-textSecondary)',
+                      border: '1px solid var(--color-border)',
+                    }}
+                  >
+                    {activity.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="text-center py-8 rounded-lg"
+              style={{ backgroundColor: 'var(--color-background)' }}
             >
-              Need Career Advice?
-            </h3>
-            <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
-              Ember can help you understand your personality profile, prepare for coffee chats, and find your ideal career path.
-            </p>
-            <Link to="/app/ember">
-              <Button size="sm" rightIcon={<ArrowRight className="w-3 h-3" />}>
-                Talk to Ember
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Tip of the Day */}
-      <div
-        className="mt-6 p-4 rounded-xl border flex items-center gap-4"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-        }}
-      >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
-        >
-          <Sparkles className="w-5 h-5" style={{ color: '#8B5CF6' }} />
-        </div>
-        <div>
-          <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            Tip: Be authentic in your assessment
-          </p>
-          <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            There are no right or wrong answers. Honest responses lead to better culture matches.
-          </p>
+              <TrendingUp
+                className="w-10 h-10 mx-auto mb-3 opacity-40"
+                style={{ color: 'var(--color-textMuted)' }}
+              />
+              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+                No recent activity yet
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

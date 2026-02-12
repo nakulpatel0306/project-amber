@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Briefcase,
-  Trophy,
   Users,
   Coffee,
   ArrowRight,
@@ -11,20 +10,20 @@ import {
   Plus,
   Star,
   ChevronRight,
-  Building2,
-  Sparkles,
   Target,
   RotateCcw,
   Lightbulb,
   Zap,
   Heart,
   Anchor,
+  Clock,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
 import { supabase } from '../../lib/supabase';
-import { EmberFirefly } from '../ember/EmberFirefly';
+
 
 interface CulturePreferences {
   openness: number;
@@ -47,14 +46,10 @@ interface EmployerData {
   updated_at: string | null;
 }
 
-interface QuickAction {
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  href?: string;
-  color: string;
-  status?: 'complete' | 'in-progress' | 'not-started';
-  onClick?: () => void;
+interface RecentChat {
+  candidateName: string;
+  status: string;
+  time: string;
 }
 
 export function EmployerDashboard() {
@@ -139,46 +134,6 @@ export function EmployerDashboard() {
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
-  const quickActions: QuickAction[] = [
-    {
-      title: 'Set Up Company Profile',
-      description: 'Add your company details so candidates can learn about you',
-      icon: Building2,
-      color: '#10B981',
-      status: hasCompletedProfile ? 'complete' : 'not-started',
-      onClick: () => setShowSetupModal(true),
-    },
-    {
-      title: hasCompletedCultureQuiz ? 'View Culture Insights' : 'Define Company Culture',
-      description: hasCompletedCultureQuiz ? 'See your ideal candidate profile' : 'Take our quiz to help us find the right candidates',
-      icon: Sparkles,
-      href: hasCompletedCultureQuiz ? '/app/employer/insights' : '/app/employer/culture-assessment',
-      color: '#F59E0B',
-      status: hasCompletedCultureQuiz ? 'complete' : 'not-started',
-    },
-    {
-      title: 'Browse Candidates',
-      description: 'View candidates ranked by culture fit',
-      icon: Users,
-      href: '/app/employer/candidates',
-      color: '#8B5CF6',
-    },
-    {
-      title: 'View Top 10 Candidates',
-      description: 'See your best personality-fit candidates ranked',
-      icon: Trophy,
-      href: '/app/employer/top-candidates',
-      color: '#F59E0B',
-    },
-    {
-      title: 'Coffee Chats',
-      description: 'Manage conversations with potential hires',
-      icon: Coffee,
-      href: '/app/employer/chats',
-      color: '#EC4899',
-    },
-  ];
-
   // Real data from Supabase
   const [topCandidates, setTopCandidates] = useState<Array<{ name: string; role: string; matchScore: number; topTrait: string }>>([]);
   const [activeRoles, setActiveRoles] = useState<Array<{ title: string; applicants: number; newThisWeek: number }>>([]);
@@ -188,6 +143,7 @@ export function EmployerDashboard() {
     { label: 'Pending Chats', value: '0', change: '' },
     { label: 'Avg. Match Score', value: '--', change: '' },
   ]);
+  const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -242,11 +198,35 @@ export function EmployerDashboard() {
         }
 
         // Get pending coffee chats
-        const { data: chats } = await supabase
+        const { data: pendingChats } = await supabase
           .from('coffee_chats')
           .select('id')
           .eq('employer_id', employer.id)
           .eq('status', 'pending');
+
+        // Get recent coffee chats (all statuses)
+        const { data: allChats } = await supabase
+          .from('coffee_chats')
+          .select('*, candidates!inner(profiles:user_id(full_name))')
+          .eq('employer_id', employer.id)
+          .order('updated_at', { ascending: false })
+          .limit(5);
+
+        if (allChats) {
+          setRecentChats(allChats.map(c => {
+            const candidateRecord = c.candidates as Record<string, unknown> | null;
+            const candidateProfile = candidateRecord?.profiles as Record<string, unknown> | null;
+            return {
+              candidateName: (candidateProfile?.full_name as string) || 'Unknown',
+              status: c.status || 'pending',
+              time: c.updated_at
+                ? new Date(c.updated_at).toLocaleDateString()
+                : c.created_at
+                  ? new Date(c.created_at).toLocaleDateString()
+                  : '',
+            };
+          }));
+        }
 
         setTopCandidates(roleCandidates);
         setActiveRoles(activeRolesList.map(r => ({
@@ -257,7 +237,7 @@ export function EmployerDashboard() {
         setStats([
           { label: 'Active Roles', value: String(activeRolesList.length), change: '' },
           { label: 'Total Applicants', value: String(totalApps), change: '' },
-          { label: 'Pending Chats', value: String(chats?.length || 0), change: '' },
+          { label: 'Pending Chats', value: String(pendingChats?.length || 0), change: '' },
           { label: 'Avg. Match Score', value: roleCandidates.length > 0 ? `${Math.round(roleCandidates.reduce((s, c) => s + c.matchScore, 0) / roleCandidates.length)}%` : '--', change: '' },
         ]);
       } catch (err) {
@@ -267,6 +247,19 @@ export function EmployerDashboard() {
 
     loadDashboardData();
   }, [user]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'accepted':
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-success)' }} />;
+      case 'cancelled':
+      case 'declined':
+        return <X className="w-4 h-4" style={{ color: 'var(--color-error, #EF4444)' }} />;
+      default:
+        return <Clock className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />;
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -502,72 +495,6 @@ export function EmployerDashboard() {
         ))}
       </div>
 
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {quickActions.map((action) => {
-          const cardContent = (
-            <div className="flex items-start gap-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${action.color}15` }}
-              >
-                <action.icon className="w-5 h-5" style={{ color: action.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3
-                    className="font-medium"
-                    style={{ color: 'var(--color-text)' }}
-                  >
-                    {action.title}
-                  </h3>
-                  {action.status === 'complete' && (
-                    <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-                  )}
-                </div>
-                <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                  {action.description}
-                </p>
-              </div>
-              <ChevronRight
-                className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
-            </div>
-          );
-
-          if (action.onClick) {
-            return (
-              <button
-                key={action.title}
-                onClick={action.onClick}
-                className="p-5 rounded-xl border transition-all hover:shadow-md group text-left"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                }}
-              >
-                {cardContent}
-              </button>
-            );
-          }
-
-          return (
-            <Link
-              key={action.title}
-              to={action.href || '#'}
-              className="p-5 rounded-xl border transition-all hover:shadow-md group"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-              }}
-            >
-              {cardContent}
-            </Link>
-          );
-        })}
-      </div>
-
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Candidates */}
@@ -778,59 +705,75 @@ export function EmployerDashboard() {
         </div>
       )}
 
-      {/* Ask Ember CTA */}
+      {/* Recent Coffee Chat Activity */}
       <div
-        className="mt-6 p-6 rounded-2xl border overflow-hidden relative"
-        style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.04))',
-          borderColor: 'rgba(245, 158, 11, 0.2)',
-        }}
-      >
-        <div className="flex items-center gap-6">
-          <div className="flex-shrink-0">
-            <EmberFirefly size="md" mood="happy" animated />
-          </div>
-          <div className="flex-1">
-            <h3
-              className="font-semibold mb-1"
-              style={{ color: 'var(--color-text)' }}
-            >
-              Need Hiring Help?
-            </h3>
-            <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
-              Ember can help you understand candidate profiles, refine your culture preferences, and improve your hiring strategy.
-            </p>
-            <Link to="/app/employer/ember">
-              <Button size="sm" rightIcon={<ArrowRight className="w-3 h-3" />}>
-                Talk to Ember
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Tip */}
-      <div
-        className="mt-6 p-4 rounded-xl border flex items-center gap-4"
+        className="mt-6 p-6 rounded-xl border"
         style={{
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-border)',
         }}
       >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}
-        >
-          <Sparkles className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="font-semibold flex items-center gap-2"
+            style={{ color: 'var(--color-text)' }}
+          >
+            <Coffee className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+            Recent Coffee Chat Activity
+          </h2>
+          <Link
+            to="/app/employer/chats"
+            className="text-sm font-medium"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            View All
+          </Link>
         </div>
-        <div>
-          <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            Tip: Coffee chats reduce time-to-hire by 40%
-          </p>
-          <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            Candidates who have casual chats before formal interviews are more likely to accept offers.
-          </p>
-        </div>
+
+        {recentChats.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recentChats.map((chat, i) => (
+              <div
+                key={i}
+                className="p-3 rounded-lg flex items-center gap-3"
+                style={{ backgroundColor: 'var(--color-background)' }}
+              >
+                {getStatusIcon(chat.status)}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate" style={{ color: 'var(--color-text)' }}>
+                    {chat.candidateName}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    {chat.time}
+                  </p>
+                </div>
+                <span
+                  className="px-2 py-0.5 rounded-full text-xs capitalize"
+                  style={{
+                    backgroundColor: 'var(--color-background)',
+                    color: 'var(--color-textSecondary)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  {chat.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="text-center py-8 rounded-lg"
+            style={{ backgroundColor: 'var(--color-background)' }}
+          >
+            <Coffee
+              className="w-10 h-10 mx-auto mb-3 opacity-40"
+              style={{ color: 'var(--color-textMuted)' }}
+            />
+            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+              No coffee chat activity yet
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Employer Setup Modal */}

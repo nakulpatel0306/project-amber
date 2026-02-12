@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Brain,
   Lightbulb,
@@ -27,16 +27,17 @@ import {
   Building2,
   AlertCircle,
   Eye,
-  MessageSquare,
   Lock,
   Beaker,
   GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
 import { getArchetypeByName } from '../../lib/archetypes';
+import { calculateCombinedOCEAN, type OCEANScores } from '../../lib/personalityEngine';
 
 interface PersonalityData {
   openness_score: number | null;
@@ -46,6 +47,10 @@ interface PersonalityData {
   neuroticism_score: number | null;
   top_traits: string[] | null;
   assessment_completed_at: string | null;
+  visual_perception_data: Record<string, unknown> | null;
+  work_values_data: Record<string, unknown> | null;
+  situational_judgment_data: Record<string, unknown> | null;
+  cognitive_patterns_data: Record<string, unknown> | null;
 }
 
 const OCEAN_INFO = {
@@ -214,27 +219,33 @@ const ADDITIONAL_ASSESSMENTS = [
     color: '#8B5CF6',
     duration: '~5 min',
     status: 'available' as const,
+    dataField: 'visual_perception_data',
     traits: ['Perceptual style', 'Attention patterns', 'Cognitive flexibility'],
+    weight: '10%',
   },
   {
     id: 'work-values',
     name: 'Work Values Assessment',
-    description: 'Rank and prioritize what matters most to you in a workplace to refine your culture match.',
+    description: 'Explore what drives you at work — purpose, growth, recognition, and more.',
     icon: Scale,
     color: '#10B981',
-    duration: '~8 min',
-    status: 'coming_soon' as const,
-    traits: ['Value priorities', 'Motivation drivers', 'Deal-breakers'],
+    duration: '~5 min',
+    status: 'available' as const,
+    dataField: 'work_values_data',
+    traits: ['Values', 'Motivation', 'Career goals'],
+    weight: '15%',
   },
   {
-    id: 'communication-style',
-    name: 'Communication Style Quiz',
-    description: 'Understand how you express ideas, give feedback, and collaborate with different personality types.',
-    icon: MessageSquare,
+    id: 'situational-judgment',
+    name: 'Situational Judgment',
+    description: 'How do you handle real workplace scenarios? Conflicts, pressure, feedback, and ethical dilemmas.',
+    icon: Shield,
     color: '#F59E0B',
-    duration: '~6 min',
-    status: 'coming_soon' as const,
-    traits: ['Expression style', 'Feedback approach', 'Conflict handling'],
+    duration: '~5 min',
+    status: 'available' as const,
+    dataField: 'situational_judgment_data',
+    traits: ['Conflict styles', 'Emotions', 'Work behavior'],
+    weight: '15%',
   },
   {
     id: 'cognitive-patterns',
@@ -242,24 +253,31 @@ const ADDITIONAL_ASSESSMENTS = [
     description: 'Explore your problem-solving approach, decision-making style, and learning preferences.',
     icon: GraduationCap,
     color: '#EC4899',
-    duration: '~10 min',
-    status: 'coming_soon' as const,
-    traits: ['Problem-solving style', 'Decision framework', 'Learning preference'],
+    duration: '~5 min',
+    status: 'available' as const,
+    dataField: 'cognitive_patterns_data',
+    traits: ['Problem-solving', 'Decisions', 'Learning style'],
+    weight: '11%',
   },
 ];
 
 export function PersonalityInsights() {
   const { user } = useAuth();
+  const { error: showError } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [personalityData, setPersonalityData] = useState<PersonalityData | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<keyof typeof OCEAN_INFO | null>(null);
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
+  const [reflectionText, setReflectionText] = useState<string | null>(null);
+  const [assessmentCooldowns, setAssessmentCooldowns] = useState<Record<string, number | null>>({});
 
   // Load personality data
   useEffect(() => {
     if (!user) return;
 
     const loadData = async () => {
+      // Fetch core personality data (these columns always exist)
       const { data: candidate } = await supabase
         .from('candidates')
         .select('openness_score, conscientiousness_score, extraversion_score, agreeableness_score, neuroticism_score, top_traits, assessment_completed_at')
@@ -267,17 +285,82 @@ export function PersonalityInsights() {
         .single();
 
       if (candidate) {
-        setPersonalityData(candidate as PersonalityData);
+        // Try to fetch supplementary assessment data separately (columns may not exist yet)
+        let supplementary: Record<string, unknown> = {
+          visual_perception_data: null,
+          work_values_data: null,
+          situational_judgment_data: null,
+          cognitive_patterns_data: null,
+        };
 
-        // Check cooldown
+        try {
+          const { data: supData } = await supabase
+            .from('candidates')
+            .select('visual_perception_data, work_values_data, situational_judgment_data, cognitive_patterns_data')
+            .eq('user_id', user.id)
+            .single();
+
+          if (supData) {
+            supplementary = supData as Record<string, unknown>;
+          }
+        } catch {
+          // Columns may not exist yet — that's fine
+        }
+
+        setPersonalityData({
+          ...candidate,
+          visual_perception_data: (supplementary.visual_perception_data as Record<string, unknown>) ?? null,
+          work_values_data: (supplementary.work_values_data as Record<string, unknown>) ?? null,
+          situational_judgment_data: (supplementary.situational_judgment_data as Record<string, unknown>) ?? null,
+          cognitive_patterns_data: (supplementary.cognitive_patterns_data as Record<string, unknown>) ?? null,
+        } as PersonalityData);
+
+        // Calculate per-assessment cooldowns (7 days)
+        const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+        const cooldowns: Record<string, number | null> = {};
+        const assessmentFields = [
+          { id: 'visual-perception', data: supplementary.visual_perception_data },
+          { id: 'work-values', data: supplementary.work_values_data },
+          { id: 'situational-judgment', data: supplementary.situational_judgment_data },
+          { id: 'cognitive-patterns', data: supplementary.cognitive_patterns_data },
+        ];
+        for (const { id, data } of assessmentFields) {
+          const completedAt = (data as Record<string, unknown> | null)?.completed_at as string | undefined;
+          if (completedAt) {
+            const timeSince = Date.now() - new Date(completedAt).getTime();
+            cooldowns[id] = timeSince < cooldownMs ? cooldownMs - timeSince : null;
+          } else {
+            cooldowns[id] = null;
+          }
+        }
+        setAssessmentCooldowns(cooldowns);
+
+        // Check core assessment cooldown (7 days)
         if (candidate.assessment_completed_at) {
           const lastCompleted = new Date(candidate.assessment_completed_at);
           const timeSince = Date.now() - lastCompleted.getTime();
-          const cooldownMs = 24 * 60 * 60 * 1000;
 
           if (timeSince < cooldownMs) {
             setCooldownRemaining(cooldownMs - timeSince);
           }
+        }
+
+        // Load reflection text from assessment_responses
+        try {
+          const { data: reflectionData } = await supabase
+            .from('assessment_responses')
+            .select('reflection_text')
+            .eq('user_id', user.id)
+            .eq('question_id', 'c12')
+            .order('answered_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (reflectionData?.reflection_text) {
+            setReflectionText(reflectionData.reflection_text);
+          }
+        } catch {
+          // No reflection saved yet
         }
       }
       setIsLoading(false);
@@ -286,22 +369,29 @@ export function PersonalityInsights() {
     loadData();
   }, [user]);
 
-  // Cooldown timer
+  // Cooldown timer (core + per-assessment)
   useEffect(() => {
-    if (cooldownRemaining === null || cooldownRemaining <= 0) return;
+    const hasAnyCooldown = cooldownRemaining !== null || Object.values(assessmentCooldowns).some(v => v !== null && v > 0);
+    if (!hasAnyCooldown) return;
 
     const interval = setInterval(() => {
       setCooldownRemaining(prev => {
-        if (prev === null || prev <= 1000) {
-          clearInterval(interval);
-          return null;
-        }
+        if (prev === null || prev <= 1000) return null;
         return prev - 1000;
+      });
+      setAssessmentCooldowns(prev => {
+        const updated = { ...prev };
+        for (const key of Object.keys(updated)) {
+          if (updated[key] !== null && updated[key]! > 0) {
+            updated[key] = updated[key]! <= 1000 ? null : updated[key]! - 1000;
+          }
+        }
+        return updated;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [cooldownRemaining]);
+  }, [cooldownRemaining, assessmentCooldowns]);
 
   const hasCompletedAssessment = personalityData?.openness_score !== null && personalityData?.openness_score !== undefined;
 
@@ -351,22 +441,93 @@ export function PersonalityInsights() {
     );
   }
 
-  const scores = {
+  // Build combined OCEAN scores from all completed assessments
+  const coreScores: OCEANScores = {
     openness: personalityData?.openness_score || 0,
     conscientiousness: personalityData?.conscientiousness_score || 0,
     extraversion: personalityData?.extraversion_score || 0,
     agreeableness: personalityData?.agreeableness_score || 0,
-    neuroticism: 100 - (personalityData?.neuroticism_score || 0), // Invert for stability
+    neuroticism: personalityData?.neuroticism_score || 0,
+  };
+
+  // Extract supplementary OCEAN data
+  const vpData = personalityData?.visual_perception_data as Record<string, unknown> | null;
+  const wvData = personalityData?.work_values_data as Record<string, unknown> | null;
+  const sjData = personalityData?.situational_judgment_data as Record<string, unknown> | null;
+  const cpData = personalityData?.cognitive_patterns_data as Record<string, unknown> | null;
+
+  const supplementaryScores: {
+    visualPerception?: Partial<Record<keyof OCEANScores, number>>;
+    workValues?: OCEANScores;
+    situationalJudgment?: OCEANScores;
+    cognitivePatterns?: OCEANScores;
+  } = {};
+
+  if (vpData?.trait_modifiers) {
+    const mods = vpData.trait_modifiers as Record<string, number>;
+    supplementaryScores.visualPerception = {
+      openness: mods.openness ?? 0,
+      conscientiousness: mods.conscientiousness ?? 0,
+      extraversion: mods.extraversion ?? 0,
+      agreeableness: mods.agreeableness ?? 0,
+      neuroticism: mods.neuroticism_inv ? -mods.neuroticism_inv : 0,
+    };
+  }
+  if (wvData?.ocean_scores) {
+    supplementaryScores.workValues = wvData.ocean_scores as OCEANScores;
+  }
+  if (sjData?.ocean_scores) {
+    supplementaryScores.situationalJudgment = sjData.ocean_scores as OCEANScores;
+  }
+  if (cpData?.ocean_scores) {
+    supplementaryScores.cognitivePatterns = cpData.ocean_scores as OCEANScores;
+  }
+
+  const combinedOcean = calculateCombinedOCEAN(
+    coreScores,
+    Object.keys(supplementaryScores).length > 0 ? supplementaryScores : undefined
+  );
+
+  const scores = {
+    openness: combinedOcean.openness,
+    conscientiousness: combinedOcean.conscientiousness,
+    extraversion: combinedOcean.extraversion,
+    agreeableness: combinedOcean.agreeableness,
+    neuroticism: 100 - combinedOcean.neuroticism, // Invert for stability display
   };
 
   const formatCooldown = (ms: number) => {
+    const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
+    if (days > 1) return `${days} days`;
     const hours = Math.floor(ms / (1000 * 60 * 60));
+    if (hours > 0) return `${hours}h`;
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const handleAssessmentClick = (assessmentId: string, isCompleted: boolean, cooldown: number | null | undefined) => {
+    const isOnCooldown = isCompleted && cooldown !== null && cooldown !== undefined && cooldown > 0;
+    if (isOnCooldown) {
+      const days = Math.ceil(cooldown / (1000 * 60 * 60 * 24));
+      showError('Cooldown Active', `You can retake this in ${days} day${days > 1 ? 's' : ''}`);
+      return;
+    }
+    navigate(`/app/assessments/${assessmentId}`);
   };
 
   const selectedInfo = selectedDimension ? OCEAN_INFO[selectedDimension] : null;
   const selectedScore = selectedDimension ? scores[selectedDimension] : 0;
+
+  // Assessment completion tracking
+  const completedAssessments = [
+    true, // Core is always completed if we're here
+    !!personalityData?.visual_perception_data,
+    !!personalityData?.work_values_data,
+    !!personalityData?.situational_judgment_data,
+    !!personalityData?.cognitive_patterns_data,
+  ];
+  const completionCount = completedAssessments.filter(Boolean).length;
+  const profileCompleteness = Math.round((completionCount / 5) * 100);
 
   // Calculate derived insights
   const collaborationStyle = scores.extraversion > 65 ? 'high' : scores.extraversion < 35 ? 'low' : 'mid';
@@ -417,7 +578,7 @@ export function PersonalityInsights() {
               >
                 <Clock className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
                 <span className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                  Retake in {formatCooldown(cooldownRemaining)}
+                  Retake in {formatCooldown(cooldownRemaining!)}
                 </span>
               </div>
             ) : (
@@ -444,9 +605,15 @@ export function PersonalityInsights() {
               <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Mind Map
             </h2>
-            <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
+            <p className="text-sm mb-2" style={{ color: 'var(--color-textMuted)' }}>
               Click any dimension to explore detailed insights
             </p>
+            {completionCount > 1 && (
+              <p className="text-xs mb-4 flex items-center gap-1.5" style={{ color: 'var(--color-accent)' }}>
+                <Sparkles className="w-3 h-3" />
+                Enhanced with {completionCount - 1} supplementary assessment{completionCount > 2 ? 's' : ''}
+              </p>
+            )}
 
             {/* Brain SVG Visualization */}
             <div className="relative">
@@ -1055,6 +1222,50 @@ export function PersonalityInsights() {
           </div>
         )}
 
+        {/* Peak Moment Reflection */}
+        {reflectionText && (
+          <div
+            className="p-6 rounded-2xl border mt-6"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <h2
+              className="text-lg font-semibold mb-2 flex items-center gap-2"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <Sparkles className="w-5 h-5" style={{ color: '#F59E0B' }} />
+              Your Peak Moment
+            </h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-textMuted)' }}>
+              The moment at work when you felt most alive
+            </p>
+            <div
+              className="p-5 rounded-xl mb-4"
+              style={{ backgroundColor: 'var(--color-background)', borderLeft: '3px solid #F59E0B' }}
+            >
+              <p className="text-sm italic" style={{ color: 'var(--color-textSecondary)' }}>
+                "{reflectionText}"
+              </p>
+            </div>
+            <div
+              className="p-4 rounded-xl"
+              style={{ backgroundColor: 'rgba(245, 158, 11, 0.06)' }}
+            >
+              <p className="text-xs font-medium mb-2" style={{ color: '#F59E0B' }}>
+                What This Reveals About You
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
+                {reflectionText.toLowerCase().includes('viral') || reflectionText.toLowerCase().includes('view count') || reflectionText.toLowerCase().includes('tiktok')
+                  ? "Your peak moment centers on seeing strategic work translate into real-world impact — the thrill of watching careful planning connect with a live audience. This reveals a rare combination of strategic thinking and emotional engagement. You don't just want results in a spreadsheet; you crave visible, tangible momentum. This suggests high openness to experience (thriving at the intersection of creativity and data) combined with strong conscientiousness (the planning behind the campaign). People with this pattern tend to excel in roles where strategy meets execution — growth marketing, product launches, or founder-type positions where you can see the direct line from your decisions to their impact."
+                  : reflectionText.toLowerCase().includes('team') || reflectionText.toLowerCase().includes('collaborate')
+                  ? "Your peak moment is tied to human connection and collective achievement. This suggests high agreeableness and extraversion — you're energized when people come together toward a shared goal. You likely thrive in roles that involve team leadership, cross-functional coordination, or community building."
+                  : reflectionText.toLowerCase().includes('solve') || reflectionText.toLowerCase().includes('figur') || reflectionText.toLowerCase().includes('debug')
+                  ? "Your peak moment revolves around intellectual challenge and problem-solving. This signals high openness and conscientiousness — the thrill of unraveling complexity. You likely excel in analytical, engineering, or research roles where deep thinking leads to breakthrough solutions."
+                  : "This moment captures what drives you at your core — the conditions where your personality traits align perfectly with the task at hand. Understanding this pattern helps us match you with roles and cultures that create more moments like this one."}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Why This Assessment */}
         <div
           className="p-6 rounded-2xl border mt-6"
@@ -1133,7 +1344,7 @@ export function PersonalityInsights() {
           >
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-textMuted)' }} />
             <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-              This is your base assessment. Your personality profile becomes more accurate and nuanced as you complete additional assessments below. You can retake any assessment every 24 hours.
+              This is your base assessment. Your personality profile becomes more accurate and nuanced as you complete additional assessments below. You can retake any assessment every 7 days for authenticity.
             </p>
           </div>
         </div>
@@ -1150,14 +1361,37 @@ export function PersonalityInsights() {
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Enhance Your Profile
           </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Take additional assessments to build a more complete and accurate personality picture
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+              Complete more assessments for a more accurate personality picture
+            </p>
+            <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2 w-24 rounded-full overflow-hidden"
+                  style={{ backgroundColor: 'var(--color-background)' }}
+                >
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${profileCompleteness}%`, backgroundColor: 'var(--color-accent)' }}
+                  />
+                </div>
+                <span className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>
+                  {profileCompleteness}%
+                </span>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ADDITIONAL_ASSESSMENTS.map(assessment => {
               const AssessmentIcon = assessment.icon;
               const isAvailable = assessment.status === 'available';
+              const isCompleted = personalityData
+                ? !!(personalityData as unknown as Record<string, unknown>)[assessment.dataField]
+                : false;
+              const cooldown = assessmentCooldowns[assessment.id];
+              const isOnCooldown = isCompleted && cooldown !== null && cooldown !== undefined && cooldown > 0;
 
               return (
                 <div
@@ -1165,21 +1399,46 @@ export function PersonalityInsights() {
                   className="p-5 rounded-xl flex gap-4 transition-all"
                   style={{
                     backgroundColor: 'var(--color-background)',
-                    border: isAvailable ? `1px solid ${assessment.color}40` : '1px solid var(--color-border)',
+                    border: isCompleted ? `1px solid ${assessment.color}60` : isAvailable ? `1px solid ${assessment.color}40` : '1px solid var(--color-border)',
                     opacity: isAvailable ? 1 : 0.7,
                   }}
                 >
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 relative"
                     style={{ backgroundColor: `${assessment.color}15` }}
                   >
                     <AssessmentIcon className="w-6 h-6" style={{ color: assessment.color }} />
+                    {isCompleted && (
+                      <div
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: '#10B981' }}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>
                         {assessment.name}
                       </h3>
+                      {isCompleted && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}
+                        >
+                          Completed
+                        </span>
+                      )}
+                      {isOnCooldown && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
+                          style={{ backgroundColor: `${assessment.color}10`, color: assessment.color }}
+                        >
+                          <Clock className="w-3 h-3" />
+                          Retake in {formatCooldown(cooldown)}
+                        </span>
+                      )}
                       {!isAvailable && (
                         <span
                           className="px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
@@ -1206,20 +1465,19 @@ export function PersonalityInsights() {
                         ))}
                       </div>
                       <span className="text-xs flex-shrink-0 ml-2" style={{ color: 'var(--color-textMuted)' }}>
-                        {assessment.duration}
+                        {assessment.weight} weight · {assessment.duration}
                       </span>
                     </div>
                     {isAvailable && (
-                      <Link to={`/app/assessments/${assessment.id}`}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="mt-3"
-                          rightIcon={<ArrowRight className="w-3 h-3" />}
-                        >
-                          Start Assessment
-                        </Button>
-                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        rightIcon={<ArrowRight className="w-3 h-3" />}
+                        onClick={() => handleAssessmentClick(assessment.id, isCompleted, cooldown)}
+                      >
+                        {isOnCooldown ? `Retake in ${formatCooldown(cooldown)}` : isCompleted ? 'Retake' : 'Start Assessment'}
+                      </Button>
                     )}
                   </div>
                 </div>
