@@ -905,3 +905,56 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Product demo animation - 3 panels cycling over 9s */
+@keyframes demoCycle {
+  0%, 28% { opacity: 1; }
+  33%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.demo-panel-1 { animation: demoCycle 9s ease-in-out infinite; }
+.demo-panel-2 { animation: demoCycle 9s ease-in-out infinite; animation-delay: -6s; }
+.demo-panel-3 { animation: demoCycle 9s ease-in-out infinite; animation-delay: -3s; }
+
+/* Trait bar fill animation */
+@keyframes barFill {
+  from { width: 0%; }
+  to { width: var(--bar-width); }
+}
+
+.animate-bar-fill {
+  animation: barFill 1.2s ease-out forwards;
+}
+
+/* Slide-in card animation */
+@keyframes slideInCard {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-card {
+  animation: slideInCard 0.5s ease-out forwards;
+}
+
+/* Chat bubble pop-in */
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-bubble-in {
+  animation: bubbleIn 0.4s ease-out forwards;
+}
