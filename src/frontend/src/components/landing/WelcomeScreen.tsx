@@ -105,171 +105,63 @@ const valueProps = [
   },
 ];
 
-// Full-colour company logos + name labels for the marquee
-// Dark logos use currentColor so they adapt to light/dark themes
-function CompanyLogo({ name }: { name: string }) {
-  const logos: Record<string, React.ReactNode> = {
-    Google: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-      </svg>
-    ),
-    Apple: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.65-2.2.46-3.06-.4C3.79 16.17 4.36 9.02 8.8 8.76c1.28.06 2.17.72 2.92.76.99-.2 1.94-.78 3-.84 1.28-.08 2.24.38 2.87 1.14-2.63 1.56-2.01 5 .88 5.96-.52 1.36-1.18 2.7-2.42 4.5zM12.03 8.7c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="currentColor" />
-      </svg>
-    ),
-    Meta: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M6.915 4.03c-1.544 0-2.87 1.207-3.912 3.128C1.948 9.182 1.5 11.587 1.5 13.5c0 1.336.326 2.472.955 3.268.609.77 1.465 1.182 2.475 1.182.965 0 1.84-.442 2.73-1.354.752-.77 1.527-1.855 2.34-3.244.552-.946 1.04-1.85 1.46-2.693L12 9.637l.54 1.022c.42.843.908 1.747 1.46 2.693.813 1.389 1.588 2.474 2.34 3.244.89.912 1.765 1.354 2.73 1.354 1.01 0 1.866-.412 2.475-1.182.629-.796.955-1.932.955-3.268 0-1.913-.448-4.318-1.503-6.342C19.955 5.237 18.63 4.03 17.085 4.03c-1.062 0-2.063.534-3.046 1.59-.713.767-1.39 1.756-2.039 2.937-.65-1.181-1.326-2.17-2.04-2.937C8.978 4.564 7.977 4.03 6.915 4.03z" fill="#0081FB" />
-      </svg>
-    ),
-    Amazon: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M13.958 10.09c0 1.232.029 2.256-.591 3.351-.502.891-1.301 1.438-2.186 1.438-1.214 0-1.922-.924-1.922-2.292 0-2.692 2.415-3.182 4.7-3.182v.685zm3.186 7.705a.66.66 0 0 1-.753.069c-1.06-.878-1.25-1.287-1.829-2.126-1.748 1.783-2.986 2.317-5.251 2.317C6.792 18.055 5 16.555 5 13.876c0-2.09 1.133-3.512 2.745-4.209 1.397-.616 3.349-.726 4.843-.896v-.334c0-.615.047-1.342-.314-1.873-.315-.471-.919-.666-1.452-.666-1.186 0-2.178.544-2.436 1.783-.113.213-.282.44-.53.44l-2.58-.278c-.11-.024-.232-.11-.2-.273C5.577 4.474 8.264 3.5 10.693 3.5c1.248 0 2.878.332 3.862 1.276 1.248 1.165 1.128 2.72 1.128 4.415v3.995c0 1.2.499 1.728.967 2.376.164.232.2.509-.01.681-.527.44-1.465 1.258-1.98 1.717l-.016-.165z" fill="currentColor" />
-        <path d="M21.74 17.739C20.096 19.112 17.569 20 15.413 20c-3.052 0-5.8-1.13-7.877-3.01-.163-.147-.017-.348.179-.234 2.244 1.305 5.02 2.09 7.888 2.09 1.935 0 4.063-.4 6.022-1.232.295-.126.544.194.266.385l-.15.74z" fill="#FF9900" />
-        <path d="M22.457 16.904c-.222-.284-1.47-.134-2.03-.068-.17.02-.196-.128-.042-.236 .995-.698 2.627-.497 2.817-.263.19.236-.05 1.882-.983 2.668-.143.121-.28.057-.216-.103.21-.521.68-1.688.454-1.998z" fill="#FF9900" />
-      </svg>
-    ),
-    Microsoft: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-        <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
-        <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
-        <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
-      </svg>
-    ),
-    Netflix: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24h-4.715zm0 0v24c1.873.225 2.81.312 4.715.398V0h-4.715zm13.204 0v23.97c-1.677-.197-3.32-.409-4.752-.601V24c3.261.398 6.263.795 9.752 1V0h-5z" fill="#E50914" />
-      </svg>
-    ),
-    Stripe: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.918 3.757 7.038c0 4.3 2.867 5.882 5.907 7.079 1.986.78 2.93 1.39 2.93 2.426 0 .942-.79 1.525-2.262 1.525-1.86 0-4.87-.964-6.853-2.233L2.52 21.394C4.112 22.533 7.263 24 10.73 24c2.638 0 4.815-.672 6.348-1.94 1.675-1.382 2.49-3.24 2.49-5.53.026-4.41-2.91-5.966-5.592-7.38z" fill="#635BFF" />
-      </svg>
-    ),
-    Shopify: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M15.337 1.138s-.248.074-.66.203c-.39-.95-.854-1.727-1.558-1.727-.03 0-.06 0-.09.003C12.7.213 12.32 0 11.988 0c-2.39 0-3.536 2.985-3.894 4.504l-1.85.573C5.78 5.22 5.727 5.273 5.672 5.726L4.097 18.91 14.46 21l5.543-1.198S15.394 1.237 15.337 1.138zM11.07 3.534c-.005.002-.91.282-1.7.525.338-1.298 1.073-2.48 2.026-2.786a5.49 5.49 0 0 0-.326 2.261zm1.385-2.598c.11 0 .22.037.327.107-.986.465-2.044 1.637-2.49 3.977l-1.916.594c.52-1.74 1.77-4.678 4.079-4.678zm.581 12.48s-.782-.424-1.738-.424c-1.406 0-1.475.882-1.475 1.104 0 1.213 3.163 1.678 3.163 4.524 0 2.239-1.42 3.68-3.336 3.68-2.3 0-3.474-1.431-3.474-1.431l.615-2.034s1.21 1.04 2.232 1.04c.667 0 .94-.525.94-.908 0-1.585-2.596-1.657-2.596-4.263 0-2.192 1.573-4.314 4.753-4.314.962 0 1.63.301 1.63.301l-.914 2.725z" fill="#95BF47" />
-        <path d="M15.337 1.138s-.248.074-.66.203c-.39-.95-.854-1.727-1.558-1.727-.03 0-.06 0-.09.003L14.46 21l5.543-1.198S15.394 1.237 15.337 1.138z" fill="#5E8E3E" />
-      </svg>
-    ),
-    Spotify: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-.991-.12-1.111-.6-.12-.48.12-.99.6-1.111 4.38-1.32 9.78-.66 13.5 1.62.36.181.54.78.211 1.17zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z" fill="#1DB954" />
-      </svg>
-    ),
-    Airbnb: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M12.001 18.275c-.94-1.303-1.752-2.607-2.477-3.782-.838-1.375-1.609-2.81-1.96-4.207-.256-.982-.243-1.86.08-2.614.332-.775.88-1.327 1.588-1.6.332-.128.68-.192 1.034-.192h.004c.356 0 .707.064 1.038.196.712.276 1.256.828 1.584 1.596.32.75.336 1.63.08 2.614-.355 1.4-1.12 2.832-1.96 4.207-.72 1.175-1.536 2.479-2.476 3.782h.465zm7.614.576c-.108.836-.578 1.576-1.296 2.04-.47.304-.997.46-1.54.46-.36 0-.72-.076-1.072-.228-.652-.282-1.24-.758-1.791-1.353 1.018-1.376 1.868-2.738 2.616-3.96.83-1.36 1.616-2.832 2.024-4.408.336-1.283.344-2.487-.02-3.552-.365-.99-1.065-1.761-1.935-2.101-.608-.256-1.256-.388-1.925-.388h-.004c-.668 0-1.316.132-1.924.388-.868.34-1.568 1.11-1.933 2.1-.364 1.066-.356 2.27-.02 3.553.408 1.576 1.196 3.048 2.024 4.408.756 1.235 1.605 2.584 2.616 3.96-.552.595-1.14 1.071-1.792 1.353-.348.152-.708.228-1.068.228-.544 0-1.072-.156-1.54-.46-.72-.464-1.192-1.204-1.3-2.04-.048-.424-.024-.904.08-1.44l-.008.004C8.904 15.78 7.14 13.43 6.24 11.1c-.6-1.56-.72-3.06-.36-4.44.36-1.32 1.14-2.46 2.28-3.18C9.36 2.58 10.68 2.1 12 2.1s2.64.48 3.84 1.38c1.14.72 1.92 1.86 2.28 3.18.36 1.38.24 2.88-.36 4.44-.9 2.33-2.664 4.68-4.74 7.23l-.008-.004c.104.536.128 1.016.08 1.44l.004.004.515.003z" fill="#FF5A5F" />
-      </svg>
-    ),
-    Slack: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M5.042 15.166a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.166a2.528 2.528 0 0 1 2.522-2.524h2.52v2.524zm1.268 0a2.528 2.528 0 0 1 2.522-2.524 2.528 2.528 0 0 1 2.522 2.524v6.312A2.528 2.528 0 0 1 8.832 24a2.528 2.528 0 0 1-2.522-2.522v-6.312z" fill="#E01E5A" />
-        <path d="M8.832 5.042a2.528 2.528 0 0 1-2.522-2.52A2.528 2.528 0 0 1 8.832 0a2.528 2.528 0 0 1 2.522 2.522v2.52H8.832zm0 1.268a2.528 2.528 0 0 1 2.522 2.522 2.528 2.528 0 0 1-2.522 2.522H2.522A2.528 2.528 0 0 1 0 8.832a2.528 2.528 0 0 1 2.522-2.522h6.31z" fill="#36C5F0" />
-        <path d="M18.958 8.832a2.528 2.528 0 0 1 2.52-2.522A2.528 2.528 0 0 1 24 8.832a2.528 2.528 0 0 1-2.522 2.522h-2.52V8.832zm-1.268 0a2.528 2.528 0 0 1-2.522 2.522 2.528 2.528 0 0 1-2.522-2.522V2.522A2.528 2.528 0 0 1 15.168 0a2.528 2.528 0 0 1 2.522 2.522v6.31z" fill="#2EB67D" />
-        <path d="M15.168 18.958a2.528 2.528 0 0 1 2.522 2.52A2.528 2.528 0 0 1 15.168 24a2.528 2.528 0 0 1-2.522-2.522v-2.52h2.522zm0-1.268a2.528 2.528 0 0 1-2.522-2.522 2.528 2.528 0 0 1 2.522-2.522h6.31A2.528 2.528 0 0 1 24 15.168a2.528 2.528 0 0 1-2.522 2.522h-6.31z" fill="#ECB22E" />
-      </svg>
-    ),
-    Figma: (
-      <svg viewBox="0 0 16 24" className="h-6 w-auto">
-        <path d="M4 24a4 4 0 0 0 4-4v-4H4a4 4 0 0 0 0 8z" fill="#0ACF83" />
-        <path d="M0 12a4 4 0 0 1 4-4h4v8H4a4 4 0 0 1-4-4z" fill="#A259FF" />
-        <path d="M0 4a4 4 0 0 1 4-4h4v8H4a4 4 0 0 1-4-4z" fill="#F24E1E" />
-        <path d="M8 0h4a4 4 0 0 1 0 8H8V0z" fill="#FF7262" />
-        <circle cx="12" cy="12" r="4" fill="#1ABCFE" />
-      </svg>
-    ),
-    Notion: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.98-.7-2.055-.607L3.01 2.43c-.466.047-.56.28-.374.466l1.823 1.312zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.886c-.56.047-.747.327-.747.934zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.747 0-.933-.234-1.494-.934l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.234 4.764 7.28v-6.44l-1.215-.14c-.093-.514.28-.886.747-.933l3.222-.187zM2.31 1.234l13.59-1c1.68-.14 2.1.094 3.13.84l4.31 3.032c.699.513.933.653.933 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.046-1.448-.094-1.96-.747l-3.127-4.066c-.56-.747-.793-1.306-.793-1.96V2.874c0-.84.373-1.54 1.354-1.64z" fill="currentColor" />
-      </svg>
-    ),
-    Vercel: (
-      <svg viewBox="0 0 24 21" className="h-5 w-6" style={{ color: 'var(--color-text)' }}>
-        <polygon points="12,0 24,21 0,21" fill="currentColor" />
-      </svg>
-    ),
-    Datadog: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M19.098 16.378l-1.32-1.192-1.399.93-.564-.678 1.205-1.186-.698-.815-1.263.792-.556-.607.982-.94-.628-.565-1.083.94c-.243-.255-.49-.413-.737-.538l.195-1.47-.94-.333-.22 1.318c-.317-.02-.65.04-.98.168L9.989 9.62l-.674.523 1.12 1.473-.372.352-1.505-.982-.603.705 1.38 1.23-.27.37-1.67-.778-.39.74 1.63 1.062c-.127.414-.195.85-.178 1.31l-1.677.447.127.983 1.587-.223c.15.495.39.967.716 1.4l-1.254 1.29.69.672 1.17-1.19c.452.358.974.612 1.543.744l.247 1.704h.98l.135-1.646c.555-.05 1.079-.24 1.558-.526l1.15 1.17.733-.708-1.085-1.13c.37-.38.656-.83.845-1.33l1.636.41.24-.954-1.605-.555c.046-.38.024-.768-.065-1.15l1.527-.65-.34-.906zm-5.1 3.987c-1.992.387-3.903-.913-4.27-2.904-.366-1.99.916-3.902 2.907-4.29 1.992-.386 3.904.915 4.27 2.906.367 1.99-.915 3.901-2.906 4.288z" fill="#632CA6" />
-      </svg>
-    ),
-    Tesla: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.627-1.587-7.715-1.587S4.433 6.828 4.287 8.267c0 0-2.15-.802-3.233-2.438C5.28 3.865 9.525 3.775 9.525 3.775L12 5.362zm0 2.129s-2.344-.067-3.654-.539l-.626 1.242s1.66.676 4.28.676c2.62 0 4.28-.676 4.28-.676l-.626-1.242C14.344 7.424 12 7.49 12 7.49zm0 2.138L10.028 24h1.167l.805-8.566L12 24l.805-8.566L12 24h1.167L11.195 9.63z" fill="#E82127" />
-      </svg>
-    ),
-    Nvidia: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M8.948 8.798v-1.43c.217-.017.438-.03.663-.03 3.479 0 5.931 2.778 5.931 2.778s-2.745 3.179-5.654 3.179c-.33 0-.644-.04-.94-.108V9.168c1.753.088 2.1.588 3.168 2.106l2.35-1.975s-1.742-1.854-4.427-1.854c-.374 0-.737.033-1.09.102v1.25zm0 6.283v1.362c-4.036-.567-5.27-4.484-5.27-4.484s1.922-2.636 5.27-3.066v1.49c-2.073.318-3.562 1.674-3.562 1.674s1.05 2.175 3.562 3.024zm0-7.63V5.967c-5.152.6-6.836 4.266-6.836 4.266s2.42 4.058 6.836 4.74V13.56c-3.498-.437-5.07-3.363-5.07-3.363s1.727-2.21 5.07-2.746zm6.956-.754s-3.14-3.4-7.503-3.4c-.516 0-1.015.05-1.5.132V2.094l.398-.031c6.304-.153 10.84 5.12 10.84 5.12s-3.2 6.126-8.83 6.126c-.324 0-.636-.02-.94-.053v-1.463c.266.032.536.05.812.05 3.735 0 6.723-3.946 6.723-3.946z" fill="#76B900" />
-      </svg>
-    ),
-    Uber: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M0 7.97v4.958c0 1.867 1.302 3.101 3 3.101.876 0 1.602-.34 2.072-.907v.78h1.47V7.97H5.07v4.874c0 1.164-.702 1.89-1.726 1.89-1.018 0-1.728-.738-1.728-1.89V7.97H0zm14.87 0v8.862h1.478v-.792c.468.564 1.194.918 2.076.918 1.984 0 3.576-1.69 3.576-3.876 0-2.187-1.592-3.877-3.576-3.877-.882 0-1.608.336-2.076.9V7.97h-1.478zm-5.148 0c-2.07 0-3.702 1.673-3.702 3.876 0 2.272 1.716 3.877 3.84 3.877 1.206 0 2.268-.498 2.988-1.38l-1.08-.804c-.468.552-1.134.882-1.86.882-1.266 0-2.196-.846-2.382-2.028h5.652c.036-.21.048-.432.048-.66 0-2.132-1.518-3.763-3.504-3.763zm7.062 1.29c1.26 0 2.19 1.05 2.19 2.587 0 1.536-.93 2.586-2.19 2.586-1.23 0-2.19-1.086-2.19-2.586s.96-2.586 2.19-2.586zm-7.014-.012c1.092 0 1.974.726 2.148 1.824H7.632c.186-1.086 1.044-1.824 2.138-1.824z" fill="currentColor" />
-      </svg>
-    ),
-    Coinbase: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <circle cx="12" cy="12" r="12" fill="#0052FF" />
-        <path d="M12.017 15.402c-1.876 0-3.398-1.522-3.398-3.398s1.522-3.398 3.398-3.398c1.614 0 2.966 1.127 3.313 2.636h3.44C18.37 7.666 15.488 5.4 12.017 5.4A6.603 6.603 0 0 0 5.413 12a6.603 6.603 0 0 0 6.604 6.6c3.471 0 6.353-2.266 6.753-5.842h-3.44c-.347 1.509-1.699 2.644-3.313 2.644z" fill="#fff" />
-      </svg>
-    ),
-    Canva: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.14 14.428c-.327.84-1.24 1.837-2.508 1.837-.468 0-.864-.168-1.14-.456-.684-.72-.54-1.884-.132-3.144.396-1.2 1.236-2.76 2.652-2.76.408 0 .756.156.984.444.588.744.468 2.472.144 4.079zM12 2.4c5.292 0 9.6 4.308 9.6 9.6 0 .72-.084 1.416-.24 2.088-.204-.108-.504-.204-.852-.204-.636 0-1.248.36-1.752.732.012-.108.024-.216.024-.324 0-1.2-.588-2.016-1.596-2.016-1.668 0-2.976 1.668-3.48 3.24-.24.744-.624 2.208-.024 3.012.216.288.528.468.912.552-.84.132-1.716.204-2.592.204-5.292 0-9.6-4.308-9.6-9.6S6.708 2.4 12 2.4z" fill="#00C4CC" />
-      </svg>
-    ),
-    Linear: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M2.1 13.67a10.2 10.2 0 0 0 8.24 8.24L2.1 13.67zM1.56 11.03a10.22 10.22 0 0 0 11.42 11.42L1.56 11.03zM12.98 22.44A10.22 10.22 0 0 0 22.44 12.98L12.98 22.44zM22.79 10.93A10.24 10.24 0 0 0 13.07 1.2l9.72 9.73zM10.4 1.56L22.44 13.6A10.22 10.22 0 0 0 10.4 1.56z" fill="#5E6AD2" />
-      </svg>
-    ),
-    Wealthsimple: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M12 24C5.373 24 0 18.627 0 12S5.373 0 12 0s12 5.373 12 12-5.373 12-12 12zm-1.424-7.09l2.752-7.627-.07-.007h-2.15l-1.7 5.09-1.727-5.09H5.527l3.158 7.634h1.891zm5.02 0l2.876-7.627-.044-.007h-2.164l-2.78 7.634h2.112z" fill="currentColor" />
-      </svg>
-    ),
-    OpenAI: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 10.696 0a6.074 6.074 0 0 0-5.812 4.312 6.044 6.044 0 0 0-4.04 2.9 6.09 6.09 0 0 0 .748 7.09 5.985 5.985 0 0 0 .518 4.911 6.046 6.046 0 0 0 6.51 2.9A6.065 6.065 0 0 0 13.304 24a6.074 6.074 0 0 0 5.812-4.312 6.044 6.044 0 0 0 4.04-2.9 6.09 6.09 0 0 0-.748-7.09l-.126.123zM13.304 22.45a4.528 4.528 0 0 1-2.912-1.057l.145-.083 4.834-2.79a.788.788 0 0 0 .396-.683v-6.814l2.043 1.18a.073.073 0 0 1 .04.056v5.64a4.546 4.546 0 0 1-4.546 4.55zM3.68 18.315a4.51 4.51 0 0 1-.54-3.04l.145.087 4.834 2.79a.778.778 0 0 0 .782 0l5.904-3.408v2.361a.073.073 0 0 1-.03.061l-4.889 2.822a4.546 4.546 0 0 1-6.206-1.673zM2.393 7.877a4.528 4.528 0 0 1 2.363-1.987l-.002.169v5.58a.778.778 0 0 0 .39.675l5.904 3.408-2.043 1.18a.073.073 0 0 1-.068.005L4.049 14.085a4.546 4.546 0 0 1-1.656-6.208zM18.95 11.72l-5.904-3.408L15.09 7.13a.073.073 0 0 1 .068-.005l4.889 2.822a4.547 4.547 0 0 1-.701 8.195v-5.749a.778.778 0 0 0-.396-.673zM21.06 8.945l-.144-.088-4.834-2.79a.778.778 0 0 0-.782 0l-5.904 3.408V7.114a.073.073 0 0 1 .03-.061l4.889-2.822a4.547 4.547 0 0 1 6.745 4.714zM7.67 13.72l-2.043-1.18a.073.073 0 0 1-.04-.056V6.845a4.547 4.547 0 0 1 7.453-3.49l-.145.083-4.834 2.79a.788.788 0 0 0-.396.683l.005 6.809z" fill="currentColor" />
-      </svg>
-    ),
-    Databricks: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6">
-        <path d="M12 2L1.5 8.1v2.6L12 4.6l10.5 6.1V8.1L12 2z" fill="#FF3621" />
-        <path d="M12 8.2L1.5 14.3v2.6L12 10.8l10.5 6.1v-2.6L12 8.2z" fill="#FF3621" />
-        <path d="M12 14.4L1.5 20.5 12 26.6l10.5-6.1L12 14.4zM12 14.4L1.5 20.5 12 22l10.5-1.5L12 14.4z" fill="#FF3621" />
-      </svg>
-    ),
-    Plaid: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" style={{ color: 'var(--color-text)' }}>
-        <path d="M9.268 1.393H6.392L4.53 3.268V6.17l1.862 1.875h2.876L11.13 6.17V3.268L9.268 1.393zm4.862 0h-2.876L9.392 3.268V6.17l1.862 1.875h2.876l1.862-1.875V3.268L14.13 1.393zm4.862 0h-2.876l-1.862 1.875V6.17l1.862 1.875h2.876L20.855 6.17V3.268L18.992 1.393zM9.268 6.255H6.392L4.53 8.13v2.902l1.862 1.875h2.876l1.862-1.875V8.13L9.268 6.255zm4.862 0h-2.876L9.392 8.13v2.902l1.862 1.875h2.876l1.862-1.875V8.13L14.13 6.255zm4.862 0h-2.876l-1.862 1.875v2.902l1.862 1.875h2.876l1.862-1.875V8.13l-1.862-1.875zM9.268 11.117H6.392L4.53 12.992v2.902l1.862 1.875h2.876l1.862-1.875v-2.902L9.268 11.117zm4.862 0h-2.876l-1.862 1.875v2.902l1.862 1.875h2.876l1.862-1.875v-2.902l-1.862-1.875zm4.862 0h-2.876l-1.862 1.875v2.902l1.862 1.875h2.876l1.862-1.875v-2.902l-1.862-1.875z" fill="currentColor" opacity=".85" />
-      </svg>
-    ),
-  };
+// Company logos fetched from Clearbit Logo API for exact brand logos
+const COMPANIES = [
+  { name: 'Google', domain: 'google.com' },
+  { name: 'Apple', domain: 'apple.com' },
+  { name: 'Meta', domain: 'meta.com' },
+  { name: 'Amazon', domain: 'amazon.com' },
+  { name: 'Microsoft', domain: 'microsoft.com' },
+  { name: 'Netflix', domain: 'netflix.com' },
+  { name: 'NVIDIA', domain: 'nvidia.com' },
+  { name: 'Tesla', domain: 'tesla.com' },
+  { name: 'Stripe', domain: 'stripe.com' },
+  { name: 'Shopify', domain: 'shopify.com' },
+  { name: 'Spotify', domain: 'spotify.com' },
+  { name: 'Airbnb', domain: 'airbnb.com' },
+  { name: 'Uber', domain: 'uber.com' },
+  { name: 'Coinbase', domain: 'coinbase.com' },
+  { name: 'Databricks', domain: 'databricks.com' },
+  { name: 'OpenAI', domain: 'openai.com' },
+  { name: 'Slack', domain: 'slack.com' },
+  { name: 'Figma', domain: 'figma.com' },
+  { name: 'Notion', domain: 'notion.so' },
+  { name: 'Linear', domain: 'linear.app' },
+  { name: 'Canva', domain: 'canva.com' },
+  { name: 'Vercel', domain: 'vercel.com' },
+  { name: 'Datadog', domain: 'datadoghq.com' },
+];
+
+function CompanyLogo({ name, domain }: { name: string; domain: string }) {
+  const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      {logos[name] || null}
-      <span className="text-[10px] font-medium" style={{ color: 'var(--color-textMuted)' }}>
+    <div className="flex flex-col items-center gap-2">
+      {!imgError ? (
+        <img
+          src={`https://logo.clearbit.com/${domain}?size=80`}
+          alt={name}
+          className="h-8 w-8 rounded-lg object-contain"
+          loading="lazy"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div
+          className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold"
+          style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}
+        >
+          {name[0]}
+        </div>
+      )}
+      <span
+        className="text-[10px] font-medium tracking-wide"
+        style={{ color: 'var(--color-textMuted)' }}
+      >
         {name}
       </span>
     </div>
   );
 }
-
-const COMPANY_LIST = [
-  'Google', 'Apple', 'Meta', 'Amazon', 'Microsoft', 'Netflix', 'Nvidia', 'Tesla',
-  'Stripe', 'Shopify', 'Spotify', 'Airbnb', 'Uber', 'Coinbase', 'Databricks', 'OpenAI',
-  'Slack', 'Figma', 'Notion', 'Linear', 'Canva', 'Vercel', 'Plaid', 'Wealthsimple', 'Datadog',
-];
 
 const OUR_VALUES = [
   {
@@ -354,77 +246,128 @@ const demoTraits = [
 ];
 
 const demoMatches = [
-  { company: 'Notion', role: 'Product Designer', score: 94, color: '#8B5CF6' },
-  { company: 'Stripe', role: 'Frontend Engineer', score: 89, color: '#635BFF' },
-  { company: 'Spotify', role: 'UX Researcher', score: 85, color: '#1DB954' },
+  { company: 'Notion', role: 'Product Designer', score: 94, color: '#8B5CF6', tags: ['Creative', 'Collaborative'] },
+  { company: 'Stripe', role: 'Frontend Engineer', score: 89, color: '#635BFF', tags: ['Innovative', 'Detail-oriented'] },
+  { company: 'Spotify', role: 'UX Researcher', score: 85, color: '#1DB954', tags: ['Creative', 'Data-driven'] },
+  { company: 'Figma', role: 'Design Engineer', score: 82, color: '#F24E1E', tags: ['Collaborative', 'Fast-paced'] },
 ];
 
 const demoChatMessages = [
-  { from: 'employer', text: "Hey! We loved your personality profile. Free for a coffee chat this week?", delay: 0 },
-  { from: 'candidate', text: "Absolutely! I'd love to learn more about the team culture.", delay: 1 },
-  { from: 'employer', text: "Amazing — how's Thursday at 2pm? We'll keep it casual ☕", delay: 2 },
+  { from: 'employer', name: 'Sarah', text: "Hey! We loved your personality profile. Free for a coffee chat this week?" },
+  { from: 'candidate', name: 'You', text: "Absolutely! I'd love to learn more about the team culture." },
+  { from: 'employer', name: 'Sarah', text: "Amazing \u2014 how's Thursday at 2pm? We'll keep it casual \u2615" },
+  { from: 'candidate', name: 'You', text: "Perfect, see you then! \ud83c\udf89" },
+];
+
+const demoScreens = [
+  { step: '01', label: 'Take Assessment', icon: Sparkles, color: '#F59E0B' },
+  { step: '02', label: 'Get Matched', icon: Target, color: '#10B981' },
+  { step: '03', label: 'Coffee Chat', icon: Coffee, color: '#EC4899' },
 ];
 
 function ProductDemo() {
   const [activeScreen, setActiveScreen] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveScreen((prev) => (prev + 1) % 3);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    setProgress(0);
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) return 100;
+        return prev + 2.5;
+      });
+    }, 100);
+    return () => clearInterval(progressInterval);
+  }, [activeScreen]);
+
   return (
-    <div className="relative max-w-3xl mx-auto">
+    <div className="relative max-w-4xl mx-auto">
       {/* Decorative glow */}
       <div
-        className="absolute -inset-8 rounded-3xl opacity-20 blur-3xl -z-10"
-        style={{
-          background: 'linear-gradient(135deg, var(--color-accent), #8B5CF6, #10B981)',
-        }}
+        className="absolute -inset-10 rounded-3xl opacity-15 blur-3xl -z-10"
+        style={{ background: 'linear-gradient(135deg, var(--color-accent), #8B5CF6, #10B981)' }}
       />
 
       {/* Browser chrome frame */}
       <div
-        className="rounded-2xl border overflow-hidden shadow-2xl"
+        className="rounded-2xl border overflow-hidden"
         style={{
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-border)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03)',
         }}
       >
         {/* Title bar */}
         <div
-          className="flex items-center gap-2 px-4 py-3 border-b"
+          className="flex items-center gap-3 px-4 py-3 border-b"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background)' }}
         >
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-400" />
-            <div className="w-3 h-3 rounded-full bg-yellow-400" />
-            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#FF5F57' }} />
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#FFBD2E' }} />
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#28C840' }} />
           </div>
           <div
-            className="flex-1 text-center text-xs font-medium"
-            style={{ color: 'var(--color-textMuted)' }}
+            className="flex-1 mx-12 py-1 px-3 rounded-md text-center text-[11px] font-medium"
+            style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-textMuted)' }}
           >
             app.tryamber.com
           </div>
+          <div className="w-16" />
+        </div>
+
+        {/* Step indicators */}
+        <div
+          className="flex items-center justify-center gap-1 px-6 py-3 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          {demoScreens.map((screen, i) => (
+            <button
+              key={screen.step}
+              onClick={() => setActiveScreen(i)}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={{
+                backgroundColor: activeScreen === i ? `${screen.color}15` : 'transparent',
+                color: activeScreen === i ? screen.color : 'var(--color-textMuted)',
+              }}
+            >
+              <screen.icon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{screen.label}</span>
+              <span className="sm:hidden">{screen.step}</span>
+            </button>
+          ))}
         </div>
 
         {/* Screen content */}
-        <div className="relative h-72 sm:h-80 overflow-hidden">
+        <div className="relative h-80 sm:h-[420px] overflow-hidden">
           {/* Screen 1: Assessment */}
           <div
-            className="absolute inset-0 p-6 sm:p-8 transition-opacity duration-500"
-            style={{ opacity: activeScreen === 0 ? 1 : 0 }}
+            className="absolute inset-0 p-6 sm:p-8 transition-all duration-500"
+            style={{
+              opacity: activeScreen === 0 ? 1 : 0,
+              transform: activeScreen === 0 ? 'translateX(0)' : 'translateX(-20px)',
+              pointerEvents: activeScreen === 0 ? 'auto' : 'none',
+            }}
           >
-            <div className="flex items-center gap-2 mb-5">
-              <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                Your OCEAN Profile
-              </span>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
+                  Your OCEAN Personality Profile
+                </h3>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
+                  Based on 48 research-backed questions
+                </p>
+              </div>
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-4 mb-6">
               {demoTraits.map((trait, i) => (
                 <div key={trait.label} className="flex items-center gap-3">
                   <span
@@ -433,55 +376,77 @@ function ProductDemo() {
                   >
                     {trait.label}
                   </span>
-                  <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
+                  <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
                     <div
-                      className="h-full rounded-full animate-bar-fill"
+                      className="h-full rounded-full transition-all duration-1000 ease-out"
                       style={{
-                        '--bar-width': `${trait.value}%`,
                         backgroundColor: trait.color,
-                        animationDelay: `${i * 200}ms`,
-                        animationPlayState: activeScreen === 0 ? 'running' : 'paused',
                         width: activeScreen === 0 ? `${trait.value}%` : '0%',
-                      } as React.CSSProperties}
+                        transitionDelay: `${i * 150}ms`,
+                      }}
                     />
                   </div>
-                  <span
-                    className="text-xs font-bold w-8"
-                    style={{ color: trait.color }}
-                  >
+                  <span className="text-xs font-bold w-8 tabular-nums" style={{ color: trait.color }}>
                     {trait.value}
                   </span>
                 </div>
               ))}
             </div>
+
+            {/* Archetype badge */}
+            <div
+              className="inline-flex items-center gap-3 px-4 py-3 rounded-xl border"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background)' }}
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: '#8B5CF615' }}
+              >
+                <Sparkles className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>
+                  Your Archetype: The Innovator
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>
+                  Creative, open-minded, and deeply collaborative
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Screen 2: Matches */}
           <div
-            className="absolute inset-0 p-6 sm:p-8 transition-opacity duration-500"
-            style={{ opacity: activeScreen === 1 ? 1 : 0 }}
+            className="absolute inset-0 p-6 sm:p-8 transition-all duration-500"
+            style={{
+              opacity: activeScreen === 1 ? 1 : 0,
+              transform: activeScreen === 1 ? 'translateX(0)' : 'translateX(20px)',
+              pointerEvents: activeScreen === 1 ? 'auto' : 'none',
+            }}
           >
-            <div className="flex items-center gap-2 mb-5">
-              <Target className="w-4 h-4" style={{ color: '#10B981' }} />
-              <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                Your Top Matches
-              </span>
+            <div className="mb-5">
+              <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
+                Your Top Culture Matches
+              </h3>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
+                Ranked by personality compatibility
+              </p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {demoMatches.map((match, i) => (
                 <div
                   key={match.company}
-                  className="flex items-center gap-4 p-3 rounded-xl border"
+                  className="flex items-center gap-3 p-3 rounded-xl border transition-all duration-500"
                   style={{
                     borderColor: 'var(--color-border)',
                     backgroundColor: 'var(--color-background)',
                     opacity: activeScreen === 1 ? 1 : 0,
                     transform: activeScreen === 1 ? 'translateX(0)' : 'translateX(30px)',
-                    transition: `all 0.5s ease-out ${i * 200}ms`,
+                    transitionDelay: `${i * 100}ms`,
                   }}
                 >
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                     style={{ backgroundColor: match.color }}
                   >
                     {match.score}%
@@ -490,15 +455,20 @@ function ProductDemo() {
                     <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-text)' }}>
                       {match.company}
                     </p>
-                    <p className="text-xs truncate" style={{ color: 'var(--color-textMuted)' }}>
+                    <p className="text-[11px] truncate" style={{ color: 'var(--color-textMuted)' }}>
                       {match.role}
                     </p>
                   </div>
-                  <div
-                    className="px-2 py-1 rounded-full text-[10px] font-semibold"
-                    style={{ backgroundColor: `${match.color}15`, color: match.color }}
-                  >
-                    Great Fit
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    {match.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="px-2 py-0.5 rounded-full text-[9px] font-medium"
+                        style={{ backgroundColor: `${match.color}10`, color: match.color }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -507,14 +477,20 @@ function ProductDemo() {
 
           {/* Screen 3: Coffee Chat */}
           <div
-            className="absolute inset-0 p-6 sm:p-8 transition-opacity duration-500"
-            style={{ opacity: activeScreen === 2 ? 1 : 0 }}
+            className="absolute inset-0 p-6 sm:p-8 transition-all duration-500"
+            style={{
+              opacity: activeScreen === 2 ? 1 : 0,
+              transform: activeScreen === 2 ? 'translateX(0)' : 'translateX(20px)',
+              pointerEvents: activeScreen === 2 ? 'auto' : 'none',
+            }}
           >
-            <div className="flex items-center gap-2 mb-5">
-              <Coffee className="w-4 h-4" style={{ color: '#EC4899' }} />
-              <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                Coffee Chat
-              </span>
+            <div className="mb-5">
+              <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
+                Coffee Chat with Notion
+              </h3>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
+                Casual conversation · No pressure
+              </p>
             </div>
             <div className="space-y-3">
               {demoChatMessages.map((msg, i) => (
@@ -523,20 +499,39 @@ function ProductDemo() {
                   className={`flex ${msg.from === 'candidate' ? 'justify-end' : 'justify-start'}`}
                   style={{
                     opacity: activeScreen === 2 ? 1 : 0,
-                    transform: activeScreen === 2 ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(10px)',
-                    transition: `all 0.4s ease-out ${i * 400}ms`,
+                    transform: activeScreen === 2 ? 'scale(1) translateY(0)' : 'scale(0.9) translateY(10px)',
+                    transition: `all 0.4s ease-out ${i * 300}ms`,
                   }}
                 >
-                  <div
-                    className="max-w-[75%] px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed"
-                    style={{
-                      backgroundColor: msg.from === 'candidate' ? 'var(--color-accent)' : 'var(--color-background)',
-                      color: msg.from === 'candidate' ? 'var(--color-accentText)' : 'var(--color-text)',
-                      borderBottomRightRadius: msg.from === 'candidate' ? '4px' : undefined,
-                      borderBottomLeftRadius: msg.from === 'employer' ? '4px' : undefined,
-                    }}
-                  >
-                    {msg.text}
+                  <div className={`flex items-end gap-2 max-w-[80%] ${msg.from === 'candidate' ? 'flex-row-reverse' : ''}`}>
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                      style={{
+                        backgroundColor: msg.from === 'candidate' ? 'var(--color-accent)' : '#8B5CF6',
+                        color: '#fff',
+                      }}
+                    >
+                      {msg.from === 'candidate' ? 'Y' : 'S'}
+                    </div>
+                    <div>
+                      <p
+                        className={`text-[9px] font-medium mb-0.5 px-1 ${msg.from === 'candidate' ? 'text-right' : ''}`}
+                        style={{ color: 'var(--color-textMuted)' }}
+                      >
+                        {msg.name}
+                      </p>
+                      <div
+                        className="px-3.5 py-2 rounded-2xl text-xs leading-relaxed"
+                        style={{
+                          backgroundColor: msg.from === 'candidate' ? 'var(--color-accent)' : 'var(--color-background)',
+                          color: msg.from === 'candidate' ? 'var(--color-accentText)' : 'var(--color-text)',
+                          borderBottomRightRadius: msg.from === 'candidate' ? '4px' : undefined,
+                          borderBottomLeftRadius: msg.from === 'employer' ? '4px' : undefined,
+                        }}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -544,22 +539,36 @@ function ProductDemo() {
           </div>
         </div>
 
-        {/* Screen indicator dots */}
-        <div className="flex justify-center gap-2 pb-4">
-          {['Assessment', 'Matches', 'Coffee Chat'].map((label, i) => (
-            <button
-              key={label}
-              onClick={() => setActiveScreen(i)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium transition-all"
+        {/* Progress bar */}
+        <div className="px-6 pb-4">
+          <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-100 ease-linear"
               style={{
-                backgroundColor: activeScreen === i ? 'var(--color-accent)' : 'var(--color-background)',
-                color: activeScreen === i ? 'var(--color-accentText)' : 'var(--color-textMuted)',
+                width: `${progress}%`,
+                backgroundColor: demoScreens[activeScreen].color,
               }}
-            >
-              {label}
-            </button>
-          ))}
+            />
+          </div>
         </div>
+      </div>
+
+      {/* Stats below */}
+      <div className="grid grid-cols-3 gap-4 mt-8">
+        {[
+          { value: '2,000+', label: 'Assessments Taken' },
+          { value: '94%', label: 'Match Satisfaction' },
+          { value: '500+', label: 'Coffee Chats Booked' },
+        ].map(stat => (
+          <div key={stat.label} className="text-center">
+            <p className="text-lg sm:text-xl font-bold" style={{ color: 'var(--color-text)' }}>
+              {stat.value}
+            </p>
+            <p className="text-[10px] sm:text-xs" style={{ color: 'var(--color-textMuted)' }}>
+              {stat.label}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -764,21 +773,6 @@ export function WelcomeScreen() {
         </div>
       </section>
 
-      {/* Product Demo Animation */}
-      <ScrollSection>
-        <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            <p
-              className="text-center text-sm font-medium mb-8 tracking-wide uppercase"
-              style={{ color: 'var(--color-textMuted)', letterSpacing: '0.1em' }}
-            >
-              See How It Works
-            </p>
-            <ProductDemo />
-          </div>
-        </section>
-      </ScrollSection>
-
       {/* Recruiters From These Companies */}
       <ScrollSection>
         <section className="py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -792,12 +786,12 @@ export function WelcomeScreen() {
             <div className="relative overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
               <div className="flex items-center animate-marquee" style={{ width: 'max-content' }}>
                 {/* Duplicate the logos for seamless loop */}
-                {[...COMPANY_LIST, ...COMPANY_LIST].map((name, i) => (
+                {[...COMPANIES, ...COMPANIES].map((company, i) => (
                   <div
-                    key={`${name}-${i}`}
-                    className="flex items-center justify-center px-8 py-3 flex-shrink-0 opacity-75 hover:opacity-100 transition-opacity"
+                    key={`${company.domain}-${i}`}
+                    className="flex items-center justify-center px-8 py-3 flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity"
                   >
-                    <CompanyLogo name={name} />
+                    <CompanyLogo name={company.name} domain={company.domain} />
                   </div>
                 ))}
               </div>
@@ -844,6 +838,29 @@ export function WelcomeScreen() {
                 </TiltCard>
               ))}
             </div>
+          </div>
+        </section>
+      </ScrollSection>
+
+      {/* Product Demo — See Amber in Action */}
+      <ScrollSection>
+        <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2
+                className="text-3xl sm:text-4xl font-bold mb-4"
+                style={{ color: 'var(--color-text)' }}
+              >
+                See Amber in Action
+              </h2>
+              <p
+                className="text-lg max-w-2xl mx-auto"
+                style={{ color: 'var(--color-textSecondary)' }}
+              >
+                From personality assessment to coffee chat — watch how culture-first matching works.
+              </p>
+            </div>
+            <ProductDemo />
           </div>
         </section>
       </ScrollSection>
