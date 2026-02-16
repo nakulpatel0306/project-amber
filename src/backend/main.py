@@ -256,14 +256,70 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Detailed health check"""
+    """Detailed health check with real service probes"""
+    import time
+    from datetime import datetime, timezone
+    from db.database import get_connection
+    from db.supabase_client import get_supabase
+
+    services: dict = {}
+
+    # API – if we got here it's up
+    services["api"] = {"status": "operational", "latency_ms": 1}
+
+    # Database (SQLite)
+    try:
+        t0 = time.perf_counter()
+        conn = get_connection()
+        conn.execute("SELECT 1")
+        conn.close()
+        latency = round((time.perf_counter() - t0) * 1000)
+        services["database"] = {"status": "operational", "latency_ms": latency}
+    except Exception:
+        services["database"] = {"status": "down", "latency_ms": 0}
+
+    # Supabase
+    try:
+        t0 = time.perf_counter()
+        client = get_supabase()
+        if client is None:
+            services["supabase"] = {"status": "degraded", "latency_ms": 0}
+        else:
+            # lightweight probe – list 0 rows from any table
+            client.table("candidates").select("id").limit(1).execute()
+            latency = round((time.perf_counter() - t0) * 1000)
+            services["supabase"] = {"status": "operational", "latency_ms": latency}
+    except Exception:
+        latency = round((time.perf_counter() - t0) * 1000)
+        services["supabase"] = {"status": "down", "latency_ms": latency}
+
+    # Matching Engine
+    try:
+        t0 = time.perf_counter()
+        from engine.compatibility import calculate_compatibility  # noqa: F811
+        latency = round((time.perf_counter() - t0) * 1000)
+        services["matching_engine"] = {"status": "operational", "latency_ms": latency}
+    except Exception:
+        services["matching_engine"] = {"status": "down", "latency_ms": 0}
+
+    # Auth
+    services["auth"] = {
+        "status": "operational" if is_auth_configured() else "degraded"
+    }
+
+    # Overall status
+    statuses = [s["status"] for s in services.values()]
+    if any(s == "down" for s in statuses):
+        overall = "degraded"
+    elif any(s == "degraded" for s in statuses):
+        overall = "degraded"
+    else:
+        overall = "operational"
+
     return {
-        "status": "healthy",
-        "services": {
-            "api": "ok",
-            "database": "ok",
-            "auth": "configured" if is_auth_configured() else "disabled"
-        }
+        "status": overall,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": services,
     }
 
 

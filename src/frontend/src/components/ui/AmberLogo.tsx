@@ -44,34 +44,60 @@ export function AmberLogo({ size = 'md', variant = 'icon', className }: AmberLog
       <svg
         width={iconSize}
         height={iconSize}
-        viewBox="0 0 32 32"
+        viewBox="0 0 40 40"
         fill="none"
-        className="text-white"
       >
-        {/* Coffee mug body = chat bubble shape */}
-        {/* Rounded rectangle mug with chat-bubble tail at bottom-left */}
+        {/* Coffee cup body - rounded U shape */}
         <path
-          d="M4 8a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H11l-4 4v-4H8a4 4 0 0 1-4-4V8z"
+          d="M8 16c0-1.5 1-2.5 2.5-2.5h15c1.5 0 2.5 1 2.5 2.5v8c0 5-3.5 8-10 8s-10-3-10-8v-8z"
           fill="white"
-          opacity="0.9"
+          opacity="0.92"
         />
-        {/* Mug handle — small arc on the right */}
+        {/* Cup highlight - subtle shine */}
         <path
-          d="M24 10c2.5 0 4 1.5 4 3.5S26.5 17 24 17"
+          d="M11 16c0-0.5 0.3-1 1-1h1.5c0.5 0 0.8 0.3 0.8 0.8v6c0 0.5-0.3 0.7-0.8 0.7H12c-0.7 0-1-0.3-1-0.8V16z"
+          fill="white"
+          opacity="0.35"
+        />
+        {/* Cup handle */}
+        <path
+          d="M28 17.5c2 0 3.5 1.2 3.5 3s-1.5 3-3.5 3"
           stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           fill="none"
-          opacity="0.9"
+          opacity="0.85"
         />
-        {/* Steam — single gentle wisp */}
+        {/* Steam wisp left */}
         <path
-          d="M12 4c0.5-2 2-3 2-3M16 4c0.5-2.5 2.2-3.5 2.2-3.5"
+          d="M14 12c0-1.5 1.2-2.5 0.8-4"
           stroke="white"
-          strokeWidth="1.3"
+          strokeWidth="1.2"
           strokeLinecap="round"
           fill="none"
-          opacity="0.45"
+          opacity="0.4"
+        />
+        {/* Steam wisp right */}
+        <path
+          d="M18 11.5c0.3-1.5-0.5-2.5 0.2-4.2"
+          stroke="white"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.35"
+        />
+        {/* Chat bubble */}
+        <rect x="21" y="3" width="12" height="8" rx="3.5" fill="white" opacity="0.75" />
+        <path d="M24 11l-2 2.5v-2.5" fill="white" opacity="0.75" />
+        {/* Chat dots */}
+        <circle cx="25" cy="7" r="1" fill="var(--color-accent)" opacity="0.7" />
+        <circle cx="27.5" cy="7" r="1" fill="var(--color-accent)" opacity="0.55" />
+        <circle cx="30" cy="7" r="1" fill="var(--color-accent)" opacity="0.4" />
+        {/* Sparkle */}
+        <path
+          d="M10 9l0.6-1.5L12 7l-1.4-0.5L10 5l-0.6 1.5L8 7l1.4 0.5z"
+          fill="white"
+          opacity="0.65"
         />
       </svg>
     </div>

@@ -188,7 +188,24 @@ export async function submitFeedback(
 
 // ============ Health Check ============
 
-export async function healthCheck(): Promise<{ status: string }> {
+export interface ServiceHealth {
+  status: "operational" | "degraded" | "down";
+  latency_ms?: number;
+}
+
+export interface HealthResponse {
+  status: "operational" | "degraded" | "down";
+  timestamp: string;
+  services: {
+    api: ServiceHealth;
+    database: ServiceHealth;
+    supabase: ServiceHealth;
+    matching_engine: ServiceHealth;
+    auth: ServiceHealth;
+  };
+}
+
+export async function healthCheck(): Promise<HealthResponse> {
   const response = await fetch(`${API_BASE_URL}/health`);
   return response.json();
 }
