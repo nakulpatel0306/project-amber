@@ -247,15 +247,15 @@ const demoMatches = [
 const demoChatMessages = [
   { from: 'employer', name: 'Sarah', text: "Hey! We loved your personality profile. Free for a coffee chat this week?" },
   { from: 'candidate', name: 'You', text: "Absolutely! I'd love to learn more about the team culture." },
-  { from: 'employer', name: 'Sarah', text: "Amazing \u2014 how's Thursday at 2pm? We'll keep it casual \u2615" },
-  { from: 'candidate', name: 'You', text: "Perfect, see you then! \ud83c\udf89" },
+  { from: 'employer', name: 'Sarah', text: "Amazing \u2014 how's Thursday at 2pm? We'll keep it casual." },
+  { from: 'candidate', name: 'You', text: "Perfect, see you then!" },
 ];
 
 function ProductDemo() {
   const [elapsed, setElapsed] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  const CYCLE = 19500;
+  const CYCLE = 24000;
 
   useEffect(() => {
     if (isPaused) return;
@@ -288,60 +288,40 @@ function ProductDemo() {
     return (t - start) / (end - start);
   };
 
-  // Scene opacities
-  const s1 = vis(0, 600, 2800, 3400);         // Hook
-  const s2 = vis(3000, 3600, 6200, 6800);      // Assessment
-  const s3 = vis(6400, 7000, 9600, 10200);     // Mind Map
-  const s4 = vis(9800, 10400, 12800, 13400);   // Matches
-  const s5 = vis(13000, 13600, 16000, 16600);  // Coffee Chat
-  const s6 = vis(16200, 16800, 19000, 19500);  // Ember
+  // Scene opacities - 6 scenes across 24s
+  const s1 = vis(0, 600, 2800, 3400);           // Welcome
+  const s2 = vis(3000, 3600, 6600, 7200);       // Assessment
+  const s3 = vis(6800, 7400, 10200, 10800);     // Personality
+  const s4 = vis(10400, 11000, 13800, 14400);   // Matches
+  const s5 = vis(14000, 14600, 17000, 17600);   // Coffee Chat
+  const s6 = vis(17200, 17800, 23400, 24000);   // Ember
 
-  // Assessment: animated slider 20% -> 72%
-  const sliderPos = 20 + smooth(prog(3600, 5800)) * 52;
-  const sliderVal = Math.round(sliderPos);
+  // Assessment: scenario options stagger + selection
+  const mcOptionProgress = prog(3600, 5200);
+  const mcSelectionProgress = smooth(prog(5400, 5800));
 
-  // Mind map: nodes appear with stagger, scores count up
-  const mindMapProgress = prog(7000, 9200);
-  const MAP_CX = 230, MAP_CY = 100;
-  const mindMapNodes = demoTraits.map((trait, i) => {
-    const angles = [-90, -18, 54, 126, 198];
-    const labels = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Stability'];
-    const shortDescs = ['Creativity & Curiosity', 'Organization & Discipline', 'Social Energy', 'Cooperation & Empathy', 'Resilience & Composure'];
-    const radian = (angles[i] * Math.PI) / 180;
-    const dist = 75;
-    const nodeProgress = smooth(Math.max(0, Math.min(1, (mindMapProgress - i * 0.12) / 0.25)));
-    const nx = MAP_CX + Math.cos(radian) * dist;
-    const ny = MAP_CY + Math.sin(radian) * dist;
-    const r = 18 + (trait.value / 100) * 6;
-    const isRight = nx >= MAP_CX - 2;
-    return {
-      x: nx,
-      y: ny,
-      score: Math.round(trait.value * nodeProgress),
-      label: labels[i],
-      shortDesc: shortDescs[i],
-      color: trait.color,
-      r,
-      opacity: nodeProgress,
-      isRight,
-      annotX: isRight ? nx + r + 14 : nx - r - 14,
-      radian,
-    };
-  });
+  // Personality bars: animated fill
+  const barProgress = prog(7400, 9800);
 
   // Match cards: staggered slide-in with counting scores
-  const matchProgress = prog(10400, 12400);
+  const matchProgress = prog(11000, 13400);
 
   // Chat messages: staggered pop-in
-  const chatProgress = prog(13600, 15600);
+  const chatProgress = prog(14600, 16600);
 
-  // Ember finale: scale up, text fades in, "Amber" slides up
-  const emberScale = smooth(prog(16800, 17600));
-  const emberTextOpacity = smooth(prog(17600, 18200));
-  const amberTextOpacity = smooth(prog(18200, 18800));
+  // Ember finale
+  const ringProgress = smooth(prog(17800, 19000));
+  const emberScale = smooth(prog(18000, 19200));
+  const emberTextOpacity = smooth(prog(19200, 20000));
+  const amberTextOpacity = smooth(prog(20200, 21000));
+  const lineReveal = smooth(prog(20800, 21400));
 
   // Progress bar
   const progressPercent = (t / CYCLE) * 100;
+
+  // Step indicator
+  const steps = ['Welcome', 'Assessment', 'Results', 'Matches', 'Coffee Chat', 'Ember'];
+  const activeStep = s1 > 0 ? 0 : s2 > 0 ? 1 : s3 > 0 ? 2 : s4 > 0 ? 3 : s5 > 0 ? 4 : 5;
 
   return (
     <div
@@ -384,16 +364,18 @@ function ProductDemo() {
         </div>
 
         {/* Content area */}
-        <div className="relative h-[340px] sm:h-[440px] overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="relative h-[360px] sm:h-[460px] overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
 
-          {/* ===== Scene 1: Hook ===== */}
+          {/* ===== Scene 1: Welcome ===== */}
           {s1 > 0 && (
             <div
               className="absolute inset-0 flex flex-col items-center justify-center p-8"
               style={{ opacity: s1, transform: `scale(${0.95 + s1 * 0.05})` }}
             >
               <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)' }}>
+                  <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                </div>
                 <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: 'var(--color-accent)', letterSpacing: '0.1em' }}>
                   Welcome to Amber
                 </span>
@@ -410,63 +392,88 @@ function ProductDemo() {
             </div>
           )}
 
-          {/* ===== Scene 2: Assessment ===== */}
+          {/* ===== Scene 2: Assessment (Scenario Options) ===== */}
           {s2 > 0 && (
             <div
               className="absolute inset-0 p-5 sm:p-7"
               style={{ opacity: s2, transform: `translateY(${(1 - s2) * 15}px)` }}
             >
-              {/* Progress bar across top */}
-              <div className="absolute top-0 left-0 right-0 h-1" style={{ background: `linear-gradient(90deg, var(--color-accent) 0%, var(--color-accent) 25%, var(--color-border) 25%)` }} />
+              {/* Gradient progress bar across top */}
+              <div className="absolute top-0 left-0 right-0 h-1">
+                <div className="h-full" style={{ width: '25%', background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))' }} />
+              </div>
 
               {/* Header */}
-              <div className="flex items-center justify-between mb-5 mt-1">
+              <div className="flex items-center justify-between mb-4 mt-1">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent)' }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent)' }}>
                     <Brain className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>Personality Assessment</p>
+                    <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>Personality Assessment</p>
                     <p className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>Question 12 of 48</p>
                   </div>
                 </div>
-                <div className="px-2.5 py-1 rounded-full text-[10px] font-medium" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-textSecondary)' }}>
-                  scenarios
+                <div className="px-2.5 py-1 rounded-full text-[10px] font-medium" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-textSecondary)', border: '1px solid var(--color-border)' }}>
+                  Scenario
                 </div>
               </div>
 
               <h3 className="text-sm sm:text-base font-bold mb-4" style={{ color: 'var(--color-text)' }}>
-                I enjoy trying new things and exploring unfamiliar ideas.
+                Your team is brainstorming and someone proposes an unconventional approach. You would most likely...
               </h3>
 
-              {/* Animated slider */}
-              <div className="relative pt-8 pb-4 px-4 rounded-2xl mb-3" style={{ backgroundColor: 'var(--color-surface)' }}>
-                <div
-                  className="absolute top-1.5 px-2.5 py-1 rounded-lg font-bold text-xs shadow-md"
-                  style={{ backgroundColor: 'var(--color-accent)', color: 'white', left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
-                >
-                  {sliderVal}
-                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rotate-45" style={{ backgroundColor: 'var(--color-accent)' }} />
-                </div>
-                <div className="h-2 rounded-full relative" style={{ background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${sliderPos}%, var(--color-border) ${sliderPos}%)` }}>
-                  <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-[2.5px] shadow-md" style={{ backgroundColor: '#fff', borderColor: 'var(--color-accent)', left: `calc(${sliderPos}% - 10px)` }} />
-                </div>
-                <div className="flex justify-between mt-1.5 px-0.5">
-                  {[0, 25, 50, 75, 100].map(tick => (
-                    <div key={tick} className="w-0.5 h-1 rounded-full" style={{ backgroundColor: sliderVal >= tick ? 'var(--color-accent)' : 'var(--color-border)', opacity: 0.5 }} />
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-between text-[10px] px-1 mb-4">
-                <span style={{ color: 'var(--color-textSecondary)' }}>Strongly Disagree</span>
-                <span style={{ color: 'var(--color-textSecondary)' }}>Strongly Agree</span>
+              {/* 2-column scenario grid (matching real ScenarioOptions) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {[
+                  { label: 'A', text: 'Champion the idea and help build on it' },
+                  { label: 'B', text: 'Ask probing questions to understand their reasoning' },
+                  { label: 'C', text: 'Suggest testing it alongside a proven method' },
+                  { label: 'D', text: 'Advocate for sticking with what has worked before' },
+                ].map((option, i) => {
+                  const optionProg = smooth(Math.max(0, Math.min(1, (mcOptionProgress - i * 0.15) / 0.25)));
+                  const isSelected = i === 0;
+                  const selected = isSelected && mcSelectionProgress > 0;
+                  return (
+                    <div
+                      key={option.label}
+                      className="flex items-center gap-3 p-3 sm:p-4 rounded-2xl"
+                      style={{
+                        backgroundColor: selected ? 'rgba(217, 119, 6, 0.06)' : 'var(--color-surface)',
+                        border: selected ? '2px solid var(--color-accent)' : '2px solid var(--color-border)',
+                        opacity: optionProg,
+                        transform: `translateY(${(1 - optionProg) * 15}px)`,
+                      }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{
+                          backgroundColor: selected ? 'var(--color-accent)' : 'transparent',
+                          border: selected ? 'none' : '2px solid var(--color-border)',
+                          color: selected ? 'white' : 'var(--color-textMuted)',
+                        }}
+                      >
+                        {selected ? (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <span className="text-[10px] font-bold">{option.label}</span>
+                        )}
+                      </div>
+                      <span className="text-[11px] sm:text-xs leading-snug" style={{ color: 'var(--color-text)' }}>
+                        {option.text}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Question dots */}
-              <div className="flex items-center justify-center gap-1 mt-2">
+              {/* Progress dots */}
+              <div className="flex items-center justify-center gap-1 mt-4">
                 {[...Array(12)].map((_, i) => (
                   <div key={i} className="rounded-full" style={{
-                    width: i === 11 ? 14 : 5, height: 5,
+                    width: i === 11 ? 16 : 5, height: 5,
                     backgroundColor: i === 11 ? 'var(--color-accent)' : i < 11 ? 'var(--color-success)' : 'var(--color-border)',
                   }} />
                 ))}
@@ -477,101 +484,63 @@ function ProductDemo() {
             </div>
           )}
 
-          {/* ===== Scene 3: Mind Map ===== */}
+          {/* ===== Scene 3: OCEAN Bar Chart ===== */}
           {s3 > 0 && (
             <div
-              className="absolute inset-0 p-4 sm:p-6"
+              className="absolute inset-0 p-5 sm:p-7"
               style={{ opacity: s3, transform: `translateY(${(1 - s3) * 15}px)` }}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Brain className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Your Personality Profile</h3>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
+                    <Brain className="w-4 h-4" style={{ color: '#8B5CF6' }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>Your Personality Profile</p>
+                    <p className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>Big Five OCEAN dimensions</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] mb-2" style={{ color: 'var(--color-textMuted)' }}>
-                OCEAN dimensions mapped from 48 assessment responses
-              </p>
 
-              <div className="flex justify-center">
-                <svg viewBox="0 0 460 200" className="w-full" style={{ maxWidth: '540px' }}>
-                  <defs>
-                    <linearGradient id="demoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.05" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Connection lines with animated growth */}
-                  {mindMapNodes.map((n, i) => {
-                    const endX = MAP_CX + (n.x - MAP_CX) * n.opacity;
-                    const endY = MAP_CY + (n.y - MAP_CY) * n.opacity;
-                    // Arrowhead triangle at end of line
-                    const cos = Math.cos(n.radian);
-                    const sin = Math.sin(n.radian);
-                    const tipDist = n.r * n.opacity + 2;
-                    const tipX = n.x - cos * tipDist;
-                    const tipY = n.y - sin * tipDist;
-                    const baseX1 = tipX - cos * 6 - sin * 3;
-                    const baseY1 = tipY - sin * 6 + cos * 3;
-                    const baseX2 = tipX - cos * 6 + sin * 3;
-                    const baseY2 = tipY - sin * 6 - cos * 3;
-                    return (
-                      <g key={`l${i}`} opacity={n.opacity * 0.5}>
-                        <line x1={MAP_CX} y1={MAP_CY} x2={endX} y2={endY} stroke={n.color} strokeWidth={1.5} strokeDasharray="4 2" />
-                        {n.opacity > 0.5 && (
-                          <polygon
-                            points={`${tipX},${tipY} ${baseX1},${baseY1} ${baseX2},${baseY2}`}
-                            fill={n.color}
-                            opacity={0.7}
-                          />
-                        )}
-                      </g>
-                    );
-                  })}
-
-                  {/* Center node */}
-                  <circle cx={MAP_CX} cy={MAP_CY} r={28} fill="url(#demoGrad)" stroke="var(--color-accent)" strokeWidth="1.5" strokeDasharray="4 2" />
-                  <text x={MAP_CX} y={MAP_CY - 4} textAnchor="middle" fill="var(--color-accent)" fontSize="9" fontWeight="600">OCEAN</text>
-                  <text x={MAP_CX} y={MAP_CY + 8} textAnchor="middle" fill="var(--color-textMuted)" fontSize="7">Profile</text>
-
-                  {/* Dimension nodes with annotations */}
-                  {mindMapNodes.map((d, i) => {
-                    const anchor = d.isRight ? 'start' : 'end';
-                    const leaderStartX = d.isRight ? d.x + d.r * d.opacity : d.x - d.r * d.opacity;
-                    const leaderEndX = d.isRight ? d.x + d.r + 8 : d.x - d.r - 8;
-                    return (
-                      <g key={`n${i}`} opacity={d.opacity}>
-                        {/* Node circle */}
-                        <circle cx={d.x} cy={d.y} r={d.r * d.opacity} fill={`${d.color}18`} stroke={d.color} strokeWidth={1.5} />
-
-                        {d.opacity > 0.3 && (
-                          <>
-                            {/* Score inside node */}
-                            <text x={d.x} y={d.y + 1} textAnchor="middle" fill={d.color} fontSize="13" fontWeight="bold">{d.score}</text>
-
-                            {/* Leader line from node edge to annotation */}
-                            <line x1={leaderStartX} y1={d.y} x2={leaderEndX} y2={d.y} stroke={d.color} strokeWidth={0.8} opacity={0.5} />
-                            <circle cx={leaderEndX} cy={d.y} r={1.5} fill={d.color} opacity={0.6} />
-
-                            {/* Annotation: label + description */}
-                            <text x={d.annotX} y={d.y - 4} textAnchor={anchor} fill={d.color} fontSize="7.5" fontWeight="600">{d.label}</text>
-                            <text x={d.annotX} y={d.y + 6} textAnchor={anchor} fill="var(--color-textMuted)" fontSize="6">{d.shortDesc}</text>
-                          </>
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
+              {/* OCEAN bars */}
+              <div className="mt-4 space-y-3 sm:space-y-4">
+                {demoTraits.map((trait, i) => {
+                  const traitProg = smooth(Math.max(0, Math.min(1, (barProgress - i * 0.12) / 0.3)));
+                  const displayValue = Math.round(trait.value * traitProg);
+                  return (
+                    <div key={trait.label} style={{ opacity: traitProg, transform: `translateX(${(1 - traitProg) * 20}px)` }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: trait.color }} />
+                          <span className="text-[11px] sm:text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{trait.label}</span>
+                        </div>
+                        <span className="text-[11px] sm:text-xs font-bold tabular-nums" style={{ color: trait.color }}>{displayValue}%</span>
+                      </div>
+                      <div className="h-2.5 sm:h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-surface)' }}>
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${trait.value * traitProg}%`,
+                            background: `linear-gradient(90deg, ${trait.color}, ${trait.color}88)`,
+                            transition: 'none',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Archetype badge */}
-              <div className="flex items-center justify-center mt-1.5">
+              <div className="flex items-center justify-center mt-4">
                 <div
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
                   style={{
                     backgroundColor: '#8B5CF615',
                     color: '#8B5CF6',
                     border: '1px solid #8B5CF625',
-                    opacity: smooth(prog(8000, 9000)),
+                    opacity: smooth(prog(8800, 9600)),
                   }}
                 >
                   <Sparkles className="w-3 h-3" />
@@ -582,26 +551,36 @@ function ProductDemo() {
             </div>
           )}
 
-          {/* ===== Scene 4: Top Matches ===== */}
+          {/* ===== Scene 4: Top Matches with Score Rings ===== */}
           {s4 > 0 && (
             <div
               className="absolute inset-0 p-5 sm:p-7"
               style={{ opacity: s4, transform: `translateY(${(1 - s4) * 15}px)` }}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Your Top Matches</h3>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                    <Trophy className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>Your Top Matches</p>
+                    <p className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>Ranked by personality compatibility</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] mb-4" style={{ color: 'var(--color-textSecondary)' }}>Roles ranked by personality compatibility</p>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5 mt-3">
                 {demoMatches.map((match, i) => {
-                  const cardProg = smooth(Math.max(0, Math.min(1, (matchProgress - i * 0.18) / 0.25)));
+                  const cardProg = smooth(Math.max(0, Math.min(1, (matchProgress - i * 0.16) / 0.25)));
                   const displayScore = Math.round(match.score * cardProg);
+                  const scoreColor = displayScore >= 90 ? 'var(--color-success)' : displayScore >= 80 ? 'var(--color-accent)' : 'var(--color-warning, #F59E0B)';
+                  const ringR = 16;
+                  const ringCirc = 2 * Math.PI * ringR;
+                  const ringOffset = ringCirc * (1 - (match.score / 100) * cardProg);
                   return (
                     <div
                       key={match.company}
-                      className="flex items-center gap-3 p-2.5 rounded-2xl"
+                      className="flex items-center gap-3 p-3 rounded-2xl"
                       style={{
                         backgroundColor: 'var(--color-surface)',
                         border: i === 0 && cardProg > 0.5 ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
@@ -609,28 +588,42 @@ function ProductDemo() {
                         transform: `translateX(${(1 - cardProg) * 40}px)`,
                       }}
                     >
+                      {/* Score Ring */}
                       <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-                          <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                        </div>
-                        <div
-                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
-                          style={{
-                            backgroundColor: i < 3 ? 'var(--color-accent)' : 'var(--color-surface)',
-                            color: i < 3 ? 'white' : 'var(--color-textMuted)',
-                            border: i >= 3 ? '1px solid var(--color-border)' : 'none',
-                          }}
-                        >
-                          {i + 1}
-                        </div>
+                        <svg width="40" height="40" viewBox="0 0 40 40">
+                          <circle cx="20" cy="20" r={ringR} fill="none" stroke="var(--color-border)" strokeWidth="3" />
+                          <circle
+                            cx="20" cy="20" r={ringR}
+                            fill="none"
+                            stroke={scoreColor}
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeDasharray={ringCirc}
+                            strokeDashoffset={ringOffset}
+                            transform="rotate(-90 20 20)"
+                          />
+                          <text x="20" y="21.5" textAnchor="middle" fontSize="9" fontWeight="700" fill={scoreColor}>
+                            {displayScore}
+                          </text>
+                        </svg>
+                        {i < 3 && (
+                          <div
+                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
+                            style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
+                          >
+                            {i + 1}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold truncate" style={{ color: 'var(--color-text)' }}>{match.role}</p>
+                        <p className="text-[11px] sm:text-xs font-semibold truncate" style={{ color: 'var(--color-text)' }}>{match.role}</p>
                         <p className="text-[10px] truncate" style={{ color: 'var(--color-textSecondary)' }}>{match.company}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-sm font-bold tabular-nums" style={{ color: displayScore >= 85 ? 'var(--color-success)' : 'var(--color-accent)' }}>
-                          {displayScore}%
+                        <div className="flex gap-1.5 mt-1">
+                          {match.tags.map(tag => (
+                            <span key={tag} className="text-[8px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                              {tag}
+                            </span>
+                          ))}
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
@@ -659,12 +652,12 @@ function ProductDemo() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
                       <p className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>Sarah from Notion</p>
-                      <span className="px-1.5 py-0.5 rounded-full text-[8px] font-medium" style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-accent)' }}>Scheduled</span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[8px] font-medium" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)' }}>Confirmed</span>
                     </div>
-                    <p className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>re: Product Designer</p>
+                    <p className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>re: Product Designer - 94% match</p>
                     <div className="flex items-center gap-2.5 mt-1.5 text-[9px]" style={{ color: 'var(--color-textMuted)' }}>
                       <span>Thu 2:00 PM</span>
-                      <span>94% match</span>
+                      <span>15 min</span>
                     </div>
                   </div>
                 </div>
@@ -710,54 +703,139 @@ function ProductDemo() {
           {/* ===== Scene 6: Ember Finale ===== */}
           {s6 > 0 && (
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center p-6 sm:p-8"
+              className="absolute inset-0 flex items-center justify-center p-6 sm:p-8"
               style={{ opacity: s6 }}
             >
-              {/* Sparkle particles */}
-              {[...Array(8)].map((_, i) => (
+              {/* Radial ambient glow */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `radial-gradient(ellipse at 50% 50%, rgba(245, 158, 11, ${0.1 * emberScale}) 0%, rgba(139, 92, 246, ${0.05 * emberScale}) 35%, transparent 65%)`,
+                }}
+              />
+
+              {/* Concentric rings - centered on ember */}
+              {[0, 1, 2].map(i => (
                 <div
-                  key={i}
-                  className="absolute w-1.5 h-1.5 rounded-full animate-sparkle"
+                  key={`ring-${i}`}
+                  className="absolute rounded-full pointer-events-none"
                   style={{
-                    backgroundColor: i % 2 === 0 ? '#F59E0B' : '#8B5CF6',
-                    top: `${15 + Math.sin(i * 0.9) * 35}%`,
-                    left: `${15 + Math.cos(i * 1.1) * 35}%`,
-                    animationDelay: `${i * 0.25}s`,
-                    animationDuration: '2s',
+                    width: `${(120 + i * 80) * ringProgress}px`,
+                    height: `${(120 + i * 80) * ringProgress}px`,
+                    border: `1px solid rgba(245, 158, 11, ${(0.18 - i * 0.05) * ringProgress})`,
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
                   }}
                 />
               ))}
-              <div style={{ transform: `scale(${emberScale})`, opacity: emberScale }}>
-                <EmberFirefly size="xl" mood="excited" animated />
+
+              {/* Orbiting particles */}
+              {[...Array(12)].map((_, i) => {
+                const baseAngle = (t / 2500) * Math.PI + i * (Math.PI * 2 / 12);
+                const radius = 60 + (i % 3) * 25;
+                const size = i % 4 === 0 ? 3.5 : i % 3 === 0 ? 3 : 2;
+                const colors = ['#F59E0B', '#8B5CF6', '#10B981', '#F59E0B'];
+                return (
+                  <div
+                    key={`p-${i}`}
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                      width: `${size}px`,
+                      height: `${size}px`,
+                      backgroundColor: colors[i % 4],
+                      top: `calc(50% + ${Math.sin(baseAngle) * radius * emberScale}px)`,
+                      left: `calc(50% + ${Math.cos(baseAngle) * radius * emberScale}px)`,
+                      opacity: emberScale * (0.3 + 0.35 * Math.sin(baseAngle * 2)),
+                    }}
+                  />
+                );
+              })}
+
+              {/* Content stack */}
+              <div className="relative z-10 flex flex-col items-center text-center">
+                {/* Ember character */}
+                <div style={{ transform: `scale(${emberScale})`, opacity: emberScale }}>
+                  <EmberFirefly size="xl" mood="excited" animated />
+                </div>
+
+                {/* Subtitle label */}
+                <p
+                  className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase mt-6 mb-2"
+                  style={{ color: 'var(--color-accent)', opacity: emberTextOpacity }}
+                >
+                  Your AI Career Guide
+                </p>
+
+                {/* Main title */}
+                <h3
+                  className="text-3xl sm:text-4xl font-bold animate-gradient-text leading-tight"
+                  style={{ opacity: amberTextOpacity, transform: `translateY(${(1 - amberTextOpacity) * 15}px)` }}
+                >
+                  Meet Ember
+                </h3>
+
+                {/* Animated horizontal line */}
+                <div
+                  className="h-px mt-4 mb-4 rounded-full"
+                  style={{
+                    width: `${lineReveal * 140}px`,
+                    background: 'linear-gradient(90deg, transparent, var(--color-accent), transparent)',
+                    opacity: lineReveal,
+                  }}
+                />
+
+                {/* Tagline */}
+                <p
+                  className="text-sm sm:text-base max-w-[280px] leading-relaxed"
+                  style={{
+                    color: 'var(--color-textSecondary)',
+                    opacity: amberTextOpacity,
+                    transform: `translateY(${(1 - amberTextOpacity) * 10}px)`,
+                  }}
+                >
+                  Discover where you truly belong
+                </p>
+
+                {/* CTA */}
+                {amberTextOpacity > 0.8 && (
+                  <Link to="/auth/signup" className="mt-6" style={{ opacity: smooth((amberTextOpacity - 0.8) / 0.2) }}>
+                    <button
+                      className="group px-7 py-3 rounded-xl text-sm font-semibold flex items-center gap-2.5 animate-glow-pulse transition-all"
+                      style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-accentText)' }}
+                    >
+                      Begin Your Story
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  </Link>
+                )}
               </div>
-              <p
-                className="text-lg sm:text-xl font-bold mb-1 mt-4 text-center"
-                style={{ color: 'var(--color-text)', opacity: emberTextOpacity }}
-              >
-                Meet Ember, Your AI Career Guide
-              </p>
-              <p
-                className="text-2xl sm:text-3xl font-bold animate-gradient-text"
-                style={{ opacity: amberTextOpacity, transform: `translateY(${(1 - amberTextOpacity) * 20}px)` }}
-              >
-                Amber
-              </p>
-              {amberTextOpacity > 0.8 && (
-                <Link to="/auth/signup" className="mt-4" style={{ opacity: smooth((amberTextOpacity - 0.8) / 0.2) }}>
-                  <button
-                    className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all animate-glow-pulse"
-                    style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-accentText)' }}
-                  >
-                    Start Your Journey
-                  </button>
-                </Link>
-              )}
             </div>
           )}
         </div>
 
-        {/* Cinematic progress bar */}
-        <div className="h-1 relative" style={{ backgroundColor: 'var(--color-border)' }}>
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-1 px-4 py-2 border-t" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background)' }}>
+          {steps.map((step, i) => (
+            <div key={step} className="flex items-center">
+              <div
+                className="px-2 py-0.5 rounded-full text-[9px] font-medium transition-colors"
+                style={{
+                  backgroundColor: activeStep === i ? 'var(--color-accent)' : 'transparent',
+                  color: activeStep === i ? 'var(--color-accentText)' : 'var(--color-textMuted)',
+                }}
+              >
+                {step}
+              </div>
+              {i < steps.length - 1 && (
+                <div className="w-2 h-px mx-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-0.5 relative" style={{ backgroundColor: 'var(--color-border)' }}>
           <div
             className="h-full"
             style={{
