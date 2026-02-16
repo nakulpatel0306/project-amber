@@ -26,101 +26,57 @@ export function RoleSelectionPage() {
         throw new Error('Not authenticated');
       }
 
-      // Wait for profile to exist (database trigger may not have completed yet)
-      let profile = null;
-      let attempts = 0;
-      const maxAttempts = 10;
+      // Use upsert to handle both new and existing profiles
+      // This avoids race conditions with the database trigger and duplicate key errors
+      console.log('RoleSelectionPage: Upserting profile for user:', user.id);
 
-      while (!profile && attempts < maxAttempts) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .single();
-
-        if (data) {
-          profile = data;
-        } else {
-          // Wait 500ms before trying again
-          await new Promise(resolve => setTimeout(resolve, 500));
-          attempts++;
-        }
-      }
-
-      // If profile still doesn't exist after waiting, create it manually
-      if (!profile) {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
             id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
             avatar_url: user.user_metadata?.avatar_url || null,
             role: role,
-            onboarding_completed: false  // Set to false so setup modal shows
-          });
+            onboarding_completed: false
+          },
+          { onConflict: 'id' }
+        );
 
-        if (insertError) {
-          console.error('Profile insert error:', insertError);
-          throw new Error('Unable to create profile. Please try again.');
-        }
-      } else {
-        // Profile exists, update it - keep onboarding_completed as false for new users
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ role, onboarding_completed: false })
-          .eq('id', user.id);
-
-        if (updateError) {
-          console.error('Profile update error:', updateError);
-          throw updateError;
-        }
+      if (upsertError) {
+        console.error('Profile upsert error:', upsertError);
+        throw new Error('Unable to save profile. Please try again.');
       }
 
-      // Ensure the role-specific record exists
+      console.log('RoleSelectionPage: Profile upserted successfully with role:', role);
+
+      // Ensure the role-specific record exists (use upsert to avoid conflicts)
       if (role === 'candidate') {
-        const { data: existing } = await supabase
+        const { error: candidateError } = await supabase
           .from('candidates')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
+          .upsert({ user_id: user.id }, { onConflict: 'user_id' });
 
-        if (!existing) {
-          const { error: candidateError } = await supabase
-            .from('candidates')
-            .insert({ user_id: user.id });
-
-          if (candidateError) {
-            console.error('Candidate insert error:', candidateError);
-          }
+        if (candidateError) {
+          console.error('Candidate upsert error:', candidateError);
         }
       } else if (role === 'employer') {
-        const { data: existing } = await supabase
+        const { error: employerError } = await supabase
           .from('employers')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
+          .upsert({ user_id: user.id, company_name: 'My Company' }, { onConflict: 'user_id' });
 
-        if (!existing) {
-          const { error: employerError } = await supabase
-            .from('employers')
-            .insert({ user_id: user.id, company_name: 'My Company' });
-
-          if (employerError) {
-            console.error('Employer insert error:', employerError);
-          }
+        if (employerError) {
+          console.error('Employer upsert error:', employerError);
         }
       }
 
-      // Also create user_settings if they don't exist
-      const { data: existingSettings } = await supabase
+      // Ensure user_settings exists (use upsert to avoid conflicts)
+      const { error: settingsError } = await supabase
         .from('user_settings')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+        .upsert({ user_id: user.id }, { onConflict: 'user_id' });
 
-      if (!existingSettings) {
-        await supabase.from('user_settings').insert({ user_id: user.id });
+      if (settingsError) {
+        console.error('User settings upsert error:', settingsError);
       }
 
       await refreshProfile();

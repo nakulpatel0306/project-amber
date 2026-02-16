@@ -44,8 +44,9 @@ export function ProtectedRoute({
   }
 
   // Check if user needs onboarding (no role selected)
-  // Skip this check for the onboarding page itself
-  if (!skipOnboardingCheck && needsOnboarding) {
+  // Skip this check for the onboarding page itself or if we're already there
+  const isOnOnboardingPage = location.pathname === '/app/onboarding';
+  if (!skipOnboardingCheck && needsOnboarding && !isOnOnboardingPage) {
     return <Navigate to="/app/onboarding" replace />;
   }
 

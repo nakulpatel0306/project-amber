@@ -57,23 +57,32 @@ export function AuthCallback() {
 
         // Wait for the database trigger to create the profile
         let profile = null;
+        let queryError = null;
         let attempts = 0;
         const maxAttempts = 10;
 
+        console.log('AuthCallback: Fetching profile for user:', session.user.id);
+
         while (!profile && attempts < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 500));
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
             .single();
 
+          if (error) {
+            console.log('AuthCallback: Profile query attempt', attempts + 1, 'error:', error.message, error.code);
+            queryError = error;
+          }
+
           if (data) {
             profile = data;
+            queryError = null;
           }
           attempts++;
         }
-        console.log('AuthCallback: profile =', profile);
+        console.log('AuthCallback: profile =', profile, 'queryError =', queryError?.message);
 
         // If we have a stored role from signup flow
         if (storedRole && (storedRole === 'candidate' || storedRole === 'employer')) {

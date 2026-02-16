@@ -61,6 +61,9 @@ CREATE POLICY "Users can insert own profile"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
+-- NOTE: Cross-visibility policies for matching are handled via backend API with service role
+-- to avoid RLS infinite recursion issues
+
 -- ============================================
 -- CANDIDATES POLICIES
 -- ============================================
@@ -69,16 +72,8 @@ CREATE POLICY "Candidates can view own data"
   ON public.candidates FOR SELECT
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Employers can view candidates with completed assessments" ON public.candidates;
-CREATE POLICY "Employers can view candidates with completed assessments"
-  ON public.candidates FOR SELECT
-  USING (
-    assessment_status = 'completed'
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'employer'
-    )
-  );
+-- NOTE: Cross-visibility for matching (employers viewing candidates) is handled via backend API
+-- with service role to avoid RLS infinite recursion issues
 
 DROP POLICY IF EXISTS "Candidates can update own data" ON public.candidates;
 CREATE POLICY "Candidates can update own data"
@@ -98,15 +93,8 @@ CREATE POLICY "Employers can view own data"
   ON public.employers FOR SELECT
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Candidates can view employer public info" ON public.employers;
-CREATE POLICY "Candidates can view employer public info"
-  ON public.employers FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'candidate'
-    )
-  );
+-- NOTE: Cross-visibility for matching (candidates viewing employers) is handled via backend API
+-- with service role to avoid RLS infinite recursion issues
 
 DROP POLICY IF EXISTS "Employers can update own data" ON public.employers;
 CREATE POLICY "Employers can update own data"
