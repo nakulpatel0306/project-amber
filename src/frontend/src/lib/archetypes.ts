@@ -1,6 +1,13 @@
 /**
  * Personality Archetypes for Project Amber
- * TypeScript port of ember_agent.py archetype logic
+ *
+ * Client-side port of the archetype classification logic from ember_agent.py.
+ * Used as a fallback when the backend is unavailable, and for displaying
+ * archetype details in the UI without an API call.
+ *
+ * The determineArchetype() function uses a rule-based decision tree
+ * (checking OCEAN score thresholds) rather than the backend's distance-based
+ * scoring approach. Both produce equivalent results for most profiles.
  */
 
 export interface Archetype {
@@ -87,6 +94,11 @@ interface OCEANInput {
   neuroticism: number;
 }
 
+/**
+ * Classify a candidate into a personality archetype based on OCEAN scores.
+ * Uses a priority-ordered decision tree: the first matching rule wins.
+ * Falls back to "The Explorer" if no strong pattern is detected.
+ */
 export function determineArchetype(ocean: OCEANInput): Archetype & { confidence: number } {
   const o = ocean.openness;
   const c = ocean.conscientiousness;
@@ -94,6 +106,7 @@ export function determineArchetype(ocean: OCEANInput): Archetype & { confidence:
   const a = ocean.agreeableness;
   const n = ocean.neuroticism;
 
+  // Default archetype if no strong OCEAN pattern is detected
   let key = 'the_explorer';
   let confidence = 70;
 

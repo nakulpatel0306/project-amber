@@ -1,6 +1,18 @@
 """
-Amber - Backend API
-Culture-first job matching platform
+Amber Backend API
+
+FastAPI server for the Amber culture-first job matching platform.
+This is the main entry point that defines all API routes, middleware, and
+request/response models. Routes are organized into sections:
+  - Health checks
+  - Authentication
+  - Assessment (personality quiz flow)
+  - Candidate management (employer-facing)
+  - Matching and compatibility scoring
+  - Ember agent (AI personality analysis)
+  - Coffee chats (informal interviews)
+  - Feedback
+  - Stripe payments
 """
 
 import os
@@ -68,7 +80,7 @@ from auth import (
 )
 from auth.supabase_auth import is_auth_configured
 
-# Initialize database
+# Initialize the local SQLite database (used for the assessment flow in development)
 init_database()
 
 app = FastAPI(
@@ -77,27 +89,29 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for frontend
+# CORS: Allow requests from the frontend dev servers and Tauri desktop app.
+# Update these origins for production deployments.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:1420",
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://tauri.localhost",
-        "tauri://localhost"
+        "http://localhost:1420",    # Tauri dev server
+        "http://localhost:5173",    # Vite dev server (default)
+        "http://localhost:3000",    # Alternative dev server
+        "http://tauri.localhost",   # Tauri production
+        "tauri://localhost"         # Tauri protocol
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Add authentication middleware (optional - only active when SUPABASE_JWT_SECRET is set)
-# Protected routes require valid JWT token in Authorization header
+# JWT authentication middleware (only active when SUPABASE_JWT_SECRET is set).
+# In development mode (no secret configured), all routes are accessible without auth.
+# Public endpoints like assessment and auth are always excluded from auth checks.
 app.add_middleware(
     AuthMiddleware,
     exclude_paths=["/", "/health", "/docs", "/redoc", "/openapi.json"],
-    exclude_prefixes=["/api/assessment/", "/api/auth/"],  # Assessment and auth endpoints are public
+    exclude_prefixes=["/api/assessment/", "/api/auth/"],
 )
 
 
@@ -443,9 +457,10 @@ async def submit_answer(request: SubmitAnswerRequest):
     total = get_total_questions()
     next_q_id = request.question_id + 1
 
-    # Check if assessment is complete
+    # When all questions have been answered, trigger score calculation.
+    # This aggregates all responses into dimension scores, computes the
+    # four composite scores, and identifies the candidate's top traits.
     if next_q_id > total:
-        # Calculate and save scores
         responses = get_assessment_responses(request.candidate_id)
         scores = calculate_scores(responses)
 
@@ -639,6 +654,9 @@ async def get_feedback():
 
 
 # ============ Matching Endpoints ============
+# These helper functions convert raw Supabase dictionaries into typed dataclass
+# instances used by the compatibility scoring engine. Defaults to 50 (neutral)
+# when a score is missing, since 50 represents the midpoint on the 0-100 scale.
 
 def _build_candidate_ocean(candidate: dict) -> CandidateOCEAN:
     """Build CandidateOCEAN from Supabase candidate data."""
@@ -1202,6 +1220,8 @@ async def submit_coffee_chat_feedback(
 
 
 # ============ Stripe Endpoints ============
+# Payment integration for subscription plans. When STRIPE_SECRET_KEY is not set,
+# these endpoints return a demo-mode response instead of failing.
 
 class CreateCheckoutRequest(BaseModel):
     priceId: str

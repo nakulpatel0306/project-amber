@@ -1,3 +1,18 @@
+/**
+ * App.tsx — Root component and route configuration for the Amber frontend.
+ *
+ * Routes are organized into three groups:
+ *   1. Public routes: Landing page, blog, about, legal pages (no auth required)
+ *   2. Auth routes: Login, signup, OAuth callback, role selection (guest only)
+ *   3. Protected routes (/app/*): Dashboards, assessments, matching, settings
+ *      - Candidate routes: /app/dashboard, /app/assessment, /app/insights, etc.
+ *      - Employer routes: /app/employer/*, culture quiz, roles, candidates
+ *      - Shared routes: /app/settings, /app/pricing
+ *
+ * The provider hierarchy is: ErrorBoundary > AuthProvider > ThemeProvider > ToastProvider
+ * This ensures auth state is available to theming (user theme preference) and
+ * toast notifications are available to all components.
+ */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';

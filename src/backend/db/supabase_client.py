@@ -1,7 +1,14 @@
 """
-Supabase client for backend operations.
+Supabase Client for Backend Operations
 
-This module provides database access functions for the compatibility scoring system.
+Provides database access functions for all Supabase tables: candidates, employers,
+roles, applications, and coffee chats. Uses the service role key to bypass RLS
+policies, which is necessary for cross-role data access in the matching engine
+(e.g., employers viewing candidate personality scores).
+
+The client is lazily initialized on first use. If Supabase credentials are not
+configured, functions return None or empty lists instead of raising errors,
+allowing the app to run in a degraded mode during local development.
 """
 
 import os
@@ -12,9 +19,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+# Service role key bypasses RLS — only use server-side, never expose to the client
 SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 
-# Lazy initialization
+# Lazy initialization: the client is created on first call to get_supabase()
 _client = None
 
 

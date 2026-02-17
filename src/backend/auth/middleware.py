@@ -1,7 +1,17 @@
 """
-Amber - FastAPI Authentication Middleware
+Amber FastAPI Authentication Middleware
 
-Provides middleware and dependencies for protecting API routes.
+Provides two layers of authentication:
+
+1. AuthMiddleware (Starlette middleware): Intercepts all incoming requests,
+   validates JWT tokens, and attaches the authenticated user to request.state.
+   Routes can be excluded by path or prefix (e.g., public assessment endpoints).
+
+2. FastAPI dependencies (get_current_user_dependency, require_auth, require_role):
+   Used in individual route handlers to enforce auth and role-based access.
+   These work independently of the middleware and can be used as a second check.
+
+When SUPABASE_JWT_SECRET is not configured, auth is disabled entirely (dev mode).
 """
 
 from typing import Optional, List, Callable
@@ -183,7 +193,8 @@ def require_role(allowed_roles: List[str]) -> Callable:
     return role_checker
 
 
-# Convenience dependencies for common role checks
+# Pre-built role dependencies for common access patterns.
+# Usage: user: AuthUser = Depends(require_candidate)
 require_candidate = require_role(["candidate"])
 require_employer = require_role(["employer"])
 require_any_role = require_role(["candidate", "employer"])

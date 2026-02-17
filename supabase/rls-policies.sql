@@ -1,5 +1,15 @@
 -- Amber Platform Row Level Security Policies
--- Run this AFTER schema.sql in Supabase SQL Editor
+-- Run this AFTER schema.sql in the Supabase SQL Editor.
+--
+-- RLS ensures that users can only access data they are authorized to see.
+-- Key principles:
+--   - Users can always read and update their own data (profile, settings, etc.)
+--   - Employers can view candidate profiles only for candidates with completed assessments
+--   - Candidates can view employer profiles (needed for matching)
+--   - Anyone can view active job roles
+--   - Cross-role visibility for the matching engine is handled by the backend
+--     using the service role key, which bypasses RLS entirely
+--   - An avatars storage bucket is created with folder-based access control
 
 -- ============================================
 -- ENABLE RLS ON ALL TABLES

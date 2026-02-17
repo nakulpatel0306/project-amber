@@ -88,7 +88,7 @@ PERSONALITY_ARCHETYPES = {
 
 
 def classify_level(score: float) -> str:
-    """Classify an OCEAN score into a level."""
+    """Classify an OCEAN score (0-100) into a discrete level for archetype matching."""
     if score >= 80:
         return 'high'
     elif score >= 60:
@@ -101,7 +101,15 @@ def classify_level(score: float) -> str:
 
 
 def determine_archetype(ocean: CandidateOCEAN) -> dict:
-    """Determine the best-fitting personality archetype for a candidate."""
+    """
+    Determine the best-fitting personality archetype for a candidate.
+
+    Each archetype has an OCEAN signature (e.g., Innovator = high openness).
+    We score each archetype by comparing the candidate's classified trait levels
+    against the expected levels, awarding full points for exact matches and
+    partial credit based on distance. The archetype with the highest normalized
+    score wins. Returns the archetype dict with a confidence value (0-100).
+    """
     scores = {
         'openness': ocean.openness,
         'conscientiousness': ocean.conscientiousness,
@@ -260,10 +268,20 @@ def generate_insights(
     role: Optional[RoleRequirements] = None,
     compatibility: Optional[CompatibilityResult] = None,
 ) -> list[EmberInsight]:
-    """Generate Ember's personality-based insights."""
+    """
+    Generate Ember's personality-based insights for a candidate-employer match.
+
+    Insights are categorized as:
+      - 'strength': Traits that strongly align with the employer's culture
+      - 'caution': Large gaps (>25 points) between candidate and employer preferences
+      - 'highlight': Archetype-culture value overlap or exceptional overall scores
+      - 'tip': Actionable advice for specific archetype-culture combinations
+
+    Returns up to 8 insights, prioritizing the most impactful observations.
+    """
     insights = []
 
-    # Trait-based strengths
+    # Trait-based strengths: check if high candidate scores align with employer values
     if candidate.openness >= 75 and 'innovation' in [v.lower() for v in culture_values]:
         insights.append(EmberInsight(
             category='strength',
@@ -304,7 +322,8 @@ def generate_insights(
             score_impact='positive',
         ))
 
-    # Gap-based cautions
+    # Gap-based cautions: flag significant personality gaps (>25 points) that
+    # could require adaptation from the candidate
     o_diff = abs(candidate.openness - employer.openness_preference)
     if o_diff > 25:
         direction = 'more creative' if candidate.openness > employer.openness_preference else 'more structured'
