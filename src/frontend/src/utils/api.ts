@@ -1,3 +1,13 @@
+/**
+ * API Client for the Amber Backend
+ *
+ * All backend communication goes through this module. It defines TypeScript
+ * interfaces for request/response shapes and provides typed fetch wrappers
+ * for each API endpoint. The base URL points to the FastAPI dev server.
+ *
+ * For production, update API_BASE_URL to the deployed backend URL or use
+ * an environment variable (e.g., import.meta.env.VITE_API_URL).
+ */
 const API_BASE_URL = "http://localhost:8000";
 
 // ============ Assessment Types ============

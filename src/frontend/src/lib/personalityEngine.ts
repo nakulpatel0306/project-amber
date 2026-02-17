@@ -103,8 +103,18 @@ export interface MatchScore {
 // ============================================
 
 /**
- * Maps individual traits to their OCEAN correlations
- * Values range from -1 (negative correlation) to 1 (positive correlation)
+ * Trait-to-OCEAN correlation matrix.
+ *
+ * Maps granular personality traits (e.g., "collaboration", "innovation") to
+ * their correlations with each Big Five dimension. Values range from -1 to 1:
+ *   - Positive: higher trait score pushes the OCEAN dimension up
+ *   - Negative: higher trait score pushes the OCEAN dimension down
+ *
+ * Example: "collaboration" has extraversion: 0.6, agreeableness: 0.7, meaning
+ * a high collaboration score contributes positively to both E and A dimensions.
+ *
+ * This matrix is the bridge between the assessment questions (which measure
+ * granular traits) and the OCEAN model (which the matching engine uses).
  */
 const traitToOceanMatrix: Record<string, Partial<Record<keyof OCEANScores, number>>> = {
   // Collaboration & Social traits
@@ -629,13 +639,17 @@ export class PersonalityEngine {
 /**
  * Combines OCEAN scores from multiple assessments using weighted averaging.
  *
- * Weight distribution:
- *  - Core Personality: 60% (base OCEAN scores)
- *  - Visual Perception: 10% (perceptual modifiers)
- *  - Work Values: 15% (motivational supplement)
- *  - Situational Judgment: 15% (behavioral supplement)
+ * The core personality assessment provides the base OCEAN scores (55% weight).
+ * Supplementary assessments refine the profile with additional data:
+ *   - Visual Perception: 10% (perceptual modifiers, applied additively)
+ *   - Work Values: 12% (motivational supplement)
+ *   - Situational Judgment: 12% (behavioral supplement)
+ *   - Cognitive Patterns: 11% (cognitive style supplement)
  *
- * If a supplementary assessment isn't taken, its weight redistributes proportionally.
+ * If a supplementary assessment has not been taken, its weight is redistributed
+ * proportionally among the available assessments. This means a candidate who has
+ * only completed the core assessment gets the same results as if they had a 100%
+ * weight on core — no penalty for skipping supplementary assessments.
  */
 export function calculateCombinedOCEAN(
   coreScores: OCEANScores,

@@ -1,8 +1,19 @@
 """
-Amber - Scoring Algorithm
+Amber Scoring Algorithm
 
-Simple scoring system based on answer patterns.
-Each answer option is assigned a score profile that contributes to different dimensions.
+Converts raw assessment responses into personality dimension scores. Each answer
+option contributes points to one or more dimensions (e.g., "directness",
+"collaboration", "autonomy"). These raw dimensions are then grouped into three
+categories — work style, communication, and values — and normalized to 0-100
+scores. The overall culture fit score is a weighted average of all three.
+
+Score flow:
+  1. User selects an answer option for each question.
+  2. The option's index maps to a score profile (dimension -> points).
+  3. Points are accumulated across all questions.
+  4. Category scores are computed by summing relevant dimensions and normalizing.
+  5. Culture fit = 35% work style + 35% communication + 30% values.
+  6. Top 3 highest-scoring dimensions become the candidate's "top traits".
 """
 
 from typing import Dict, List, Tuple
@@ -137,7 +148,9 @@ def calculate_scores(responses: List[Dict]) -> Dict:
             for dimension, points in SCORE_PROFILES[question_id][option_index].items():
                 dimension_scores[dimension] = dimension_scores.get(dimension, 0) + points
 
-    # Calculate category scores (normalized to 0-100)
+    # Group dimensions into three scoring categories.
+    # Each category's score is the sum of its dimension points divided by the
+    # maximum possible points (10 per dimension per question), scaled to 0-100.
     work_style_dimensions = ["structure", "planning", "autonomy", "flexibility", "adaptability", "focus"]
     communication_dimensions = ["directness", "communication", "collaboration"]
     values_dimensions = ["learning", "impact", "growth", "alignment", "balance"]

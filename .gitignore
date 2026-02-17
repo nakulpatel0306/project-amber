@@ -45,6 +45,12 @@ src/frontend/dist/
 ._*
 Thumbs.db
 ehthumbs.db
+# macOS file duplicates (created by Finder conflicts)
+* 2.*
+* 2/
+
+# Local SQLite databases (development only, not committed)
+*.db
 
 # Logs
 *.log

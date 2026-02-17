@@ -1,8 +1,16 @@
 """
 Compatibility Scoring Engine for Project Amber
 
-This module calculates compatibility scores between candidates and employers/roles
-using the Big Five (OCEAN) personality model.
+Calculates compatibility scores between candidates and employers/roles using the
+Big Five (OCEAN) personality model. The engine produces three score types:
+
+  1. Trait Match Score — How closely a candidate's OCEAN scores align with the
+     employer's stated preferences, using weighted Euclidean distance.
+  2. Culture Match Score — A composite of work style compatibility (30%), culture
+     values alignment via OCEAN proxy (50%), and role-specific fit (20%).
+  3. Overall Match Score — 50% trait match + 50% culture match.
+
+All scores are normalized to a 0-100 scale where 100 is a perfect match.
 """
 
 import math
@@ -56,9 +64,12 @@ class CompatibilityResult:
     breakdown: dict               # Detailed breakdown for display
 
 
-# Culture values to OCEAN correlation mapping
-# Positive values mean higher scores in that trait correlate with the value
-# Negative values mean lower scores correlate with the value
+# Culture values to OCEAN correlation mapping.
+# Each culture value maps to one or more OCEAN traits with a correlation weight.
+# Positive weights mean a higher candidate score in that trait aligns with the value.
+# Negative weights mean a lower candidate score aligns better (e.g., low neuroticism
+# correlates with the "balance" value, meaning emotionally stable candidates fit better
+# in cultures that prioritize work-life balance).
 CULTURE_OCEAN_MAP = {
     'innovation': {'openness': 0.8, 'conscientiousness': -0.2},
     'transparency': {'extraversion': 0.3, 'agreeableness': 0.4},
@@ -208,7 +219,11 @@ def calculate_culture_match(
     weights.append(0.30)
     breakdown['work_style_fit'] = round(work_style_score)
 
-    # 2. Culture values alignment via OCEAN correlation
+    # 2. Culture values alignment via OCEAN correlation.
+    # For each of the employer's culture values, look up which OCEAN traits correlate
+    # with that value and compute how well the candidate's scores align. For positive
+    # correlations, higher candidate scores are better; for negative correlations,
+    # lower candidate scores (inverted to 100 - score) are better.
     if employer.culture_values:
         value_scores = []
         for value in employer.culture_values:
@@ -220,10 +235,8 @@ def calculate_culture_match(
                 for ocean_dim, weight in correlations.items():
                     candidate_val = getattr(candidate, ocean_dim, 50)
                     if weight > 0:
-                        # Higher candidate score = better alignment
                         alignment += candidate_val * abs(weight)
                     else:
-                        # Lower candidate score = better alignment
                         alignment += (100 - candidate_val) * abs(weight)
                     count += abs(weight)
                 if count > 0:

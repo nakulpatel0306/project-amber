@@ -1,5 +1,22 @@
 -- Amber Platform Database Schema
--- Run this in Supabase SQL Editor
+-- Run this in the Supabase SQL Editor BEFORE rls-policies.sql.
+--
+-- This file creates all tables, indexes, triggers, and functions for the
+-- Amber platform. Tables are organized as follows:
+--   - profiles: Extends auth.users with role and onboarding state
+--   - candidates: Personality scores, preferences, and assessment tracking
+--   - employers: Company info, culture values, and OCEAN preferences
+--   - roles: Job listings with personality requirement ranges
+--   - applications: Candidate-role matches with computed scores
+--   - coffee_chats: Informal interview scheduling and feedback
+--   - questions: Assessment question definitions with trait scoring
+--   - assessments: Assessment session tracking
+--   - assessment_responses: Individual question answers
+--   - feedback: User-submitted bug reports and feature requests
+--   - user_settings: Notification, privacy, and theme preferences
+--
+-- A trigger on auth.users automatically creates profile, settings, and
+-- role-specific records when a new user signs up.
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

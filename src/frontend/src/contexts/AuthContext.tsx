@@ -1,3 +1,18 @@
+/**
+ * AuthContext — Global authentication state for the Amber app.
+ *
+ * Wraps the entire app and provides:
+ *  - User session state (Supabase Auth user + profile from the profiles table)
+ *  - Auth methods: email login/signup, OAuth (Google/GitHub), password reset
+ *  - Derived state: isAuthenticated, isCandidate, isEmployer, needsOnboarding
+ *  - Profile management: updateProfile, refreshProfile
+ *
+ * The context listens to Supabase auth state changes and automatically syncs
+ * the user profile whenever a session is established or refreshed. It also
+ * handles the onboarding redirect: users who have authenticated but haven't
+ * completed setup are flagged via needsOnboarding, which ProtectedRoute uses
+ * to redirect them to the onboarding wizard.
+ */
 import {
   createContext,
   useContext,
@@ -10,8 +25,8 @@ import { supabase, getCurrentUserWithProfile, isSupabaseConfigured } from '../li
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import type { Profile, UserRole } from '../types/auth.types';
 
-// Dev mode - set to true to skip profile setup requirements
-// Toggle this in localStorage: localStorage.setItem('dev_mode', 'true')
+// Dev mode bypasses profile setup requirements for faster local development.
+// Toggle in browser console: localStorage.setItem('dev_mode', 'true')
 export const isDevMode = () => {
   if (typeof window === 'undefined') return false;
   return localStorage.getItem('dev_mode') === 'true';
