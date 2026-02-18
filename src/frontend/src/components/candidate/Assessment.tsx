@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
   ArrowLeft,
@@ -220,11 +221,11 @@ export function Assessment() {
     }
   }, [state.currentIndex, currentQuestion?.id, state.responses]);
 
-  // Redirect to insights page after completion
+  // Redirect to results page after completion
   // NOTE: This hook must be before any conditional returns to maintain consistent hook order
   useEffect(() => {
     if (isComplete && profile) {
-      navigate('/app/insights');
+      navigate('/app/personality/results');
     }
   }, [isComplete, profile, navigate]);
 
@@ -479,12 +480,13 @@ export function Assessment() {
     >
       {/* Progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50">
-        <div
-          className="h-1 transition-all duration-500"
+        <motion.div
+          className="h-1"
           style={{
-            width: `${progress}%`,
             background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
           }}
+          animate={{ width: `${progress}%` }}
+          transition={{ type: 'spring', stiffness: 100, damping: 20 }}
         />
       </div>
 
@@ -515,52 +517,62 @@ export function Assessment() {
           </div>
         </div>
 
-        {/* Question */}
-        <div className="mb-8">
-          <h1
-            className="text-2xl md:text-3xl font-bold mb-4"
-            style={{ color: 'var(--color-text)' }}
+        {/* Question with slide animation */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={state.currentIndex}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            {currentQuestion.question}
-          </h1>
-          {currentQuestion.description && (
-            <p
-              className="text-lg"
-              style={{ color: 'var(--color-textSecondary)' }}
-            >
-              {currentQuestion.description}
-            </p>
-          )}
-        </div>
+            <div className="mb-8">
+              <h1
+                className="text-2xl md:text-3xl font-bold mb-4"
+                style={{ color: 'var(--color-text)' }}
+              >
+                {currentQuestion.question}
+              </h1>
+              {currentQuestion.description && (
+                <p
+                  className="text-lg"
+                  style={{ color: 'var(--color-textSecondary)' }}
+                >
+                  {currentQuestion.description}
+                </p>
+              )}
+            </div>
 
-        {/* Answer Section */}
-        <div className="mb-12">
-          {currentQuestion.type === 'scenario' || currentQuestion.type === 'metaphor' || currentQuestion.type === 'tradeoff' ? (
-            <ScenarioOptions
-              options={currentQuestion.options || []}
-              selected={selectedAnswer}
-              onSelect={setSelectedAnswer}
-              isMetaphor={currentQuestion.type === 'metaphor'}
-            />
-          ) : currentQuestion.type === 'slider' ? (
-            <SliderQuestion
-              config={currentQuestion.sliderConfig!}
-              value={sliderValue}
-              onChange={setSliderValue}
-            />
-          ) : currentQuestion.type === 'ranking' ? (
-            <RankingQuestion
-              options={currentQuestion.options || []}
-              order={rankingOrder}
-              onReorder={setRankingOrder}
-            />
-          ) : currentQuestion.type === 'reflection' ? (
-            <ReflectionQuestion
-              value={reflectionText}
-              onChange={setReflectionText}
-            />
-          ) : null}
-        </div>
+            {/* Answer Section */}
+            <div className="mb-12">
+              {currentQuestion.type === 'scenario' || currentQuestion.type === 'metaphor' || currentQuestion.type === 'tradeoff' ? (
+                <ScenarioOptions
+                  options={currentQuestion.options || []}
+                  selected={selectedAnswer}
+                  onSelect={setSelectedAnswer}
+                  isMetaphor={currentQuestion.type === 'metaphor'}
+                />
+              ) : currentQuestion.type === 'slider' ? (
+                <SliderQuestion
+                  config={currentQuestion.sliderConfig!}
+                  value={sliderValue}
+                  onChange={setSliderValue}
+                />
+              ) : currentQuestion.type === 'ranking' ? (
+                <RankingQuestion
+                  options={currentQuestion.options || []}
+                  order={rankingOrder}
+                  onReorder={setRankingOrder}
+                />
+              ) : currentQuestion.type === 'reflection' ? (
+                <ReflectionQuestion
+                  value={reflectionText}
+                  onChange={setReflectionText}
+                />
+              ) : null}
+            </div>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Navigation */}
         <div className="flex items-center justify-between">

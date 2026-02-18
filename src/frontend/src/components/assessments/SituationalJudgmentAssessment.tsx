@@ -5,11 +5,9 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Sparkles,
-  Brain,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { EmberFirefly } from '../ember/EmberFirefly';
+import { AssessmentResultsTemplate } from './AssessmentResultsTemplate';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -103,65 +101,23 @@ export function SituationalJudgmentAssessment() {
 
   // Results view
   if (isComplete && oceanScores) {
-    const dimensionInfo: Record<string, { label: string; color: string }> = {
-      openness: { label: 'Openness', color: '#8B5CF6' },
-      conscientiousness: { label: 'Conscientiousness', color: '#10B981' },
-      extraversion: { label: 'Extraversion', color: '#F59E0B' },
-      agreeableness: { label: 'Agreeableness', color: '#EC4899' },
-      neuroticism: { label: 'Emotional Stability', color: '#06B6D4' },
-    };
-
-    const sortedDimensions = Object.entries(oceanScores)
-      .map(([key, value]) => ({
-        key,
-        value: key === 'neuroticism' ? 100 - value : value,
-        ...dimensionInfo[key],
-      }))
-      .sort((a, b) => b.value - a.value);
+    const dimensions = [
+      { key: 'openness', label: 'Openness', value: oceanScores.openness, color: '#8B5CF6', progressColor: 'purple' },
+      { key: 'conscientiousness', label: 'Conscientiousness', value: oceanScores.conscientiousness, color: '#10B981', progressColor: 'green' },
+      { key: 'extraversion', label: 'Extraversion', value: oceanScores.extraversion, color: '#F59E0B', progressColor: 'amber' },
+      { key: 'agreeableness', label: 'Agreeableness', value: oceanScores.agreeableness, color: '#EC4899', progressColor: 'pink' },
+      { key: 'neuroticism', label: 'Emotional Stability', value: 100 - oceanScores.neuroticism, color: '#06B6D4', progressColor: 'cyan' },
+    ];
 
     return (
-      <div className="min-h-screen py-8 px-4" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="max-w-2xl mx-auto">
-          <div className="p-8 rounded-2xl border text-center" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-            <EmberFirefly size="lg" mood="happy" animated />
-            <h1 className="text-2xl font-bold mt-4 mb-2" style={{ color: 'var(--color-text)' }}>Situational Judgment Results</h1>
-            <p className="text-sm mb-8" style={{ color: 'var(--color-textSecondary)' }}>
-              Here's what your workplace responses reveal about your behavioral tendencies
-            </p>
-
-            <div className="space-y-4 mb-8 text-left">
-              {sortedDimensions.map(({ key, value, label, color }) => (
-                <div key={key}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label}</span>
-                    <span className="text-xs font-medium" style={{ color }}>{value}/100</span>
-                  </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                    <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${value}%`, backgroundColor: color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="p-4 rounded-xl mb-6 text-left" style={{ backgroundColor: 'var(--color-background)' }}>
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
-                <div>
-                  <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>Profile Enhanced</p>
-                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    Your situational judgment responses have been factored into your personality profile with a 15% weight, improving the accuracy of your behavioral predictions.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => navigate('/app/insights')} leftIcon={<Brain className="w-4 h-4" />}>View Full Profile</Button>
-              <Button onClick={() => navigate('/app/matches')} rightIcon={<ArrowRight className="w-4 h-4" />}>Find Matches</Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AssessmentResultsTemplate
+        title="Social Energy Results"
+        subtitle="Here's what your workplace responses reveal about your behavioral tendencies"
+        dimensions={dimensions}
+        enhancedMessage="Your situational judgment responses have been factored into your personality profile with a 15% weight, improving the accuracy of your behavioral predictions."
+        icon={<Shield className="w-10 h-10 text-white" />}
+        accentColor="#F59E0B"
+      />
     );
   }
 

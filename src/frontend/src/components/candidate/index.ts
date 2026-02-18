@@ -1,5 +1,6 @@
 export { CandidateSetupModal } from './CandidateSetupModal';
 export { Assessment } from './Assessment';
+export { AssessmentResults } from './AssessmentResults';
 export { AssessmentFlow } from './AssessmentFlow';
 export { AssessmentResults } from './AssessmentResults';
 export { MatchingAgent } from './MatchingAgent';

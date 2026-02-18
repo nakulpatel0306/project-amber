@@ -12,7 +12,6 @@ import {
   Coffee,
   Users,
   Sparkles,
-  Trophy,
   Flame,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,18 +41,18 @@ export function Navbar() {
 
   const candidateNavItems: { path: string; label: string; icon: React.ElementType }[] = [
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/matches', label: 'Matches', icon: Users },
-    { path: '/app/ember', label: 'Ember', icon: Flame },
     { path: '/app/insights', label: 'Insights', icon: Sparkles },
-    { path: '/app/chats', label: 'Chats', icon: Coffee },
+    { path: '/app/ember', label: 'Ember', icon: Flame },
+    { path: '/app/matches', label: 'Matches', icon: Users },
+    { path: '/app/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 
   const employerNavItems: { path: string; label: string; icon: React.ElementType }[] = [
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/app/employer/top-candidates', label: 'Top 10', icon: Trophy },
+    { path: '/app/employer/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/employer/ember', label: 'Ember', icon: Flame },
-    { path: '/app/employer/candidates', label: 'Candidates', icon: Users },
-    { path: '/app/employer/chats', label: 'Chats', icon: Coffee },
+    { path: '/app/employer/candidates', label: 'Matches', icon: Users },
+    { path: '/app/employer/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 
   const navItems = isEmployer ? employerNavItems : candidateNavItems;
