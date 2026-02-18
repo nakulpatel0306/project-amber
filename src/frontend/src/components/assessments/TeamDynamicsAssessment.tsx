@@ -79,6 +79,42 @@ export function TeamDynamicsAssessment() {
 
     if (user) {
       try {
+        // 1. Create assessment record
+        const { data: assessmentData, error: assessmentError } = await supabase
+          .from('assessments')
+          .insert({
+            user_id: user.id,
+            assessment_type: 'team_dynamics',
+            responses: answers,
+            started_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (assessmentError) {
+          console.error('Error creating assessment record:', assessmentError);
+        }
+
+        // 2. Save individual answers to assessment_responses
+        if (assessmentData) {
+          const responseRecords = Object.entries(answers).map(([questionCode, answer]) => ({
+            assessment_id: assessmentData.id,
+            user_id: user.id,
+            question_code: questionCode,
+            answer: typeof answer === 'number' ? { value: answer } : { selected: answer },
+          }));
+
+          const { error: responsesError } = await supabase
+            .from('assessment_responses')
+            .insert(responseRecords);
+
+          if (responsesError) {
+            console.error('Error saving assessment responses:', responsesError);
+          }
+        }
+
+        // 3. Update employer's JSONB column for easy access
         await supabase
           .from('employers')
           .update({
