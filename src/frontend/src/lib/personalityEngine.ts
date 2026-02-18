@@ -202,6 +202,17 @@ const traitToOceanMatrix: Record<string, Partial<Record<keyof OCEANScores, numbe
   multitasking: { extraversion: 0.3, openness: 0.2, conscientiousness: -0.3 },
   complexity_tolerance: { openness: 0.7, conscientiousness: 0.3 },
   openness: { openness: 0.9 },
+
+  // Employer supplementary traits
+  debate: { openness: 0.5, extraversion: 0.4, agreeableness: -0.3 },
+  transparency: { openness: 0.4, agreeableness: 0.3, extraversion: 0.2 },
+  hierarchy: { conscientiousness: 0.5, openness: -0.4, agreeableness: 0.2 },
+  trust: { agreeableness: 0.6, openness: 0.3, neuroticism: -0.3 },
+  consistency: { conscientiousness: 0.7, neuroticism: -0.3 },
+  reflection: { openness: 0.4, conscientiousness: 0.3, extraversion: -0.3 },
+  energy: { extraversion: 0.6, conscientiousness: 0.2, neuroticism: 0.2 },
+  investment: { agreeableness: 0.5, openness: 0.4, conscientiousness: 0.3 },
+  quality: { conscientiousness: 0.7, openness: 0.2 },
 };
 
 // ============================================
@@ -722,6 +733,87 @@ export function calculateCombinedOCEAN(
     if (hasCP) {
       score += supplementaryScores!.cognitivePatterns![dim] * cpWeight;
     }
+
+    combined[dim] = Math.round(Math.max(0, Math.min(100, score)));
+  }
+
+  return combined;
+}
+
+// ============================================
+// COMBINED EMPLOYER MULTI-ASSESSMENT SCORING
+// ============================================
+
+/**
+ * Combines employer OCEAN preference scores from the core culture assessment
+ * and supplementary employer assessments using weighted averaging.
+ *
+ * Core culture quiz retains 55% weight. Supplementary assessments:
+ *   - Team Dynamics: 12%
+ *   - Leadership Style: 12%
+ *   - Growth Philosophy: 11%
+ *   - Work Environment: 10%
+ *
+ * If a supplementary assessment has not been taken, its weight is redistributed
+ * proportionally among the available assessments.
+ */
+export function calculateCombinedEmployerOCEAN(
+  coreScores: OCEANScores,
+  supplementaryScores?: {
+    teamDynamics?: OCEANScores;
+    leadershipStyle?: OCEANScores;
+    growthPhilosophy?: OCEANScores;
+    workEnvironment?: OCEANScores;
+  }
+): OCEANScores {
+  const weights = {
+    core: 0.55,
+    teamDynamics: 0.12,
+    leadershipStyle: 0.12,
+    growthPhilosophy: 0.11,
+    workEnvironment: 0.10,
+  };
+
+  const hasTD = !!supplementaryScores?.teamDynamics;
+  const hasLS = !!supplementaryScores?.leadershipStyle;
+  const hasGP = !!supplementaryScores?.growthPhilosophy;
+  const hasWE = !!supplementaryScores?.workEnvironment;
+
+  let redistributeWeight = 0;
+  if (!hasTD) redistributeWeight += weights.teamDynamics;
+  if (!hasLS) redistributeWeight += weights.leadershipStyle;
+  if (!hasGP) redistributeWeight += weights.growthPhilosophy;
+  if (!hasWE) redistributeWeight += weights.workEnvironment;
+
+  const availableSupplementary = (hasTD ? weights.teamDynamics : 0)
+    + (hasLS ? weights.leadershipStyle : 0)
+    + (hasGP ? weights.growthPhilosophy : 0)
+    + (hasWE ? weights.workEnvironment : 0);
+
+  const totalAvailable = weights.core + availableSupplementary;
+  const coreWeight = weights.core + (availableSupplementary === 0 ? redistributeWeight : redistributeWeight * (weights.core / totalAvailable));
+  const tdWeight = hasTD ? weights.teamDynamics + (redistributeWeight * (weights.teamDynamics / totalAvailable)) : 0;
+  const lsWeight = hasLS ? weights.leadershipStyle + (redistributeWeight * (weights.leadershipStyle / totalAvailable)) : 0;
+  const gpWeight = hasGP ? weights.growthPhilosophy + (redistributeWeight * (weights.growthPhilosophy / totalAvailable)) : 0;
+  const weWeight = hasWE ? weights.workEnvironment + (redistributeWeight * (weights.workEnvironment / totalAvailable)) : 0;
+
+  const dimensions: (keyof OCEANScores)[] = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'];
+
+  const combined: OCEANScores = {
+    openness: 0,
+    conscientiousness: 0,
+    extraversion: 0,
+    agreeableness: 0,
+    neuroticism: 0,
+  };
+
+  for (const dim of dimensions) {
+    let score = coreScores[dim] * coreWeight;
+
+    if (hasTD) score += supplementaryScores!.teamDynamics![dim] * tdWeight;
+    if (hasLS) score += supplementaryScores!.leadershipStyle![dim] * lsWeight;
+    if (hasGP) score += supplementaryScores!.growthPhilosophy![dim] * gpWeight;
+    if (hasWE) score += supplementaryScores!.workEnvironment![dim] * weWeight;
 
     combined[dim] = Math.round(Math.max(0, Math.min(100, score)));
   }

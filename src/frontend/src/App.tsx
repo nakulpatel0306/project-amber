@@ -40,13 +40,13 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { WelcomeScreen } from './components/landing';
 import { BlogPage, SciencePage, HelpCenterPage, ChangelogPage, StatusPage, AboutPage, CareersPage, PressPage, PrivacyPolicyPage, TermsOfServicePage, CookiePolicyPage, AccessibilityPage } from './components/pages';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
-import { AssessmentFlow, Assessment, MatchingAgent, PersonalityInsights, Leaderboard } from './components/candidate';
-import { CultureQuiz, CultureAssessment, CultureInsights, CreateRole, ManageRoles, BrowseCandidates, TopCandidates, EmployerLeaderboard } from './components/employer';
+import { AssessmentFlow, Assessment, AssessmentResults, MatchingAgent, PersonalityInsights, Leaderboard } from './components/candidate';
+import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResults, CreateRole, ManageRoles, BrowseCandidates, TopCandidates, EmployerLeaderboard } from './components/employer';
 import { EmberAgent } from './components/ember';
 import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
 import { PricingPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
-import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment } from './components/assessments';
+import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment, TeamDynamicsAssessment, LeadershipStyleAssessment, GrowthPhilosophyAssessment, WorkEnvironmentAssessment } from './components/assessments';
 
 import './styles/globals.css';
 
@@ -154,6 +154,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="personality/results"
+                    element={
+                      <ProtectedRoute allowedRoles={['candidate']}>
+                        <AssessmentResults />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="insights"
                     element={
                       <ProtectedRoute allowedRoles={['candidate']}>
@@ -246,6 +254,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="employer/culture-results"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <EmployerAssessmentResults />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="employer/insights"
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
@@ -285,6 +301,38 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
                         <EmployerLeaderboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="employer/assessments/team-dynamics"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <TeamDynamicsAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="employer/assessments/leadership-style"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <LeadershipStyleAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="employer/assessments/growth-philosophy"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <GrowthPhilosophyAssessment />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="employer/assessments/work-environment"
+                    element={
+                      <ProtectedRoute allowedRoles={['employer']}>
+                        <WorkEnvironmentAssessment />
                       </ProtectedRoute>
                     }
                   />
