@@ -6,11 +6,6 @@ import {
   Building2,
   CheckCircle2,
   GripVertical,
-  Users,
-  Target,
-  Zap,
-  Heart,
-  TrendingUp,
   Clock,
   RotateCcw,
 } from 'lucide-react';
@@ -25,8 +20,8 @@ import {
 import {
   cultureEngine,
   type AssessmentResponse,
-  type EmployerCultureProfile,
 } from '../../lib/personalityEngine';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../utils/cn';
 import { EmployerSetupModal } from './EmployerSetupModal';
 
@@ -39,6 +34,7 @@ interface AssessmentState {
 export function CultureAssessment() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
+  const navigate = useNavigate();
 
   const [state, setState] = useState<AssessmentState>({
     currentIndex: 0,
@@ -51,8 +47,6 @@ export function CultureAssessment() {
   const [rankingOrder, setRankingOrder] = useState<string[]>([]);
   const [reflectionText, setReflectionText] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
-  const [cultureProfile, setCultureProfile] = useState<EmployerCultureProfile | null>(null);
 
   // Profile completion check
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
@@ -205,7 +199,6 @@ export function CultureAssessment() {
     try {
       // Generate culture profile from engine
       const generatedProfile = cultureEngine.generateCultureProfile(user.id);
-      setCultureProfile(generatedProfile);
 
       // Save to database
       const { error: assessmentError } = await supabase
@@ -236,8 +229,8 @@ export function CultureAssessment() {
 
       if (employerError) throw employerError;
 
-      setIsComplete(true);
       success('Culture profile complete!', 'You can now start matching with candidates.');
+      navigate('/app/employer/culture-results');
     } catch (err) {
       console.error('Assessment error:', err);
       showError('Failed to save', 'Please try again.');
@@ -439,11 +432,6 @@ export function CultureAssessment() {
     );
   }
 
-  // Show completion screen
-  if (isComplete && cultureProfile) {
-    return <CultureAssessmentComplete profile={cultureProfile} />;
-  }
-
   return (
     <div
       className="min-h-screen"
@@ -451,10 +439,11 @@ export function CultureAssessment() {
     >
       {/* Progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50">
-        <div
-          className="h-1 transition-all duration-500"
+        <motion.div
+          className="h-1"
+          animate={{ width: `${progress}%` }}
+          transition={{ type: 'spring', stiffness: 100, damping: 20 }}
           style={{
-            width: `${progress}%`,
             background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
           }}
         />
@@ -487,6 +476,14 @@ export function CultureAssessment() {
           </div>
         </div>
 
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={state.currentIndex}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.3 }}
+          >
         {/* Question */}
         <div className="mb-8">
           <h1
@@ -532,6 +529,8 @@ export function CultureAssessment() {
             />
           ) : null}
         </div>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Navigation */}
         <div className="flex items-center justify-between">
@@ -776,193 +775,6 @@ function ReflectionQuestion({ value, onChange }: { value: string; onChange: (v: 
       <p className="text-right text-sm mt-2" style={{ color: 'var(--color-textMuted)' }}>
         {value.length} characters
       </p>
-    </div>
-  );
-}
-
-// ============================================
-// COMPLETION SCREEN
-// ============================================
-
-function CultureAssessmentComplete({ profile }: { profile: EmployerCultureProfile }) {
-  const navigate = useNavigate();
-
-  const getCultureIcon = (type: string) => {
-    if (type.includes('Innovator')) return <Zap className="w-10 h-10 text-white" />;
-    if (type.includes('Achievement')) return <Target className="w-10 h-10 text-white" />;
-    if (type.includes('Collaborative')) return <Heart className="w-10 h-10 text-white" />;
-    return <Building2 className="w-10 h-10 text-white" />;
-  };
-
-  return (
-    <div className="min-h-screen py-12 px-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div
-            className="w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
-          >
-            {getCultureIcon(profile.cultureType)}
-          </div>
-          <h1 className="text-3xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>
-            Your Company Culture Profile
-          </h1>
-          <div
-            className="inline-block px-4 py-2 rounded-full mb-4"
-            style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
-          >
-            {profile.cultureType}
-          </div>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-textSecondary)' }}>
-            {profile.cultureDescription}
-          </p>
-        </div>
-
-        {/* Culture Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div
-            className="p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-              <Users className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              Team Dynamics
-            </h3>
-            <p className="text-2xl font-bold" style={{ color: 'var(--color-accent)' }}>
-              {profile.teamDynamics}
-            </p>
-          </div>
-          <div
-            className="p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-              <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              Decision Culture
-            </h3>
-            <p className="text-2xl font-bold" style={{ color: 'var(--color-accent)' }}>
-              {profile.decisionCulture}
-            </p>
-          </div>
-        </div>
-
-        {/* Culture Dimensions */}
-        <div
-          className="p-6 rounded-2xl border mb-8"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-        >
-          <h2 className="text-lg font-semibold mb-6" style={{ color: 'var(--color-text)' }}>
-            Culture Dimensions
-          </h2>
-          <div className="space-y-4">
-            {[
-              { label: 'Innovation Focus', value: profile.innovationLevel, low: 'Optimize', high: 'Disrupt' },
-              { label: 'Work Intensity', value: profile.workIntensity, low: 'Sustainable', high: 'Intense' },
-              { label: 'Hierarchy Level', value: profile.hierarchyLevel, low: 'Flat', high: 'Structured' },
-              { label: 'Transparency', value: profile.transparencyLevel, low: 'Need to Know', high: 'Radical' },
-            ].map(({ label, value, low, high }) => (
-              <div key={label} className="space-y-2">
-                <div className="flex justify-between">
-                  <p className="font-medium" style={{ color: 'var(--color-text)' }}>{label}</p>
-                  <p className="font-bold" style={{ color: 'var(--color-accent)' }}>{value}</p>
-                </div>
-                <div className="relative h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${value}%`,
-                      background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                  <span>{low}</span>
-                  <span>{high}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Ideal Candidate Profile */}
-        <div
-          className="p-6 rounded-2xl border mb-8"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-        >
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-            <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-            Ideal Candidate Profile
-          </h2>
-          <p className="mb-4" style={{ color: 'var(--color-textSecondary)' }}>
-            Based on your culture, candidates with these personality traits will thrive at your company:
-          </p>
-          <div className="space-y-3">
-            {[
-              { key: 'openness', label: 'Openness to Experience' },
-              { key: 'conscientiousness', label: 'Conscientiousness' },
-              { key: 'extraversion', label: 'Extraversion' },
-              { key: 'agreeableness', label: 'Agreeableness' },
-              { key: 'neuroticism', label: 'Emotional Stability' },
-            ].map(({ key, label }) => (
-              <div key={key} className="flex items-center gap-4">
-                <p className="w-40 text-sm" style={{ color: 'var(--color-text)' }}>{label}</p>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${key === 'neuroticism'
-                        ? 100 - profile.idealCandidateOCEAN[key as keyof typeof profile.idealCandidateOCEAN]
-                        : profile.idealCandidateOCEAN[key as keyof typeof profile.idealCandidateOCEAN]}%`,
-                      backgroundColor: 'var(--color-accent)',
-                    }}
-                  />
-                </div>
-                <p className="w-12 text-right font-medium" style={{ color: 'var(--color-accent)' }}>
-                  {key === 'neuroticism'
-                    ? 100 - profile.idealCandidateOCEAN[key as keyof typeof profile.idealCandidateOCEAN]
-                    : profile.idealCandidateOCEAN[key as keyof typeof profile.idealCandidateOCEAN]}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Values Priority */}
-        <div
-          className="p-6 rounded-2xl border mb-8"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-        >
-          <h3 className="font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
-            Your Top Values
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {profile.valuesPriority.map((value, index) => (
-              <span
-                key={value}
-                className="px-4 py-2 rounded-full text-sm font-medium"
-                style={{
-                  backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
-                  color: index === 0 ? 'white' : 'var(--color-text)',
-                }}
-              >
-                {index + 1}. {value.charAt(0).toUpperCase() + value.slice(1)}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="text-center">
-          <Button
-            size="lg"
-            onClick={() => navigate('/app/employer/insights')}
-            rightIcon={<ArrowRight className="w-5 h-5" />}
-          >
-            view detailed insights
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

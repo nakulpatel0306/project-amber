@@ -1,6 +1,7 @@
 export { CultureQuiz } from './CultureQuiz';
 export { CultureAssessment } from './CultureAssessment';
 export { CultureInsights } from './CultureInsights';
+export { EmployerAssessmentResults } from './EmployerAssessmentResults';
 export { CreateRole } from './CreateRole';
 export { ManageRoles } from './ManageRoles';
 export { BrowseCandidates } from './BrowseCandidates';

@@ -5,11 +5,9 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Sparkles,
-  Brain,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { EmberFirefly } from '../ember/EmberFirefly';
+import { AssessmentResultsTemplate } from './AssessmentResultsTemplate';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -687,105 +685,24 @@ export function VisualPerceptionAssessment() {
       }
     }
 
-    const traitLabels: Record<string, { label: string; color: string }> = {
-      openness: { label: 'Openness', color: '#8B5CF6' },
-      conscientiousness: { label: 'Conscientiousness', color: '#10B981' },
-      extraversion: { label: 'Extraversion', color: '#F59E0B' },
-      agreeableness: { label: 'Agreeableness', color: '#EC4899' },
-      neuroticism_inv: { label: 'Emotional Stability', color: '#06B6D4' },
-    };
-
-    const sortedTraits = Object.entries(traitScores)
-      .filter(([, v]) => v > 0)
-      .sort((a, b) => b[1] - a[1]);
+    const maxPossible = 50;
+    const dimensions = [
+      { key: 'openness', label: 'Openness', value: Math.min(100, (traitScores.openness / maxPossible) * 100), color: '#8B5CF6', progressColor: 'purple' },
+      { key: 'conscientiousness', label: 'Conscientiousness', value: Math.min(100, (traitScores.conscientiousness / maxPossible) * 100), color: '#10B981', progressColor: 'green' },
+      { key: 'extraversion', label: 'Extraversion', value: Math.min(100, (traitScores.extraversion / maxPossible) * 100), color: '#F59E0B', progressColor: 'amber' },
+      { key: 'agreeableness', label: 'Agreeableness', value: Math.min(100, (traitScores.agreeableness / maxPossible) * 100), color: '#EC4899', progressColor: 'pink' },
+      { key: 'neuroticism', label: 'Emotional Stability', value: Math.min(100, (traitScores.neuroticism_inv / maxPossible) * 100), color: '#06B6D4', progressColor: 'cyan' },
+    ];
 
     return (
-      <div
-        className="min-h-screen py-8 px-4"
-        style={{ backgroundColor: 'var(--color-background)' }}
-      >
-        <div className="max-w-2xl mx-auto">
-          <div
-            className="p-8 rounded-2xl border text-center"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <EmberFirefly size="lg" mood="happy" animated />
-            <h1
-              className="text-2xl font-bold mt-4 mb-2"
-              style={{ color: 'var(--color-text)' }}
-            >
-              Visual Perception Results
-            </h1>
-            <p className="text-sm mb-8" style={{ color: 'var(--color-textSecondary)' }}>
-              Here's what your visual perception style reveals about your personality
-            </p>
-
-            {/* Trait modifiers */}
-            <div className="space-y-4 mb-8 text-left">
-              {sortedTraits.map(([trait, value]) => {
-                const info = traitLabels[trait];
-                const maxPossible = 50;
-                const percentage = Math.min(100, (value / maxPossible) * 100);
-
-                return (
-                  <div key={trait}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                        {info.label}
-                      </span>
-                      <span className="text-xs" style={{ color: info.color }}>
-                        +{value} modifier
-                      </span>
-                    </div>
-                    <div
-                      className="h-2 rounded-full overflow-hidden"
-                      style={{ backgroundColor: 'var(--color-background)' }}
-                    >
-                      <div
-                        className="h-full rounded-full transition-all duration-1000"
-                        style={{ width: `${percentage}%`, backgroundColor: info.color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div
-              className="p-4 rounded-xl mb-6 text-left"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }} />
-                <div>
-                  <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>
-                    Profile Enhanced
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    These visual perception modifiers have been applied to your personality profile, making your matches more accurate. The more assessments you complete, the better your results.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 justify-center">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/app/insights')}
-                leftIcon={<Brain className="w-4 h-4" />}
-              >
-                View Full Profile
-              </Button>
-              <Button
-                onClick={() => navigate('/app/matches')}
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-              >
-                Find Matches
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AssessmentResultsTemplate
+        title="Visual Perception Results"
+        subtitle="Here's what your visual perception style reveals about your personality"
+        dimensions={dimensions}
+        enhancedMessage="These visual perception modifiers have been applied to your personality profile, making your matches more accurate. The more assessments you complete, the better your results."
+        icon={<Eye className="w-10 h-10 text-white" />}
+        accentColor="#8B5CF6"
+      />
     );
   }
 
