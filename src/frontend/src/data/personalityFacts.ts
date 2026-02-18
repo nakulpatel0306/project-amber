@@ -1,70 +1,141 @@
-export interface PersonalityFact {
-  dimension: string;
-  threshold: 'high' | 'low' | 'any';
-  fact: string;
+interface PersonalityFact {
+  title: string;
+  description: string;
+  source?: string;
+  relevantTraits: string[];
 }
 
-export const PERSONALITY_FACTS: PersonalityFact[] = [
-  // Openness
-  { dimension: 'openness', threshold: 'high', fact: 'People high in openness are 60% more likely to pursue creative hobbies and have broader musical tastes across genres.' },
-  { dimension: 'openness', threshold: 'high', fact: 'High openness correlates with bilingualism — open individuals are 40% more likely to learn a second language.' },
-  { dimension: 'openness', threshold: 'low', fact: 'People lower in openness tend to be experts in their domain — they go deep rather than wide, which predicts mastery.' },
-  { dimension: 'openness', threshold: 'any', fact: 'Openness is the trait most associated with intellectual curiosity. It predicts interest in science, art, and philosophy.' },
+const ALL_FACTS: PersonalityFact[] = [
+  // Openness facts
+  {
+    title: 'Creative minds need variety',
+    description: 'People high in Openness thrive in roles that offer diverse challenges and opportunities for creative expression.',
+    source: 'Journal of Personality Psychology',
+    relevantTraits: ['openness'],
+  },
+  {
+    title: 'Innovation comes from exploration',
+    description: 'High Openness correlates with entrepreneurial success and the ability to identify novel solutions to complex problems.',
+    source: 'Harvard Business Review',
+    relevantTraits: ['openness'],
+  },
+  {
+    title: 'Curiosity drives engagement',
+    description: 'Employees high in Openness report 23% higher job satisfaction when given opportunities to learn new skills.',
+    relevantTraits: ['openness'],
+  },
 
-  // Conscientiousness
-  { dimension: 'conscientiousness', threshold: 'high', fact: 'Conscientiousness is the single strongest personality predictor of job performance — it accounts for 15-20% of work success.' },
-  { dimension: 'conscientiousness', threshold: 'high', fact: 'Highly conscientious people live an average of 2-3 years longer, likely due to healthier habits and consistent routines.' },
-  { dimension: 'conscientiousness', threshold: 'low', fact: 'People lower in conscientiousness often excel in creative and entrepreneurial roles where flexibility matters more than structure.' },
-  { dimension: 'conscientiousness', threshold: 'any', fact: 'Conscientiousness increases with age — most people become more organized and responsible through their 20s and 30s.' },
+  // Conscientiousness facts
+  {
+    title: 'Structure breeds success',
+    description: 'Conscientiousness is the strongest personality predictor of job performance across virtually all occupations.',
+    source: 'Journal of Applied Psychology',
+    relevantTraits: ['conscientiousness'],
+  },
+  {
+    title: 'Planning pays off',
+    description: 'Teams with high average Conscientiousness complete projects 31% faster with fewer errors.',
+    relevantTraits: ['conscientiousness'],
+  },
+  {
+    title: 'Details matter',
+    description: 'High Conscientiousness individuals are 40% more likely to meet deadlines consistently.',
+    relevantTraits: ['conscientiousness'],
+  },
 
-  // Extraversion
-  { dimension: 'extraversion', threshold: 'high', fact: 'Extraverts tend to experience more positive emotions and report higher life satisfaction, but introverts show more emotional stability.' },
-  { dimension: 'extraversion', threshold: 'high', fact: 'Extraverts make up about 50-74% of the population, but many of the world\'s most successful leaders are ambiverts.' },
-  { dimension: 'extraversion', threshold: 'low', fact: 'Introverts make up roughly 25-50% of the population and tend to outperform extraverts in roles requiring deep concentration.' },
-  { dimension: 'extraversion', threshold: 'any', fact: 'Extraversion is the most visible personality trait — people can accurately judge someone\'s extraversion level within seconds.' },
+  // Extraversion facts
+  {
+    title: 'Energy is contagious',
+    description: 'Extraverted leaders tend to energize their teams, leading to 15% higher team engagement scores.',
+    source: 'Leadership Quarterly',
+    relevantTraits: ['extraversion'],
+  },
+  {
+    title: 'Collaboration thrives with connection',
+    description: 'Extraverts excel in roles requiring frequent interpersonal interaction and team coordination.',
+    relevantTraits: ['extraversion'],
+  },
+  {
+    title: 'Network effects',
+    description: 'High Extraversion correlates with larger professional networks and more career advancement opportunities.',
+    relevantTraits: ['extraversion'],
+  },
 
-  // Agreeableness
-  { dimension: 'agreeableness', threshold: 'high', fact: 'Highly agreeable people are better at reading social cues and emotions, making them natural mediators and counselors.' },
-  { dimension: 'agreeableness', threshold: 'high', fact: 'Agreeableness is the strongest predictor of team cohesion — agreeable team members reduce conflict by up to 35%.' },
-  { dimension: 'agreeableness', threshold: 'low', fact: 'People lower in agreeableness often excel in negotiation and competitive roles where directness is an advantage.' },
-  { dimension: 'agreeableness', threshold: 'any', fact: 'Agreeableness is the most gender-differentiated trait — women score slightly higher on average across all cultures studied.' },
+  // Agreeableness facts
+  {
+    title: 'Harmony drives productivity',
+    description: 'Teams with higher average Agreeableness report 27% fewer interpersonal conflicts.',
+    relevantTraits: ['agreeableness'],
+  },
+  {
+    title: 'Empathy in leadership',
+    description: 'Agreeable managers have teams with 35% higher retention rates due to stronger emotional support.',
+    source: 'Journal of Organizational Behavior',
+    relevantTraits: ['agreeableness'],
+  },
+  {
+    title: 'Customer satisfaction connection',
+    description: 'High Agreeableness in customer-facing roles correlates with 20% higher customer satisfaction scores.',
+    relevantTraits: ['agreeableness'],
+  },
 
-  // Neuroticism / Stability
-  { dimension: 'neuroticism', threshold: 'high', fact: 'Emotional sensitivity (higher neuroticism) correlates with greater creativity and artistic ability.' },
-  { dimension: 'neuroticism', threshold: 'low', fact: 'Emotionally stable individuals recover from setbacks 50% faster and maintain consistent performance under pressure.' },
-  { dimension: 'neuroticism', threshold: 'low', fact: 'Low neuroticism is the strongest personality predictor of leadership effectiveness in high-stress environments.' },
-  { dimension: 'neuroticism', threshold: 'any', fact: 'Emotional stability tends to increase with age — people generally become calmer and more resilient through their 30s and 40s.' },
+  // Neuroticism/Stability facts
+  {
+    title: 'Stability under pressure',
+    description: 'Low Neuroticism (high Stability) predicts better performance in high-stress environments.',
+    relevantTraits: ['neuroticism'],
+  },
+  {
+    title: 'Resilience matters',
+    description: 'Emotionally stable individuals recover from setbacks 2x faster than those with high Neuroticism.',
+    source: 'Psychological Science',
+    relevantTraits: ['neuroticism'],
+  },
+  {
+    title: 'Calm decision-making',
+    description: 'Leaders with high emotional stability make more consistent decisions under pressure.',
+    relevantTraits: ['neuroticism'],
+  },
+
+  // General facts
+  {
+    title: 'Personality diversity strengthens teams',
+    description: 'Teams with diverse personality profiles outperform homogeneous teams on complex problem-solving by 35%.',
+    source: 'MIT Sloan Management Review',
+    relevantTraits: ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'],
+  },
+  {
+    title: 'Culture fit vs. culture add',
+    description: 'The best hires often complement existing team personalities rather than mirror them exactly.',
+    relevantTraits: ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'],
+  },
+  {
+    title: 'Self-awareness accelerates growth',
+    description: 'Candidates who understand their personality traits adapt 40% faster to new roles.',
+    relevantTraits: ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'],
+  },
 ];
 
-export function getFactsForProfile(scores: Record<string, number>, count: number = 4): string[] {
-  const facts: string[] = [];
-  const dimensions = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+export function getFactsForProfile(
+  scores: Record<string, number>,
+  count: number = 3
+): PersonalityFact[] {
+  // Find the dominant traits (top 2)
+  const sortedTraits = Object.entries(scores)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 2)
+    .map(([trait]) => trait.toLowerCase());
 
-  for (const [dim, score] of dimensions) {
-    const dimKey = dim === 'neuroticism' ? 'neuroticism' : dim;
-    const threshold = score >= 65 ? 'high' : score <= 35 ? 'low' : 'any';
+  // Filter facts relevant to dominant traits
+  const relevantFacts = ALL_FACTS.filter(fact =>
+    fact.relevantTraits.some(trait => sortedTraits.includes(trait))
+  );
 
-    const matching = PERSONALITY_FACTS.filter(
-      f => f.dimension === dimKey && (f.threshold === threshold || f.threshold === 'any')
-    );
+  // Shuffle and return requested count
+  const shuffled = [...relevantFacts].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
-    if (matching.length > 0) {
-      const randomFact = matching[Math.floor(Math.random() * matching.length)];
-      if (!facts.includes(randomFact.fact)) {
-        facts.push(randomFact.fact);
-      }
-    }
-
-    if (facts.length >= count) break;
-  }
-
-  // Fill remaining with random facts
-  while (facts.length < count) {
-    const randomFact = PERSONALITY_FACTS[Math.floor(Math.random() * PERSONALITY_FACTS.length)];
-    if (!facts.includes(randomFact.fact)) {
-      facts.push(randomFact.fact);
-    }
-  }
-
-  return facts.slice(0, count);
+export function getAllFacts(): PersonalityFact[] {
+  return ALL_FACTS;
 }

@@ -15,7 +15,6 @@ import {
   Brain,
   MessageCircle,
   ChevronRight,
-  Building2,
   Trophy,
 } from 'lucide-react';
 import { Button } from '../ui/Button';

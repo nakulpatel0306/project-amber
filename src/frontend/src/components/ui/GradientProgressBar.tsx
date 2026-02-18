@@ -2,77 +2,67 @@ import { motion } from 'framer-motion';
 
 interface GradientProgressBarProps {
   value: number;
-  max?: number;
-  label?: string;
-  sublabel?: string;
   color?: string;
+  label?: string;
   showValue?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  animated?: boolean;
 }
 
-const GRADIENTS: Record<string, string> = {
-  amber: 'linear-gradient(90deg, #F59E0B, #D97706)',
-  purple: 'linear-gradient(90deg, #8B5CF6, #7C3AED)',
-  green: 'linear-gradient(90deg, #10B981, #059669)',
-  pink: 'linear-gradient(90deg, #EC4899, #DB2777)',
-  cyan: 'linear-gradient(90deg, #06B6D4, #0891B2)',
+const SIZE_CONFIG = {
+  sm: { height: 6, labelSize: 'text-xs', valueSize: 'text-xs' },
+  md: { height: 8, labelSize: 'text-sm', valueSize: 'text-sm' },
+  lg: { height: 10, labelSize: 'text-base', valueSize: 'text-base' },
 };
 
 export function GradientProgressBar({
   value,
-  max = 100,
+  color = 'var(--color-accent)',
   label,
-  sublabel,
-  color = 'amber',
   showValue = true,
   size = 'md',
+  animated = true,
 }: GradientProgressBarProps) {
-  const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-  const gradient = GRADIENTS[color] || `linear-gradient(90deg, ${color}, ${color})`;
-  const heights = { sm: 'h-1.5', md: 'h-2.5', lg: 'h-3.5' };
+  const config = SIZE_CONFIG[size];
+  const clampedValue = Math.min(100, Math.max(0, value));
 
   return (
-    <div>
+    <div className="w-full">
       {(label || showValue) && (
-        <div className="flex items-center justify-between mb-1.5">
-          <div>
-            {label && (
-              <span
-                className="text-sm font-medium"
-                style={{ color: 'var(--color-text)' }}
-              >
-                {label}
-              </span>
-            )}
-            {sublabel && (
-              <span
-                className="text-xs ml-2"
-                style={{ color: 'var(--color-textMuted)' }}
-              >
-                {sublabel}
-              </span>
-            )}
-          </div>
+        <div className="flex justify-between items-center mb-1.5">
+          {label && (
+            <span
+              className={`font-medium ${config.labelSize}`}
+              style={{ color: 'var(--color-text)' }}
+            >
+              {label}
+            </span>
+          )}
           {showValue && (
             <span
-              className="text-sm font-semibold"
-              style={{ color: 'var(--color-textSecondary)' }}
+              className={`font-semibold ${config.valueSize}`}
+              style={{ color }}
             >
-              {Math.round(value)}/{max}
+              {Math.round(clampedValue)}
             </span>
           )}
         </div>
       )}
       <div
-        className={`${heights[size]} rounded-full overflow-hidden`}
-        style={{ backgroundColor: 'var(--color-background)' }}
+        className="w-full rounded-full overflow-hidden"
+        style={{
+          height: config.height,
+          backgroundColor: 'var(--color-border)',
+        }}
       >
         <motion.div
-          className={`${heights[size]} rounded-full`}
-          style={{ background: gradient }}
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+          className="h-full rounded-full"
+          style={{
+            background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+          }}
+          initial={animated ? { width: 0 } : { width: `${clampedValue}%` }}
+          animate={{ width: `${clampedValue}%` }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
         />
       </div>
     </div>

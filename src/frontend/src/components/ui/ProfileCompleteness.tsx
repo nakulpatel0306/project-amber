@@ -4,11 +4,16 @@ import { CheckCircle2 } from 'lucide-react';
 interface ProfileCompletenessProps {
   completedCount: number;
   totalCount?: number;
-  variant?: 'ring' | 'bar';
+  variant?: 'ring' | 'bar' | 'minimal';
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
-  assessments?: { name: string; completed: boolean }[];
 }
+
+const SIZE_CONFIG = {
+  sm: { ringSize: 32, strokeWidth: 3, fontSize: 'text-xs', iconSize: 12 },
+  md: { ringSize: 48, strokeWidth: 4, fontSize: 'text-sm', iconSize: 16 },
+  lg: { ringSize: 64, strokeWidth: 5, fontSize: 'text-base', iconSize: 20 },
+};
 
 export function ProfileCompleteness({
   completedCount,
@@ -16,119 +21,135 @@ export function ProfileCompleteness({
   variant = 'ring',
   size = 'md',
   showLabel = true,
-  assessments,
 }: ProfileCompletenessProps) {
-  const percentage = Math.round((completedCount / totalCount) * 100);
+  const config = SIZE_CONFIG[size];
+  const percentage = Math.min(100, (completedCount / totalCount) * 100);
+  const radius = (config.ringSize - config.strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  if (variant === 'bar') {
+  const isComplete = completedCount >= totalCount;
+
+  if (variant === 'ring') {
     return (
-      <div>
-        {showLabel && (
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-              Profile Completeness
-            </span>
-            <span className="text-sm font-semibold" style={{ color: 'var(--color-accent)' }}>
-              {percentage}%
-            </span>
+      <div className="flex items-center gap-2">
+        <div className="relative" style={{ width: config.ringSize, height: config.ringSize }}>
+          {/* Background circle */}
+          <svg
+            width={config.ringSize}
+            height={config.ringSize}
+            className="transform -rotate-90"
+          >
+            <circle
+              cx={config.ringSize / 2}
+              cy={config.ringSize / 2}
+              r={radius}
+              fill="none"
+              stroke="var(--color-border)"
+              strokeWidth={config.strokeWidth}
+            />
+            <motion.circle
+              cx={config.ringSize / 2}
+              cy={config.ringSize / 2}
+              r={radius}
+              fill="none"
+              stroke={isComplete ? '#10B981' : 'var(--color-accent)'}
+              strokeWidth={config.strokeWidth}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+          </svg>
+          {/* Center content */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            {isComplete ? (
+              <CheckCircle2
+                style={{ width: config.iconSize, height: config.iconSize, color: '#10B981' }}
+              />
+            ) : (
+              <span
+                className={`font-bold ${config.fontSize}`}
+                style={{ color: 'var(--color-text)' }}
+              >
+                {completedCount}
+              </span>
+            )}
           </div>
-        )}
-        <div
-          className="h-2 rounded-full overflow-hidden"
-          style={{ backgroundColor: 'var(--color-background)' }}
-        >
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))' }}
-            initial={{ width: 0 }}
-            animate={{ width: `${percentage}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          />
         </div>
-        {assessments && (
-          <div className="flex items-center gap-3 mt-2">
-            {assessments.map((a, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <CheckCircle2
-                  className="w-3.5 h-3.5"
-                  style={{ color: a.completed ? '#10B981' : 'var(--color-border)' }}
-                />
-                <span
-                  className="text-xs"
-                  style={{ color: a.completed ? 'var(--color-textSecondary)' : 'var(--color-textMuted)' }}
-                >
-                  {a.name}
-                </span>
-              </div>
-            ))}
+        {showLabel && (
+          <div className="flex flex-col">
+            <span
+              className={`font-medium ${config.fontSize}`}
+              style={{ color: 'var(--color-text)' }}
+            >
+              {isComplete ? 'Complete' : `${completedCount}/${totalCount}`}
+            </span>
+            <span
+              className="text-xs"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              assessments
+            </span>
           </div>
         )}
       </div>
     );
   }
 
-  // Ring variant
-  const sizes = { sm: 48, md: 64, lg: 80 };
-  const ringSize = sizes[size];
-  const strokeWidth = size === 'sm' ? 4 : size === 'md' ? 5 : 6;
-  const ringRadius = (ringSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * ringRadius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="flex items-center gap-3">
-      <div className="relative" style={{ width: ringSize, height: ringSize }}>
-        <svg
-          viewBox={`0 0 ${ringSize} ${ringSize}`}
-          className="transform -rotate-90"
-          style={{ width: ringSize, height: ringSize }}
+  if (variant === 'bar') {
+    return (
+      <div className="w-full">
+        {showLabel && (
+          <div className="flex justify-between items-center mb-1.5">
+            <span
+              className={`font-medium ${config.fontSize}`}
+              style={{ color: 'var(--color-text)' }}
+            >
+              Profile Completeness
+            </span>
+            <span
+              className={`font-semibold ${config.fontSize}`}
+              style={{ color: isComplete ? '#10B981' : 'var(--color-accent)' }}
+            >
+              {completedCount}/{totalCount}
+            </span>
+          </div>
+        )}
+        <div
+          className="w-full h-2 rounded-full overflow-hidden"
+          style={{ backgroundColor: 'var(--color-border)' }}
         >
-          {/* Background ring */}
-          <circle
-            cx={ringSize / 2}
-            cy={ringSize / 2}
-            r={ringRadius}
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth={strokeWidth}
-          />
-          {/* Progress ring */}
-          <motion.circle
-            cx={ringSize / 2}
-            cy={ringSize / 2}
-            r={ringRadius}
-            fill="none"
-            stroke="var(--color-accent)"
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span
-            className="font-bold"
+          <motion.div
+            className="h-full rounded-full"
             style={{
-              color: 'var(--color-text)',
-              fontSize: size === 'sm' ? '11px' : size === 'md' ? '14px' : '16px',
+              backgroundColor: isComplete ? '#10B981' : 'var(--color-accent)',
             }}
-          >
-            {completedCount}/{totalCount}
-          </span>
+            initial={{ width: 0 }}
+            animate={{ width: `${percentage}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          />
         </div>
       </div>
-      {showLabel && (
-        <div>
-          <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-            {percentage}% Complete
-          </p>
-          <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            {totalCount - completedCount} assessment{totalCount - completedCount !== 1 ? 's' : ''} remaining
-          </p>
-        </div>
-      )}
+    );
+  }
+
+  // Minimal variant
+  return (
+    <div className="flex items-center gap-1.5">
+      <div
+        className="w-2 h-2 rounded-full"
+        style={{ backgroundColor: isComplete ? '#10B981' : 'var(--color-accent)' }}
+      />
+      <span
+        className={config.fontSize}
+        style={{ color: 'var(--color-textSecondary)' }}
+      >
+        {completedCount}/{totalCount}
+      </span>
     </div>
   );
 }
