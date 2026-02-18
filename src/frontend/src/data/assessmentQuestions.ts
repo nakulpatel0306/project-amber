@@ -1610,3 +1610,873 @@ export const traitDefinitions = {
 };
 
 export type TraitKey = keyof typeof traitDefinitions;
+
+// ============================================
+// EMPLOYER SUPPLEMENTARY: TEAM DYNAMICS
+// ============================================
+
+export const teamDynamicsQuestions: AssessmentQuestion[] = [
+  {
+    id: 'td1',
+    type: 'scenario',
+    category: 'Collaboration',
+    question: 'Two departments disagree on the direction of a cross-functional project. Progress has stalled.',
+    description: 'How does your organization typically handle this?',
+    options: [
+      {
+        id: 'td1a',
+        text: 'Facilitate a joint workshop',
+        description: 'Bring both sides together, map out shared goals, and co-create the path forward.',
+        traitScores: { collaboration: 90, empathy: 80, diplomacy: 85 }
+      },
+      {
+        id: 'td1b',
+        text: 'Escalate to leadership',
+        description: 'A senior leader makes the call. Clear authority breaks the tie quickly.',
+        traitScores: { hierarchy: 90, decisiveness: 85, process: 80 }
+      },
+      {
+        id: 'td1c',
+        text: 'Let them debate it out',
+        description: 'Healthy conflict produces better outcomes. The best argument should win.',
+        traitScores: { debate: 90, transparency: 80, independence: 75 }
+      },
+      {
+        id: 'td1d',
+        text: 'Run a structured experiment',
+        description: 'Test both approaches on a small scale. Let data settle the disagreement.',
+        traitScores: { analytical: 90, innovation: 80, pragmatism: 85 }
+      }
+    ],
+    traits: ['collaboration', 'hierarchy', 'debate', 'analytical']
+  },
+
+  {
+    id: 'td2',
+    type: 'slider',
+    category: 'Team Style',
+    question: 'Where does your team culture fall on the collaboration spectrum?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Deep independent work — people own their domains',
+      maxLabel: 'Constant collaboration — everything is a team effort',
+      trait: 'collaboration'
+    },
+    traits: ['collaboration']
+  },
+
+  {
+    id: 'td3',
+    type: 'scenario',
+    category: 'Conflict',
+    question: 'Two team members have a personal friction that\'s starting to affect the team\'s output.',
+    description: 'What happens next?',
+    options: [
+      {
+        id: 'td3a',
+        text: 'Manager mediates directly',
+        description: 'The manager sits them down, listens to both sides, and helps them find resolution.',
+        traitScores: { empathy: 90, leadership: 85, diplomacy: 80 }
+      },
+      {
+        id: 'td3b',
+        text: 'Peer accountability',
+        description: 'The team itself addresses it. Culture of candor means everyone speaks up.',
+        traitScores: { trust: 90, transparency: 85, collaboration: 80 }
+      },
+      {
+        id: 'td3c',
+        text: 'HR steps in',
+        description: 'A neutral third party handles interpersonal issues. Keep it professional.',
+        traitScores: { process: 85, consistency: 80, hierarchy: 75 }
+      },
+      {
+        id: 'td3d',
+        text: 'Reassign and separate',
+        description: 'Not every dynamic works. Move people to where they can be productive.',
+        traitScores: { pragmatism: 85, decisiveness: 80, efficiency: 75 }
+      }
+    ],
+    traits: ['empathy', 'trust', 'process', 'pragmatism']
+  },
+
+  {
+    id: 'td4',
+    type: 'metaphor',
+    category: 'Communication',
+    question: 'If your team\'s meeting culture was a meal, what would it be?',
+    options: [
+      {
+        id: 'td4a',
+        text: 'A potluck dinner',
+        description: 'Everyone brings something to the table. Diverse, collaborative, sometimes messy.',
+        traitScores: { collaboration: 95, creativity: 80, connection: 85 }
+      },
+      {
+        id: 'td4b',
+        text: 'A chef\'s tasting menu',
+        description: 'Curated, intentional, every course has a purpose. Structured but high-quality.',
+        traitScores: { structure: 90, quality: 85, efficiency: 80 }
+      },
+      {
+        id: 'td4c',
+        text: 'A quick espresso',
+        description: 'Short, focused, energizing. Get the essentials and get back to work.',
+        traitScores: { efficiency: 95, intensity: 80, pragmatism: 85 }
+      },
+      {
+        id: 'td4d',
+        text: 'A family dinner',
+        description: 'Relaxed, relationship-building, catching up on everything — work and personal.',
+        traitScores: { connection: 95, empathy: 85, trust: 80 }
+      }
+    ],
+    traits: ['collaboration', 'structure', 'efficiency', 'connection']
+  },
+
+  {
+    id: 'td5',
+    type: 'tradeoff',
+    category: 'Hiring',
+    question: 'When building a team, what do you prioritize?',
+    options: [
+      {
+        id: 'td5a',
+        text: 'Complementary differences',
+        description: 'Diverse thinking styles, backgrounds, and skills create stronger teams.',
+        traitScores: { innovation: 90, curiosity: 85, flexibility: 80 }
+      },
+      {
+        id: 'td5b',
+        text: 'Cultural alignment',
+        description: 'Shared values and communication styles create frictionless collaboration.',
+        traitScores: { consistency: 90, trust: 85, collaboration: 80 }
+      }
+    ],
+    traits: ['innovation', 'consistency', 'trust', 'flexibility']
+  },
+
+  {
+    id: 'td6',
+    type: 'scenario',
+    category: 'Transparency',
+    question: 'The company is facing a significant challenge — a major client is at risk. How much does the team know?',
+    options: [
+      {
+        id: 'td6a',
+        text: 'Full transparency',
+        description: 'Share the situation openly. The team deserves to know and can contribute solutions.',
+        traitScores: { transparency: 95, trust: 90, collaboration: 80 }
+      },
+      {
+        id: 'td6b',
+        text: 'Leadership handles it',
+        description: 'Shield the team from unnecessary stress. Share what\'s needed, when it\'s needed.',
+        traitScores: { hierarchy: 85, stability: 80, process: 75 }
+      },
+      {
+        id: 'td6c',
+        text: 'Share with key people',
+        description: 'Brief senior ICs and team leads. They can cascade information appropriately.',
+        traitScores: { strategic: 85, trust: 75, hierarchy: 70 }
+      },
+      {
+        id: 'td6d',
+        text: 'Share after a plan exists',
+        description: 'Don\'t raise alarm without a solution. Share the problem alongside the action plan.',
+        traitScores: { stability: 90, leadership: 80, pragmatism: 85 }
+      }
+    ],
+    traits: ['transparency', 'hierarchy', 'strategic', 'stability']
+  },
+
+  {
+    id: 'td7',
+    type: 'tradeoff',
+    category: 'Accountability',
+    question: 'How does accountability work best on your teams?',
+    options: [
+      {
+        id: 'td7a',
+        text: 'Peer-driven accountability',
+        description: 'Team members hold each other to commitments. Distributed ownership.',
+        traitScores: { trust: 90, collaboration: 85, transparency: 80 }
+      },
+      {
+        id: 'td7b',
+        text: 'Manager-led accountability',
+        description: 'Clear reporting lines. Managers set expectations and track progress.',
+        traitScores: { hierarchy: 90, structure: 85, consistency: 80 }
+      }
+    ],
+    traits: ['trust', 'hierarchy', 'collaboration', 'structure']
+  },
+
+  {
+    id: 'td8',
+    type: 'slider',
+    category: 'Bonding',
+    question: 'How much does your company invest in non-work social bonding?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Keep it professional — work relationships stay at work',
+      maxLabel: 'Invest heavily — retreats, socials, team traditions',
+      trait: 'connection'
+    },
+    traits: ['connection']
+  },
+];
+
+// ============================================
+// EMPLOYER SUPPLEMENTARY: LEADERSHIP & MANAGEMENT
+// ============================================
+
+export const leadershipStyleQuestions: AssessmentQuestion[] = [
+  {
+    id: 'ls1',
+    type: 'scenario',
+    category: 'Onboarding',
+    question: 'A new employee just started. What do their first 90 days look like?',
+    description: 'Choose the approach closest to your company\'s style.',
+    options: [
+      {
+        id: 'ls1a',
+        text: 'Structured program',
+        description: 'Detailed onboarding plan, assigned buddy, clear milestones at 30/60/90 days.',
+        traitScores: { structure: 95, investment: 85, process: 80 }
+      },
+      {
+        id: 'ls1b',
+        text: 'Sink or swim',
+        description: 'Throw them into real projects fast. The best people figure it out quickly.',
+        traitScores: { intensity: 90, independence: 85, risk: 80 }
+      },
+      {
+        id: 'ls1c',
+        text: 'Mentorship-focused',
+        description: 'Pair them with a senior mentor. Learning through relationships and shadowing.',
+        traitScores: { empathy: 90, investment: 85, collaboration: 80 }
+      },
+      {
+        id: 'ls1d',
+        text: 'Self-directed exploration',
+        description: 'Give them access to everything, let them find their niche. Autonomy from day one.',
+        traitScores: { trust: 90, flexibility: 85, innovation: 75 }
+      }
+    ],
+    traits: ['structure', 'intensity', 'empathy', 'trust']
+  },
+
+  {
+    id: 'ls2',
+    type: 'slider',
+    category: 'Authority',
+    question: 'How is decision-making authority distributed?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Top-down — leaders decide, teams execute',
+      maxLabel: 'Distributed — teams closest to the work decide',
+      trait: 'trust'
+    },
+    traits: ['trust', 'hierarchy']
+  },
+
+  {
+    id: 'ls3',
+    type: 'scenario',
+    category: 'Feedback',
+    question: 'An employee delivered work that\'s below your quality standard. How does the feedback conversation go?',
+    options: [
+      {
+        id: 'ls3a',
+        text: 'Direct and immediate',
+        description: '"This doesn\'t meet our bar. Here\'s specifically what needs to change."',
+        traitScores: { directness: 95, quality: 85, intensity: 80 }
+      },
+      {
+        id: 'ls3b',
+        text: 'Coaching approach',
+        description: '"Walk me through your thinking. What would you do differently next time?"',
+        traitScores: { empathy: 90, investment: 85, reflection: 80 }
+      },
+      {
+        id: 'ls3c',
+        text: 'Peer review handles it',
+        description: 'The team\'s code/work review process catches quality issues before they need escalation.',
+        traitScores: { collaboration: 85, process: 80, trust: 75 }
+      },
+      {
+        id: 'ls3d',
+        text: 'Data-driven review',
+        description: 'Reference specific metrics, benchmarks, and past performance. Let the data speak.',
+        traitScores: { analytical: 90, quality: 85, consistency: 80 }
+      }
+    ],
+    traits: ['directness', 'empathy', 'collaboration', 'analytical']
+  },
+
+  {
+    id: 'ls4',
+    type: 'metaphor',
+    category: 'Management',
+    question: 'If your ideal manager was a role, what would they be?',
+    options: [
+      {
+        id: 'ls4a',
+        text: 'A coach',
+        description: 'Develops individuals, gives feedback, helps people reach their potential.',
+        traitScores: { empathy: 95, investment: 90, growth: 85 }
+      },
+      {
+        id: 'ls4b',
+        text: 'A captain',
+        description: 'Leads from the front, makes tough calls, inspires through action.',
+        traitScores: { leadership: 95, intensity: 85, courage: 80 }
+      },
+      {
+        id: 'ls4c',
+        text: 'An architect',
+        description: 'Designs systems, removes obstacles, builds the environment for success.',
+        traitScores: { strategic: 95, structure: 85, analytical: 80 }
+      },
+      {
+        id: 'ls4d',
+        text: 'A gardener',
+        description: 'Creates conditions for growth, nurtures talent, patient with development.',
+        traitScores: { trust: 90, investment: 90, patience: 85 }
+      }
+    ],
+    traits: ['empathy', 'leadership', 'strategic', 'trust']
+  },
+
+  {
+    id: 'ls5',
+    type: 'tradeoff',
+    category: 'Innovation',
+    question: 'When it comes to how teams work, which do you encourage more?',
+    options: [
+      {
+        id: 'ls5a',
+        text: 'Encourage experimentation',
+        description: 'Try new approaches, challenge conventions, accept some failures along the way.',
+        traitScores: { innovation: 95, risk: 85, flexibility: 80 }
+      },
+      {
+        id: 'ls5b',
+        text: 'Protect what works',
+        description: 'Refine proven processes, maintain consistency, innovate carefully.',
+        traitScores: { consistency: 90, quality: 85, stability: 80 }
+      }
+    ],
+    traits: ['innovation', 'consistency', 'risk', 'stability']
+  },
+
+  {
+    id: 'ls6',
+    type: 'scenario',
+    category: 'Performance',
+    question: 'How does your performance review process work?',
+    options: [
+      {
+        id: 'ls6a',
+        text: 'Continuous feedback',
+        description: 'Weekly 1:1s, real-time recognition, no surprises. The "annual review" is just a summary.',
+        traitScores: { transparency: 90, investment: 85, trust: 80 }
+      },
+      {
+        id: 'ls6b',
+        text: 'Structured cycles',
+        description: 'Quarterly or bi-annual formal reviews with clear rubrics and calibration.',
+        traitScores: { structure: 90, consistency: 85, process: 80 }
+      },
+      {
+        id: 'ls6c',
+        text: '360-degree feedback',
+        description: 'Input from peers, reports, and managers. A full picture of impact.',
+        traitScores: { collaboration: 85, transparency: 80, empathy: 75 }
+      },
+      {
+        id: 'ls6d',
+        text: 'Results speak for themselves',
+        description: 'Focus on output metrics. If you deliver, the numbers show it.',
+        traitScores: { intensity: 85, independence: 80, pragmatism: 75 }
+      }
+    ],
+    traits: ['transparency', 'structure', 'collaboration', 'intensity']
+  },
+
+  {
+    id: 'ls7',
+    type: 'tradeoff',
+    category: 'Failure',
+    question: 'When a project fails, which response do you value more?',
+    options: [
+      {
+        id: 'ls7a',
+        text: 'Celebrate the learning',
+        description: 'Failure is tuition. Extract lessons, share them widely, move forward.',
+        traitScores: { innovation: 90, trust: 85, reflection: 80 }
+      },
+      {
+        id: 'ls7b',
+        text: 'Analyze root cause',
+        description: 'Conduct a thorough post-mortem. Understand exactly what went wrong to prevent repetition.',
+        traitScores: { analytical: 90, quality: 85, consistency: 80 }
+      }
+    ],
+    traits: ['innovation', 'analytical', 'trust', 'quality']
+  },
+
+  {
+    id: 'ls8',
+    type: 'slider',
+    category: 'Accessibility',
+    question: 'How accessible are senior leaders to individual contributors?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Formal layers — communication flows through hierarchy',
+      maxLabel: 'Open door — anyone can reach anyone',
+      trait: 'transparency'
+    },
+    traits: ['transparency', 'hierarchy']
+  },
+];
+
+// ============================================
+// EMPLOYER SUPPLEMENTARY: GROWTH & DEVELOPMENT
+// ============================================
+
+export const growthPhilosophyQuestions: AssessmentQuestion[] = [
+  {
+    id: 'gd1',
+    type: 'scenario',
+    category: 'Learning',
+    question: 'An employee wants to attend a 3-day conference during a busy sprint.',
+    description: 'What\'s the company\'s default response?',
+    options: [
+      {
+        id: 'gd1a',
+        text: 'Approve it enthusiastically',
+        description: 'Learning comes first. The sprint can adjust. They\'ll come back energized.',
+        traitScores: { investment: 95, trust: 85, flexibility: 80 }
+      },
+      {
+        id: 'gd1b',
+        text: 'Approve with conditions',
+        description: 'Go, but ensure your deliverables are covered. Planning ahead is the trade-off.',
+        traitScores: { quality: 85, structure: 80, investment: 75 }
+      },
+      {
+        id: 'gd1c',
+        text: 'Suggest a different time',
+        description: 'The sprint matters. Find a conference that doesn\'t conflict with commitments.',
+        traitScores: { consistency: 85, process: 80, stability: 75 }
+      },
+      {
+        id: 'gd1d',
+        text: 'Virtual alternative',
+        description: 'Attend remotely or watch recordings. No need to leave the sprint.',
+        traitScores: { pragmatism: 85, efficiency: 80, intensity: 70 }
+      }
+    ],
+    traits: ['investment', 'quality', 'consistency', 'pragmatism']
+  },
+
+  {
+    id: 'gd2',
+    type: 'tradeoff',
+    category: 'Career',
+    question: 'How do career paths work at your company?',
+    options: [
+      {
+        id: 'gd2a',
+        text: 'Defined career ladder',
+        description: 'Clear levels, criteria, and timelines. People know exactly what it takes to advance.',
+        traitScores: { structure: 95, consistency: 85, process: 80 }
+      },
+      {
+        id: 'gd2b',
+        text: 'Organic growth paths',
+        description: 'Roles evolve with the person. Create your own path based on impact and interest.',
+        traitScores: { flexibility: 90, trust: 85, innovation: 80 }
+      }
+    ],
+    traits: ['structure', 'flexibility', 'consistency', 'trust']
+  },
+
+  {
+    id: 'gd3',
+    type: 'scenario',
+    category: 'Mentorship',
+    question: 'How does mentorship work at your company?',
+    options: [
+      {
+        id: 'gd3a',
+        text: 'Formal mentorship program',
+        description: 'Structured pairing, regular check-ins, defined goals for the mentorship.',
+        traitScores: { structure: 90, investment: 85, process: 80 }
+      },
+      {
+        id: 'gd3b',
+        text: 'Organic relationships',
+        description: 'People naturally find mentors. The best mentorships form spontaneously.',
+        traitScores: { trust: 85, flexibility: 80, connection: 75 }
+      },
+      {
+        id: 'gd3c',
+        text: 'Learning communities',
+        description: 'Guilds, study groups, and communities of practice. Collective learning over 1:1.',
+        traitScores: { collaboration: 90, innovation: 80, connection: 85 }
+      },
+      {
+        id: 'gd3d',
+        text: 'External coaching',
+        description: 'Invest in professional coaches and external training for high-potential people.',
+        traitScores: { investment: 95, quality: 85, growth: 80 }
+      }
+    ],
+    traits: ['structure', 'trust', 'collaboration', 'investment']
+  },
+
+  {
+    id: 'gd4',
+    type: 'slider',
+    category: 'Investment',
+    question: 'How much does your company invest in learning & development?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Learn on the job — experience is the best teacher',
+      maxLabel: 'Heavy investment — dedicated budget, time, and programs',
+      trait: 'investment'
+    },
+    traits: ['investment']
+  },
+
+  {
+    id: 'gd5',
+    type: 'scenario',
+    category: 'Promotion',
+    question: 'Two candidates for a promotion: one is a consistent, reliable performer; the other took bold risks with mixed but impressive results.',
+    description: 'Who gets the role?',
+    options: [
+      {
+        id: 'gd5a',
+        text: 'The consistent performer',
+        description: 'Reliability and trust are the foundation. Consistency earns advancement.',
+        traitScores: { consistency: 95, quality: 85, stability: 80 }
+      },
+      {
+        id: 'gd5b',
+        text: 'The bold risk-taker',
+        description: 'We need people who push boundaries. The upside of their wins outweighs the misses.',
+        traitScores: { innovation: 90, risk: 85, intensity: 80 }
+      },
+      {
+        id: 'gd5c',
+        text: 'Depends on the role',
+        description: 'Match the person to the position. Some roles need consistency, others need boldness.',
+        traitScores: { strategic: 85, pragmatism: 80, analytical: 75 }
+      },
+      {
+        id: 'gd5d',
+        text: 'Create two paths',
+        description: 'Promote both — one into a leadership track, the other into a specialist track.',
+        traitScores: { investment: 85, empathy: 80, flexibility: 75 }
+      }
+    ],
+    traits: ['consistency', 'innovation', 'strategic', 'investment']
+  },
+
+  {
+    id: 'gd6',
+    type: 'tradeoff',
+    category: 'Development',
+    question: 'What\'s your philosophy on professional development?',
+    options: [
+      {
+        id: 'gd6a',
+        text: 'Sharpen strengths',
+        description: 'Double down on what people are already great at. Maximize natural talent.',
+        traitScores: { quality: 90, depth: 85, intensity: 80 }
+      },
+      {
+        id: 'gd6b',
+        text: 'Fill gaps',
+        description: 'Well-rounded professionals are more versatile. Address weaknesses to build balance.',
+        traitScores: { growth: 90, flexibility: 85, investment: 80 }
+      }
+    ],
+    traits: ['quality', 'growth', 'depth', 'flexibility']
+  },
+
+  {
+    id: 'gd7',
+    type: 'metaphor',
+    category: 'Knowledge',
+    question: 'How does knowledge flow through your organization?',
+    options: [
+      {
+        id: 'gd7a',
+        text: 'A library',
+        description: 'Well-documented, searchable, self-serve. Knowledge lives in systems.',
+        traitScores: { structure: 90, process: 85, consistency: 80 }
+      },
+      {
+        id: 'gd7b',
+        text: 'A conversation',
+        description: 'Knowledge lives in people. Ask anyone, anytime. Oral tradition.',
+        traitScores: { collaboration: 90, trust: 85, connection: 80 }
+      },
+      {
+        id: 'gd7c',
+        text: 'A broadcast',
+        description: 'Regular all-hands, newsletters, demo days. Top-down knowledge sharing.',
+        traitScores: { transparency: 85, leadership: 80, hierarchy: 75 }
+      },
+      {
+        id: 'gd7d',
+        text: 'A marketplace',
+        description: 'Internal talks, blog posts, wikis. Anyone can teach, anyone can learn.',
+        traitScores: { innovation: 85, collaboration: 80, trust: 75 }
+      }
+    ],
+    traits: ['structure', 'collaboration', 'transparency', 'innovation']
+  },
+
+  {
+    id: 'gd8',
+    type: 'slider',
+    category: 'Time',
+    question: 'How much dedicated time do employees get for learning and development?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'No dedicated time — growth happens within daily work',
+      maxLabel: 'Significant time — 10-20% of work time for development',
+      trait: 'investment'
+    },
+    traits: ['investment']
+  },
+];
+
+// ============================================
+// EMPLOYER SUPPLEMENTARY: WORK ENVIRONMENT & PACE
+// ============================================
+
+export const workEnvironmentQuestions: AssessmentQuestion[] = [
+  {
+    id: 'we1',
+    type: 'scenario',
+    category: 'Location',
+    question: 'Describe a typical workday at your company.',
+    description: 'Which best represents your current setup?',
+    options: [
+      {
+        id: 'we1a',
+        text: 'Fully remote',
+        description: 'Work from anywhere. Async-first communication, flexible schedules.',
+        traitScores: { flexibility: 95, trust: 90, independence: 85 }
+      },
+      {
+        id: 'we1b',
+        text: 'Hybrid with core days',
+        description: 'In-office 2-3 days for collaboration, remote for focused work.',
+        traitScores: { collaboration: 80, flexibility: 75, structure: 70 }
+      },
+      {
+        id: 'we1c',
+        text: 'Office-first',
+        description: 'Most people are in the office most days. Energy from being together.',
+        traitScores: { collaboration: 90, connection: 85, energy: 80 }
+      },
+      {
+        id: 'we1d',
+        text: 'Results-only',
+        description: 'No set hours or location. Deliver outcomes, and the rest is up to you.',
+        traitScores: { trust: 95, independence: 90, flexibility: 85 }
+      }
+    ],
+    traits: ['flexibility', 'collaboration', 'trust', 'independence']
+  },
+
+  {
+    id: 'we2',
+    type: 'slider',
+    category: 'Pace',
+    question: 'What\'s the typical work intensity at your company?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Sustainable marathon — steady pace, long-term thinking',
+      maxLabel: 'Startup sprint — fast, intense, urgent',
+      trait: 'energy'
+    },
+    traits: ['energy', 'intensity']
+  },
+
+  {
+    id: 'we3',
+    type: 'scenario',
+    category: 'Boundaries',
+    question: 'It\'s 8 PM on a weeknight. Someone posts a non-urgent question in the team Slack. What\'s the cultural expectation?',
+    options: [
+      {
+        id: 'we3a',
+        text: 'Respond if you see it',
+        description: 'We\'re always-on. Quick responses show commitment and keep things moving.',
+        traitScores: { intensity: 90, energy: 85, collaboration: 75 }
+      },
+      {
+        id: 'we3b',
+        text: 'Next business day',
+        description: 'Off-hours are off-hours. A healthy boundary protects everyone\'s well-being.',
+        traitScores: { boundaries: 95, stability: 85, consistency: 80 }
+      },
+      {
+        id: 'we3c',
+        text: 'Your choice, no judgment',
+        description: 'Some people are night owls, some aren\'t. No expectation either way.',
+        traitScores: { trust: 90, flexibility: 85, independence: 80 }
+      },
+      {
+        id: 'we3d',
+        text: 'Use scheduled send',
+        description: 'Write it now, deliver it tomorrow. Respect async rhythms.',
+        traitScores: { empathy: 85, process: 80, boundaries: 75 }
+      }
+    ],
+    traits: ['intensity', 'boundaries', 'trust', 'empathy']
+  },
+
+  {
+    id: 'we4',
+    type: 'metaphor',
+    category: 'Space',
+    question: 'If your workspace had a personality, what would it be?',
+    options: [
+      {
+        id: 'we4a',
+        text: 'A coworking space',
+        description: 'Open, flexible, buzzing with energy. Serendipitous connections happen.',
+        traitScores: { collaboration: 90, energy: 85, innovation: 80 }
+      },
+      {
+        id: 'we4b',
+        text: 'A library',
+        description: 'Quiet, focused, respectful of deep work. Thoughtful and intentional.',
+        traitScores: { reflection: 90, quality: 85, boundaries: 80 }
+      },
+      {
+        id: 'we4c',
+        text: 'A living room',
+        description: 'Warm, comfortable, casual. People feel at home and bring their whole selves.',
+        traitScores: { connection: 95, trust: 85, empathy: 80 }
+      },
+      {
+        id: 'we4d',
+        text: 'A mission control',
+        description: 'Focused, urgent, data everywhere. Every screen shows progress toward the goal.',
+        traitScores: { intensity: 95, energy: 90, analytical: 80 }
+      }
+    ],
+    traits: ['collaboration', 'reflection', 'connection', 'intensity']
+  },
+
+  {
+    id: 'we5',
+    type: 'tradeoff',
+    category: 'Flexibility',
+    question: 'Which schedule philosophy do you lean toward?',
+    options: [
+      {
+        id: 'we5a',
+        text: 'Flexible hours',
+        description: 'Work when you\'re at your best. Early birds and night owls both welcome.',
+        traitScores: { flexibility: 95, trust: 85, independence: 80 }
+      },
+      {
+        id: 'we5b',
+        text: 'Core hours',
+        description: 'Everyone overlaps for key hours. Ensures collaboration windows exist.',
+        traitScores: { collaboration: 85, structure: 80, consistency: 75 }
+      }
+    ],
+    traits: ['flexibility', 'collaboration', 'trust', 'structure']
+  },
+
+  {
+    id: 'we6',
+    type: 'scenario',
+    category: 'Urgency',
+    question: 'A product launch is 2 weeks behind schedule. What happens?',
+    options: [
+      {
+        id: 'we6a',
+        text: 'Push through',
+        description: 'The team rallies, works extra hours, and ships on the original date.',
+        traitScores: { intensity: 95, energy: 90, leadership: 80 }
+      },
+      {
+        id: 'we6b',
+        text: 'Cut scope',
+        description: 'Ship the MVP on time. The rest can follow in a fast-follow release.',
+        traitScores: { pragmatism: 90, strategic: 85, efficiency: 80 }
+      },
+      {
+        id: 'we6c',
+        text: 'Adjust the date',
+        description: 'Quality over speed. Move the date and ship something we\'re proud of.',
+        traitScores: { quality: 90, stability: 85, boundaries: 80 }
+      },
+      {
+        id: 'we6d',
+        text: 'Diagnose first',
+        description: 'Understand WHY we\'re behind. Fix the process, then decide on timeline.',
+        traitScores: { analytical: 90, reflection: 85, process: 80 }
+      }
+    ],
+    traits: ['intensity', 'pragmatism', 'quality', 'analytical']
+  },
+
+  {
+    id: 'we7',
+    type: 'tradeoff',
+    category: 'Communication',
+    question: 'What\'s your company\'s communication default?',
+    options: [
+      {
+        id: 'we7a',
+        text: 'Written-first async',
+        description: 'Document decisions, write proposals, comment threads. Thoughtful and inclusive.',
+        traitScores: { reflection: 90, structure: 85, boundaries: 80 }
+      },
+      {
+        id: 'we7b',
+        text: 'Talk-first sync',
+        description: 'Jump on a call, hash it out live. Fast resolution and real-time energy.',
+        traitScores: { energy: 90, collaboration: 85, intensity: 80 }
+      }
+    ],
+    traits: ['reflection', 'energy', 'structure', 'collaboration']
+  },
+
+  {
+    id: 'we8',
+    type: 'slider',
+    category: 'Recovery',
+    question: 'After a major milestone or launch, what happens?',
+    sliderConfig: {
+      min: 0,
+      max: 100,
+      minLabel: 'Straight to the next thing — momentum matters',
+      maxLabel: 'Deliberate cooldown — rest, retro, then recharge',
+      trait: 'reflection'
+    },
+    traits: ['reflection', 'boundaries']
+  },
+];
