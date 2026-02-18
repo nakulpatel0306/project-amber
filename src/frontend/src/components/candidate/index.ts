@@ -1,9 +1,8 @@
-export { CandidateSetupModal } from './CandidateSetupModal';
-export { Assessment } from './Assessment';
-export { AssessmentResults } from './AssessmentResults';
-export { AssessmentFlow } from './AssessmentFlow';
-export { AssessmentResults } from './AssessmentResults';
-export { MatchingAgent } from './MatchingAgent';
-export { PersonalityInsights } from './PersonalityInsights';
-export { TopMatches } from './TopMatches';
-export { Leaderboard } from './Leaderboard';
+export { Assessment } from "./Assessment";
+export { AssessmentFlow } from "./AssessmentFlow";
+export { AssessmentResults } from "./AssessmentResults";
+export { CandidateSetupModal } from "./CandidateSetupModal";
+export { Leaderboard } from "./Leaderboard";
+export { MatchingAgent } from "./MatchingAgent";
+export { PersonalityInsights } from "./PersonalityInsights";
+export { TopMatches } from "./TopMatches";
