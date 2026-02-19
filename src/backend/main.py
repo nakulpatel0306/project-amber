@@ -1137,6 +1137,80 @@ async def ember_single_analysis(
     }
 
 
+@app.post("/api/coffee-chats/{chat_id}/prep")
+async def coffee_chat_prep(
+    chat_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Generate a personality-based prep brief for a specific coffee chat using Ember's matching engine."""
+    chat = get_coffee_chat_by_id(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Coffee chat not found")
+
+    candidate = get_supabase_candidate(chat['candidate_id'])
+    employer = get_employer_by_id(chat['employer_id'])
+
+    if not candidate or not employer:
+        raise HTTPException(status_code=404, detail="Participant data not found")
+
+    role_data = get_role(chat.get('role_id')) if chat.get('role_id') else None
+    analysis = run_ember_analysis(candidate, employer, role_data)
+
+    archetype = analysis.get('candidate_archetype', {})
+    overall = analysis.get('overall_score', 0)
+    company = employer.get('company_name', 'the company')
+    arch_name = archetype.get('name', 'Your archetype')
+    fit_level = 'strong' if overall >= 75 else 'moderate' if overall >= 55 else 'developing'
+
+    # Build personality-based prep using Ember's analysis
+    insights = analysis.get('insights', [])
+    strengths = [i['message'] for i in insights if i.get('category') == 'strength']
+    cautions = [i['message'] for i in insights if i.get('category') == 'caution']
+    tips = [i['message'] for i in insights if i.get('category') == 'tip']
+
+    prep = {
+        'personality_summary': (
+            f"As {arch_name}, you bring {archetype.get('description', 'unique strengths')} "
+            f"to this conversation. Your {fit_level} compatibility score of {overall}% with "
+            f"{company} suggests {'excellent alignment' if overall >= 75 else 'interesting complementary dynamics'}."
+        ),
+        'conversation_starters': [
+            f"What does a typical day look like on your team at {company}?",
+            "How would you describe the team's communication style?",
+            "What's one thing about your culture that might surprise people?",
+            "How does the team handle disagreements or different perspectives?",
+            "What's the most rewarding project you've worked on recently?",
+        ],
+        'topics_to_explore': [
+            'Team dynamics and collaboration style',
+            'Growth opportunities and learning culture',
+            'Work-life balance and flexibility',
+            'Decision-making processes',
+        ],
+        'things_to_be_mindful_of': (
+            cautions[:3] if cautions else [
+                f'Your {arch_name} tendency may differ from their expected style - be authentic but adaptable',
+                'Listen actively and ask follow-up questions to show genuine interest',
+                'Share specific examples from your experience that demonstrate culture alignment',
+            ]
+        ),
+        'archetype_tips': (
+            tips[:2] if tips else [
+                f'As {arch_name}, lead with your natural strengths in the conversation',
+                'Balance sharing your perspective with curiosity about theirs',
+            ]
+        ),
+        'strengths': strengths[:3],
+    }
+
+    return {
+        'chat_id': chat_id,
+        'prep': prep,
+        'match_score': analysis['overall_score'],
+        'archetype': archetype,
+    }
+
+
 # ============ Coffee Chat Endpoints ============
 
 @app.post("/api/coffee-chats")

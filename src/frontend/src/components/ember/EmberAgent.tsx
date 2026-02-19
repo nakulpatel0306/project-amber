@@ -1,374 +1,397 @@
-/**
- * Ember Agent - The Personality Matching Mascot for Project Amber
- *
- * Ember is like Duolingo's owl, but for personality-based job matching.
- * It's a warm, glowing flame character that represents the "amber" in the brand.
- * Ember analyzes personality profiles and shows compatibility scores.
- *
- * Works for both candidates (seeing employer matches) and employers (seeing candidate fits).
- */
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
-  Building2,
   Users,
+  Coffee,
+  Brain,
   Heart,
-  TrendingUp,
-  MapPin,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
   Zap,
   Target,
-  Star,
-  MessageCircle,
-  Briefcase,
+  Eye,
+  ChevronRight,
   Lightbulb,
-  AlertTriangle,
-  Brain,
+  Rocket,
+  CheckCircle2,
+  AlertCircle,
+  ClipboardList,
+  ArrowRight,
+  BarChart3,
+  Shield,
   Compass,
-  Layers,
-  Music,
-  User,
-  Coffee,
+  Map,
+  Award,
+  Star,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { RadarChart } from '../ui/RadarChart';
+import { ProfileCompleteness } from '../ui/ProfileCompleteness';
+import { EmberFirefly } from './EmberFirefly';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
-import { EmberFirefly } from './EmberFirefly';
-import { cn } from '../../utils/cn';
+import {
+  calculateCompatibility,
+  type OCEANScores,
+} from '../../lib/compatibilityScoring';
+import {
+  determineArchetype,
+  ARCHETYPES,
+  type Archetype,
+} from '../../lib/archetypes';
+import {
+  getAllCompatibilityForCandidate,
+  type CompatibilityEntry,
+} from '../../lib/archetypeCompatibility';
+import {
+  MatchDetailModal,
+  type MatchDetailData,
+} from '../matches/MatchDetailModal';
 
-// Alias for backward compatibility in this file
-const EmberMascot = EmberFirefly;
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 
-// ============================================
-// TYPES
-// ============================================
+interface CandidateData {
+  id: string;
+  user_id: string;
+  openness_score: number;
+  conscientiousness_score: number;
+  extraversion_score: number;
+  agreeableness_score: number;
+  neuroticism_score: number;
+  top_traits: string[];
+  work_style: string | null;
+  headline: string | null;
+  location: string | null;
+  archetype_name: string | null;
+  archetype_key: string | null;
+  visual_perception_data: unknown;
+  work_values_data: unknown;
+  situational_judgment_data: unknown;
+  cognitive_patterns_data: unknown;
+}
 
-interface EmberMatch {
-  role_id: string;
-  role_title: string;
-  company_name: string;
-  company_industry: string;
-  company_size: string;
-  company_location: string;
-  role_location: string;
-  work_style: string;
+interface RoleData {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  work_style: string | null;
+  employment_type: string;
   salary_min: number | null;
   salary_max: number | null;
-  employment_type: string;
-  overall_score: number;
-  trait_match_score: number;
-  culture_match_score: number;
-  candidate_archetype: {
-    name: string;
-    emoji: string;
+  required_openness_min: number | null;
+  required_openness_max: number | null;
+  required_conscientiousness_min: number | null;
+  required_conscientiousness_max: number | null;
+  required_extraversion_min: number | null;
+  required_extraversion_max: number | null;
+  required_agreeableness_min: number | null;
+  required_agreeableness_max: number | null;
+  required_neuroticism_min: number | null;
+  required_neuroticism_max: number | null;
+  employers: {
+    id: string;
+    company_name: string;
     description: string;
-    key: string;
-    confidence: number;
+    company_size: string;
+    industry: string;
+    location: string;
+    culture_values: string[];
+    openness_preference: number;
+    conscientiousness_preference: number;
+    extraversion_preference: number;
+    agreeableness_preference: number;
+    neuroticism_preference: number;
   };
-  breakdown: Record<string, number>;
-  insights: Array<{
-    category: string;
-    message: string;
-    trait_related: string | null;
-    score_impact: string | null;
-  }>;
-  ember_summary: string;
-  ember_recommendation: string;
-  dimension_analysis: Array<{
-    name: string;
-    candidate_score: number;
-    employer_preference: number;
-    fit_score: number;
-    gap: number;
-    direction: string;
-    in_role_range: boolean;
-    role_range: number[] | null;
-  }>;
 }
 
-interface EmberCandidateResult {
-  candidate_id: string;
-  candidate_name: string;
-  candidate_email: string;
-  candidate_headline: string;
-  candidate_location: string;
-  candidate_archetype: {
-    name: string;
-    emoji: string;
-    description: string;
-    key: string;
-    confidence: number;
+interface MatchResult {
+  role: RoleData;
+  traitMatchScore: number;
+  cultureMatchScore: number;
+  overallMatchScore: number;
+  employerArchetype: { name: string; key: string; description?: string };
+  breakdown: {
+    opennessFit: number;
+    conscientiousnessFit: number;
+    extraversionFit: number;
+    agreeablenessFit: number;
+    neuroticismFit: number;
+    workStyleFit: number;
+    valuesFit: number;
+    roleFit?: number;
   };
-  overall_score: number;
-  trait_match_score: number;
-  culture_match_score: number;
-  breakdown: Record<string, number>;
-  top_insights: Array<{
-    category: string;
-    message: string;
-    trait_related: string | null;
-    score_impact: string | null;
-  }>;
-  ember_summary: string;
+  highlightPills: string[];
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
+interface EmberInsights {
+  ember_message?: string;
+  strengths?: string[];
+  growth_areas?: string[];
+  tips?: string[];
+}
 
-const ARCHETYPE_ICONS: Record<string, typeof Brain> = {
-  the_innovator: Lightbulb,
-  the_architect: Layers,
-  the_connector: Heart,
-  the_catalyst: Zap,
-  the_craftsperson: Target,
-  the_harmonizer: Music,
-  the_explorer: Compass,
-  the_strategist: Brain,
-};
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
 
-function getMatchColor(score: number) {
+const API_BASE = 'http://127.0.0.1:8000';
+
+function getMatchColor(score: number): string {
   if (score >= 85) return 'var(--color-success)';
   if (score >= 70) return 'var(--color-accent)';
   if (score >= 55) return 'var(--color-warning)';
   return 'var(--color-textMuted)';
 }
 
-function getMatchLabel(score: number) {
-  if (score >= 85) return 'Excellent Match';
-  if (score >= 70) return 'Strong Match';
-  if (score >= 55) return 'Good Match';
-  return 'Potential Match';
+function generateHighlightPills(match: {
+  cultureMatchScore: number;
+  traitMatchScore: number;
+  breakdown: { workStyleFit: number; valuesFit: number };
+}): string[] {
+  const pills: string[] = [];
+  if (match.cultureMatchScore >= 80) pills.push('Strong Culture Fit');
+  if (match.breakdown.valuesFit >= 75) pills.push('Values Aligned');
+  if (match.breakdown.workStyleFit >= 85) pills.push('Work Style Match');
+  if (match.traitMatchScore >= 80) pills.push('Personality Match');
+  return pills.slice(0, 3);
 }
 
-function getInsightIcon(category: string) {
-  switch (category) {
-    case 'strength': return TrendingUp;
-    case 'caution': return AlertTriangle;
-    case 'tip': return Lightbulb;
-    case 'highlight': return Star;
-    default: return MessageCircle;
-  }
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #6366f1, #8b5cf6)',
+  'linear-gradient(135deg, #f43f5e, #ec4899)',
+  'linear-gradient(135deg, #14b8a6, #06b6d4)',
+  'linear-gradient(135deg, #f59e0b, #ef4444)',
+  'linear-gradient(135deg, #8b5cf6, #d946ef)',
+  'linear-gradient(135deg, #10b981, #3b82f6)',
+];
+
+function avatarGradient(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
 }
 
-function getInsightColor(category: string) {
-  switch (category) {
-    case 'strength': return 'var(--color-success)';
-    case 'caution': return 'var(--color-warning)';
-    case 'tip': return 'var(--color-accent)';
-    case 'highlight': return 'var(--color-accent)';
-    default: return 'var(--color-textMuted)';
-  }
+function getBonusColor(bonus: number): string {
+  if (bonus >= 5) return '#10b981';
+  if (bonus >= 0) return '#f59e0b';
+  return '#ef4444';
 }
 
-function formatSalary(min: number | null, max: number | null) {
-  if (!min && !max) return null;
-  const formatNum = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`);
-  if (min && max) return `${formatNum(min)} - ${formatNum(max)}`;
-  if (min) return `From ${formatNum(min)}`;
-  return `Up to ${formatNum(max!)}`;
+function getBonusBg(bonus: number): string {
+  if (bonus >= 5) return 'rgba(16, 185, 129, 0.1)';
+  if (bonus >= 0) return 'rgba(245, 158, 11, 0.1)';
+  return 'rgba(239, 68, 68, 0.1)';
 }
 
-// ============================================
-// EMBER TYPING ANIMATION
-// ============================================
+/* ------------------------------------------------------------------ */
+/*  ScoreRing                                                          */
+/* ------------------------------------------------------------------ */
 
-function EmberTypingMessage({ messages, onComplete }: { messages: string[]; onComplete: () => void }) {
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-
-  useEffect(() => {
-    if (currentIdx >= messages.length) {
-      onComplete();
-      return;
-    }
-
-    const msg = messages[currentIdx];
-    let charIdx = 0;
-
-    const interval = setInterval(() => {
-      if (charIdx <= msg.length) {
-        setCurrentText(msg.slice(0, charIdx));
-        charIdx++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => {
-          setCurrentIdx(prev => prev + 1);
-        }, 300);
-      }
-    }, 20);
-
-    return () => clearInterval(interval);
-  }, [currentIdx, messages, onComplete]);
-
-  return (
-    <div className="flex items-start gap-3">
-      <EmberMascot size="sm" animated mood="thinking" />
-      <div
-        className="px-4 py-2 rounded-2xl rounded-tl-sm text-sm"
-        style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
-      >
-        {currentText}
-        <span className="animate-pulse">|</span>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// SCORE RING COMPONENT
-// ============================================
-
-function ScoreRing({ score, size = 80, label }: { score: number; size?: number; label?: string }) {
-  const radius = (size - 8) / 2;
+function ScoreRing({ score, size = 52, label }: { score: number; size?: number; label?: string }) {
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
   const color = getMatchColor(score);
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-border)" strokeWidth={strokeWidth} />
           <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth={4}
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth={4}
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
+            cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth}
+            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
             className="transition-all duration-1000 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold" style={{ color }}>
-            {score}
-          </span>
+          <span className="text-xs font-bold" style={{ color }}>{score}</span>
         </div>
       </div>
       {label && (
-        <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-          {label}
-        </span>
+        <span className="text-[10px] leading-tight" style={{ color: 'var(--color-textMuted)' }}>{label}</span>
       )}
     </div>
   );
 }
 
-// ============================================
-// DIMENSION BAR COMPONENT
-// ============================================
+/* ------------------------------------------------------------------ */
+/*  Section Wrapper                                                    */
+/* ------------------------------------------------------------------ */
 
-function DimensionBar({
-  name,
-  candidateScore,
-  employerPreference,
-  inRange,
+function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-2xl p-5 md:p-6"
+      style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        {icon}
+        <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  ScoreDistribution — SVG histogram                                  */
+/* ------------------------------------------------------------------ */
+
+function ScoreDistribution({ matches }: { matches: MatchResult[] }) {
+  const buckets = [
+    { label: '90-100', min: 90, max: 100, color: '#10b981' },
+    { label: '80-89', min: 80, max: 89, color: '#06b6d4' },
+    { label: '70-79', min: 70, max: 79, color: '#8b5cf6' },
+    { label: '60-69', min: 60, max: 69, color: '#f59e0b' },
+    { label: '<60', min: 0, max: 59, color: '#ef4444' },
+  ];
+
+  const counts = buckets.map(b => ({
+    ...b,
+    count: matches.filter(m => m.overallMatchScore >= b.min && m.overallMatchScore <= b.max).length,
+  }));
+
+  const maxCount = Math.max(...counts.map(c => c.count), 1);
+  const barWidth = 48;
+  const barGap = 12;
+  const chartHeight = 120;
+  const svgWidth = counts.length * (barWidth + barGap) - barGap;
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg viewBox={`0 0 ${svgWidth} ${chartHeight + 30}`} className="w-full mx-auto" style={{ maxWidth: `${svgWidth}px` }}>
+        <defs>
+          {counts.map((b, i) => (
+            <linearGradient key={i} id={`bar-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={b.color} stopOpacity="0.9" />
+              <stop offset="100%" stopColor={b.color} stopOpacity="0.4" />
+            </linearGradient>
+          ))}
+        </defs>
+        {counts.map((b, i) => {
+          const x = i * (barWidth + barGap);
+          const barHeight = maxCount > 0 ? (b.count / maxCount) * chartHeight : 0;
+          const y = chartHeight - barHeight;
+          return (
+            <g key={i}>
+              <rect
+                x={x} y={y} width={barWidth} height={barHeight}
+                rx={4} fill={`url(#bar-grad-${i})`}
+              />
+              {b.count > 0 && (
+                <text
+                  x={x + barWidth / 2} y={y - 6}
+                  textAnchor="middle" fill={b.color}
+                  fontSize="12" fontWeight="700"
+                >
+                  {b.count}
+                </text>
+              )}
+              <text
+                x={x + barWidth / 2} y={chartHeight + 16}
+                textAnchor="middle" fill="var(--color-textMuted)"
+                fontSize="10"
+              >
+                {b.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  CompatibilityCard                                                  */
+/* ------------------------------------------------------------------ */
+
+function CompatibilityCard({ employerArchetype, bonus, synergy_note }: CompatibilityEntry & { employerArchetype: string }) {
+  const color = getBonusColor(bonus);
+  const bg = getBonusBg(bonus);
+
+  return (
+    <div
+      className="rounded-xl p-4 transition-all hover:shadow-sm"
+      style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+          {employerArchetype}
+        </span>
+        <span
+          className="text-xs font-bold px-2 py-0.5 rounded-full"
+          style={{ backgroundColor: bg, color }}
+        >
+          {bonus > 0 ? '+' : ''}{bonus}
+        </span>
+      </div>
+      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
+        {synergy_note}
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  InsightCard                                                        */
+/* ------------------------------------------------------------------ */
+
+function InsightCard({
+  icon,
+  title,
+  description,
+  color,
 }: {
-  name: string;
-  candidateScore: number;
-  employerPreference: number;
-  inRange: boolean;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: string;
 }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
-          {name}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--color-accent)' }}>
-            You: {candidateScore}
-          </span>
-          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            Ideal: {employerPreference}
-          </span>
+    <div
+      className="rounded-xl p-4 transition-all hover:shadow-sm"
+      style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+          style={{ backgroundColor: `${color}15` }}
+        >
+          {icon}
         </div>
-      </div>
-      <div className="relative h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-        {/* Candidate bar */}
-        <div
-          className="absolute top-0 left-0 h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${candidateScore}%`,
-            backgroundColor: inRange ? 'var(--color-accent)' : 'var(--color-warning)',
-            opacity: 0.8,
-          }}
-        />
-        {/* Employer preference marker */}
-        <div
-          className="absolute top-0 h-full w-0.5"
-          style={{
-            left: `${employerPreference}%`,
-            backgroundColor: 'var(--color-text)',
-          }}
-        />
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>{title}</h4>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>{description}</p>
+        </div>
       </div>
     </div>
   );
 }
 
-// ============================================
-// MAIN EMBER AGENT COMPONENT
-// ============================================
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                     */
+/* ------------------------------------------------------------------ */
 
 export function EmberAgent() {
-  const { user, isEmployer } = useAuth();
+  const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
   const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showTyping, setShowTyping] = useState(false);
-  const [hasAssessment, setHasAssessment] = useState(false);
+  const [candidate, setCandidate] = useState<CandidateData | null>(null);
+  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [pendingChats, setPendingChats] = useState(0);
+  const [archetype, setArchetype] = useState<(Archetype & { confidence: number }) | null>(null);
+  const [insights, setInsights] = useState<EmberInsights | null>(null);
+  const [modalMatch, setModalMatch] = useState<MatchResult | null>(null);
 
-  // Candidate state
-  const [candidateId, setCandidateId] = useState<string | null>(null);
-  const [matches, setMatches] = useState<EmberMatch[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<EmberMatch | null>(null);
-  const [archetype, setArchetype] = useState<EmberMatch['candidate_archetype'] | null>(null);
-
-  // Employer state
-  const [employerId, setEmployerId] = useState<string | null>(null);
-  const [candidateResults, setCandidateResults] = useState<EmberCandidateResult[]>([]);
-  const [selectedCandidate, setSelectedCandidate] = useState<EmberCandidateResult | null>(null);
-
-  const [emberMessage, setEmberMessage] = useState('');
-  const [expandedInsights, setExpandedInsights] = useState(false);
-  const detailRef = useRef<HTMLDivElement>(null);
-
-  const analyzeMessages = isEmployer
-    ? [
-        "Scanning candidate personality profiles...",
-        "Mapping personality traits to your culture...",
-        "Evaluating culture alignment...",
-        "Calculating compatibility scores...",
-        "Ranking candidates by personality fit...",
-        "Generating insights...",
-      ]
-    : [
-        "Reading your personality profile...",
-        "Scanning open roles and company cultures...",
-        "Comparing your traits with employer preferences...",
-        "Evaluating culture fit...",
-        "Ranking your best matches...",
-        "Generating personalized insights...",
-      ];
+  /* ---- Load all data ---- */
 
   useEffect(() => {
     if (!user) return;
@@ -380,909 +403,825 @@ export function EmberAgent() {
     setIsLoading(true);
 
     try {
-      if (isEmployer) {
-        // Load employer data
-        const { data: employer } = await supabase
-          .from('employers')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+      // Fetch candidate
+      const { data: cand, error: candErr } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-        if (employer) {
-          setEmployerId(employer.id);
-          setHasAssessment(employer.culture_quiz_completed || false);
-          await runEmployerAnalysis(employer.id);
-        }
-      } else {
-        // Load candidate data
-        const { data: candidate } = await supabase
-          .from('candidates')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        if (candidate) {
-          setCandidateId(candidate.id);
-          setHasAssessment(candidate.openness_score !== null);
-          if (candidate.openness_score !== null) {
-            await runCandidateAnalysis(candidate.id);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error loading data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const runCandidateAnalysis = async (cId: string) => {
-    setIsAnalyzing(true);
-    setShowTyping(true);
-
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/ember/candidate-matches/${cId}`
-      );
-
-      if (!response.ok) {
-        // Fallback: compute matches client-side if backend unavailable
-        await runCandidateAnalysisFallback(cId);
+      if (candErr || !cand || cand.openness_score === null) {
+        setCandidate(null);
+        setIsLoading(false);
         return;
       }
 
-      const data = await response.json();
-      setArchetype(data.archetype);
-      setMatches(data.matches || []);
-      setEmberMessage(data.ember_message || '');
+      setCandidate(cand);
 
-      if (data.matches?.length > 0) {
-        setSelectedMatch(data.matches[0]);
-      }
-    } catch {
-      // Backend not running - use fallback client-side matching
-      await runCandidateAnalysisFallback(cId);
-    } finally {
-      setShowTyping(false);
-      setIsAnalyzing(false);
-    }
-  };
+      const candidateOcean: OCEANScores = {
+        openness: cand.openness_score || 50,
+        conscientiousness: cand.conscientiousness_score || 50,
+        extraversion: cand.extraversion_score || 50,
+        agreeableness: cand.agreeableness_score || 50,
+        neuroticism: cand.neuroticism_score || 50,
+      };
 
-  const runCandidateAnalysisFallback = async (cId: string) => {
-    // Client-side fallback when backend isn't running
-    try {
-      const { data: candidate } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('id', cId)
-        .single();
+      // Determine archetype
+      const arch = determineArchetype(candidateOcean);
+      setArchetype(arch);
 
+      // Fetch roles for matching
       const { data: roles } = await supabase
         .from('roles')
         .select('*, employers!inner(*)')
         .eq('status', 'active');
 
-      if (!candidate || !roles) {
-        setEmberMessage("Couldn't load matching data. Please try again.");
-        return;
-      }
+      if (roles && roles.length > 0) {
+        const matchResults: MatchResult[] = roles.map((role: RoleData) => {
+          const employer = role.employers;
+          const result = calculateCompatibility({
+            candidateOCEAN: candidateOcean,
+            employerPreferences: {
+              openness: employer.openness_preference || 50,
+              conscientiousness: employer.conscientiousness_preference || 50,
+              extraversion: employer.extraversion_preference || 50,
+              agreeableness: employer.agreeableness_preference || 50,
+              neuroticism: employer.neuroticism_preference || 50,
+              cultureValues: employer.culture_values || [],
+            },
+            candidateWorkStyle: cand.work_style || undefined,
+            roleWorkStyle: role.work_style || undefined,
+            roleRequirements: {
+              required_openness_min: role.required_openness_min,
+              required_openness_max: role.required_openness_max,
+              required_conscientiousness_min: role.required_conscientiousness_min,
+              required_conscientiousness_max: role.required_conscientiousness_max,
+              required_extraversion_min: role.required_extraversion_min,
+              required_extraversion_max: role.required_extraversion_max,
+              required_agreeableness_min: role.required_agreeableness_min,
+              required_agreeableness_max: role.required_agreeableness_max,
+              required_neuroticism_min: role.required_neuroticism_min,
+              required_neuroticism_max: role.required_neuroticism_max,
+              work_style: role.work_style,
+            },
+          });
 
-      // Simple archetype determination
-      const ocean = {
-        o: candidate.openness_score || 50,
-        c: candidate.conscientiousness_score || 50,
-        e: candidate.extraversion_score || 50,
-        a: candidate.agreeableness_score || 50,
-        n: candidate.neuroticism_score || 50,
-      };
+          const employerOcean: OCEANScores = {
+            openness: employer.openness_preference || 50,
+            conscientiousness: employer.conscientiousness_preference || 50,
+            extraversion: employer.extraversion_preference || 50,
+            agreeableness: employer.agreeableness_preference || 50,
+            neuroticism: employer.neuroticism_preference || 50,
+          };
+          const empArchetype = determineArchetype(employerOcean);
 
-      let archetypeKey = 'the_explorer';
-      if (ocean.o >= 80 && ocean.c <= 55) archetypeKey = 'the_innovator';
-      else if (ocean.c >= 80 && ocean.e <= 50) archetypeKey = 'the_craftsperson';
-      else if (ocean.e >= 80 && ocean.a >= 75) archetypeKey = 'the_connector';
-      else if (ocean.e >= 75 && ocean.a <= 50) archetypeKey = 'the_catalyst';
-      else if (ocean.c >= 80 && ocean.o >= 60) archetypeKey = 'the_strategist';
-      else if (ocean.a >= 80 && ocean.n <= 35) archetypeKey = 'the_harmonizer';
-      else if (ocean.c >= 80) archetypeKey = 'the_architect';
-
-      const archetypeNames: Record<string, { name: string; emoji: string; description: string }> = {
-        the_innovator: { name: 'The Innovator', emoji: 'lightbulb', description: 'Creative thinker who thrives on new ideas' },
-        the_architect: { name: 'The Architect', emoji: 'layers', description: 'Systematic builder who creates order' },
-        the_connector: { name: 'The Connector', emoji: 'heart', description: 'Natural relationship builder' },
-        the_catalyst: { name: 'The Catalyst', emoji: 'zap', description: 'Bold leader who drives change' },
-        the_craftsperson: { name: 'The Craftsperson', emoji: 'target', description: 'Detail-oriented perfectionist' },
-        the_harmonizer: { name: 'The Harmonizer', emoji: 'music', description: 'Empathetic mediator who creates balance' },
-        the_explorer: { name: 'The Explorer', emoji: 'compass', description: 'Curious adventurer who adapts quickly' },
-        the_strategist: { name: 'The Strategist', emoji: 'brain', description: 'Analytical thinker who plans ahead' },
-      };
-
-      const arch = {
-        ...archetypeNames[archetypeKey],
-        key: archetypeKey,
-        confidence: 80,
-      };
-      setArchetype(arch);
-
-      // Calculate matches
-      const matchResults: EmberMatch[] = roles.map((role: any) => {
-        const emp = role.employers;
-
-        // Simple trait distance scoring
-        const dims = [
-          { c: ocean.o, e: emp.openness_preference || 50, name: 'Openness' },
-          { c: ocean.c, e: emp.conscientiousness_preference || 50, name: 'Conscientiousness' },
-          { c: ocean.e, e: emp.extraversion_preference || 50, name: 'Extraversion' },
-          { c: ocean.a, e: emp.agreeableness_preference || 50, name: 'Agreeableness' },
-          { c: 100 - ocean.n, e: 100 - (emp.neuroticism_preference || 50), name: 'Emotional Stability' },
-        ];
-
-        let totalFit = 0;
-        const dimAnalysis = dims.map(d => {
-          const fit = Math.max(0, 100 - Math.abs(d.c - d.e));
-          totalFit += fit;
           return {
-            name: d.name,
-            candidate_score: d.c,
-            employer_preference: d.e,
-            fit_score: fit,
-            gap: Math.abs(d.c - d.e),
-            direction: d.c > d.e ? 'above' : 'below',
-            in_role_range: true,
-            role_range: null,
+            role,
+            traitMatchScore: result.traitMatchScore,
+            cultureMatchScore: result.cultureMatchScore,
+            overallMatchScore: result.overallMatchScore,
+            employerArchetype: { name: empArchetype.name, key: empArchetype.key, description: empArchetype.description },
+            breakdown: result.breakdown,
+            highlightPills: generateHighlightPills({
+              cultureMatchScore: result.cultureMatchScore,
+              traitMatchScore: result.traitMatchScore,
+              breakdown: result.breakdown,
+            }),
           };
         });
 
-        const traitScore = Math.round(totalFit / dims.length);
-        const cultureScore = Math.round(traitScore * 0.9 + Math.random() * 10);
-        const overall = Math.round(traitScore * 0.5 + cultureScore * 0.5);
+        matchResults.sort((a, b) => b.overallMatchScore - a.overallMatchScore);
+        setMatches(matchResults);
+      }
 
-        const insights: EmberMatch['insights'] = [];
-        if (overall >= 80) {
-          insights.push({
-            category: 'highlight',
-            message: `Your ${arch.name} personality aligns well with ${emp.company_name}'s culture`,
-            trait_related: null,
-            score_impact: 'positive',
+      // Fetch pending coffee chats count
+      const { count } = await supabase
+        .from('coffee_chats')
+        .select('*', { count: 'exact', head: true })
+        .eq('candidate_id', cand.id)
+        .eq('status', 'pending');
+      setPendingChats(count || 0);
+
+      // Fetch AI insights from backend
+      try {
+        const res = await fetch(`${API_BASE}/api/ember/candidate-matches/${cand.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setInsights({
+            ember_message: data.ember_message || data.message,
+            strengths: data.strengths || [],
+            growth_areas: data.growth_areas || [],
+            tips: data.tips || data.recommendations || [],
           });
         }
-
-        dims.forEach(d => {
-          if (d.c - d.e > 20) {
-            insights.push({
-              category: 'strength',
-              message: `Your ${d.name.toLowerCase()} exceeds expectations for this role`,
-              trait_related: d.name.toLowerCase(),
-              score_impact: 'positive',
-            });
-          }
-          if (d.e - d.c > 25) {
-            insights.push({
-              category: 'caution',
-              message: `This role expects higher ${d.name.toLowerCase()} than your natural tendency`,
-              trait_related: d.name.toLowerCase(),
-              score_impact: 'negative',
-            });
-          }
-        });
-
-        return {
-          role_id: role.id,
-          role_title: role.title,
-          company_name: emp.company_name || 'Unknown',
-          company_industry: emp.industry || '',
-          company_size: emp.company_size || '',
-          company_location: emp.location || '',
-          role_location: role.location || '',
-          work_style: role.work_style || '',
-          salary_min: role.salary_min,
-          salary_max: role.salary_max,
-          employment_type: role.employment_type || '',
-          overall_score: overall,
-          trait_match_score: traitScore,
-          culture_match_score: cultureScore,
-          candidate_archetype: arch,
-          breakdown: {
-            openness_fit: dimAnalysis[0].fit_score,
-            conscientiousness_fit: dimAnalysis[1].fit_score,
-            extraversion_fit: dimAnalysis[2].fit_score,
-            agreeableness_fit: dimAnalysis[3].fit_score,
-            neuroticism_fit: dimAnalysis[4].fit_score,
-            work_style_fit: 75,
-            values_alignment: cultureScore,
-          },
-          insights: insights.slice(0, 5),
-          ember_summary: overall >= 80
-            ? `As ${arch.name}, you're an excellent fit for this role.`
-            : overall >= 65
-            ? `As ${arch.name}, you have solid compatibility with this team.`
-            : `This role may require some personality adaptation.`,
-          ember_recommendation: overall >= 80
-            ? 'Highly recommended'
-            : overall >= 65
-            ? 'Worth exploring'
-            : 'Proceed thoughtfully',
-          dimension_analysis: dimAnalysis,
-        };
-      });
-
-      matchResults.sort((a, b) => b.overall_score - a.overall_score);
-      setMatches(matchResults);
-
-      if (matchResults.length > 0) {
-        setSelectedMatch(matchResults[0]);
-        const top = matchResults[0].overall_score;
-        setEmberMessage(
-          top >= 80
-            ? `Great news! I found ${matchResults.length} roles and your top match is ${top}%!`
-            : `I analyzed ${matchResults.length} roles for your personality profile.`
-        );
-      } else {
-        setEmberMessage("No active roles available yet. Check back soon!");
+      } catch {
+        // Backend unavailable — insights will be null
       }
     } catch (err) {
-      console.error('Fallback analysis error:', err);
-      setEmberMessage("Had trouble analyzing matches. Please try again.");
-    }
-  };
-
-  const runEmployerAnalysis = async (eId: string) => {
-    setIsAnalyzing(true);
-    setShowTyping(true);
-
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/ember/employer-matches/${eId}`
-      );
-
-      if (!response.ok) {
-        await runEmployerAnalysisFallback(eId);
-        return;
-      }
-
-      const data = await response.json();
-      setCandidateResults(data.candidates || []);
-      setEmberMessage(data.ember_message || '');
-
-      if (data.candidates?.length > 0) {
-        setSelectedCandidate(data.candidates[0]);
-      }
-    } catch {
-      await runEmployerAnalysisFallback(eId);
+      console.error('Error loading Ember data:', err);
     } finally {
-      setShowTyping(false);
-      setIsAnalyzing(false);
+      setIsLoading(false);
     }
   };
 
-  const runEmployerAnalysisFallback = async (eId: string) => {
+  /* ---- Coffee chat handler ---- */
+
+  const handleRequestChat = useCallback(async (match: MatchResult) => {
+    if (!candidate) return;
     try {
-      const { data: employer } = await supabase
-        .from('employers')
-        .select('*')
-        .eq('id', eId)
-        .single();
-
-      const { data: candidates } = await supabase
-        .from('candidates')
-        .select('*, profiles!inner(full_name, email)')
-        .not('openness_score', 'is', null);
-
-      if (!employer || !candidates) {
-        setEmberMessage("Couldn't load candidate data.");
-        return;
-      }
-
-      const results: EmberCandidateResult[] = candidates.map((c: any) => {
-        const dims = [
-          Math.abs((c.openness_score || 50) - (employer.openness_preference || 50)),
-          Math.abs((c.conscientiousness_score || 50) - (employer.conscientiousness_preference || 50)),
-          Math.abs((c.extraversion_score || 50) - (employer.extraversion_preference || 50)),
-          Math.abs((c.agreeableness_score || 50) - (employer.agreeableness_preference || 50)),
-          Math.abs((c.neuroticism_score || 50) - (employer.neuroticism_preference || 50)),
-        ];
-
-        const avgFit = Math.round(dims.reduce((sum, d) => sum + (100 - d), 0) / dims.length);
-        const overall = Math.round(avgFit * 0.95 + Math.random() * 5);
-
-        // Determine archetype
-        let archetypeKey = 'the_explorer';
-        const o = c.openness_score || 50;
-        const con = c.conscientiousness_score || 50;
-        const e = c.extraversion_score || 50;
-        const a = c.agreeableness_score || 50;
-        if (o >= 80 && con <= 55) archetypeKey = 'the_innovator';
-        else if (con >= 80 && e <= 50) archetypeKey = 'the_craftsperson';
-        else if (e >= 80 && a >= 75) archetypeKey = 'the_connector';
-        else if (e >= 75 && a <= 50) archetypeKey = 'the_catalyst';
-        else if (con >= 80 && o >= 60) archetypeKey = 'the_strategist';
-        else if (a >= 80) archetypeKey = 'the_harmonizer';
-        else if (con >= 80) archetypeKey = 'the_architect';
-
-        const archetypeNames: Record<string, { name: string; emoji: string; description: string }> = {
-          the_innovator: { name: 'The Innovator', emoji: 'lightbulb', description: 'Creative thinker' },
-          the_architect: { name: 'The Architect', emoji: 'layers', description: 'Systematic builder' },
-          the_connector: { name: 'The Connector', emoji: 'heart', description: 'Relationship builder' },
-          the_catalyst: { name: 'The Catalyst', emoji: 'zap', description: 'Change driver' },
-          the_craftsperson: { name: 'The Craftsperson', emoji: 'target', description: 'Quality focused' },
-          the_harmonizer: { name: 'The Harmonizer', emoji: 'music', description: 'Team balancer' },
-          the_explorer: { name: 'The Explorer', emoji: 'compass', description: 'Adaptable learner' },
-          the_strategist: { name: 'The Strategist', emoji: 'brain', description: 'Big-picture thinker' },
-        };
-
-        return {
-          candidate_id: c.id,
-          candidate_name: c.profiles?.full_name || 'Unknown',
-          candidate_email: c.profiles?.email || '',
-          candidate_headline: c.headline || '',
-          candidate_location: c.location || '',
-          candidate_archetype: { ...archetypeNames[archetypeKey], key: archetypeKey, confidence: 80 },
-          overall_score: overall,
-          trait_match_score: avgFit,
-          culture_match_score: Math.round(avgFit * 0.9 + 5),
-          breakdown: {},
-          top_insights: [
-            {
-              category: overall >= 75 ? 'strength' : 'tip',
-              message: `${archetypeNames[archetypeKey].name} personality - ${archetypeNames[archetypeKey].description}`,
-              trait_related: null,
-              score_impact: overall >= 75 ? 'positive' : 'neutral',
-            },
-          ],
-          ember_summary: overall >= 80
-            ? 'Excellent personality fit for your culture.'
-            : overall >= 65
-            ? 'Good personality alignment with some complementary differences.'
-            : 'Some personality gaps, but diversity can be valuable.',
-        };
+      await supabase.from('coffee_chats').insert({
+        candidate_id: candidate.id,
+        employer_id: match.role.employers.id,
+        role_id: match.role.id,
+        initiated_by: 'candidate',
+        status: 'pending',
+        message: `Interested in ${match.role.title}`,
+        role_title: match.role.title,
+        match_score: match.overallMatchScore,
       });
-
-      results.sort((a, b) => b.overall_score - a.overall_score);
-      setCandidateResults(results);
-
-      if (results.length > 0) {
-        setSelectedCandidate(results[0]);
-        setEmberMessage(
-          `Analyzed ${results.length} candidates. Top personality match: ${results[0].overall_score}%!`
-        );
-      } else {
-        setEmberMessage("No candidates with completed assessments yet.");
-      }
-    } catch (err) {
-      console.error('Employer fallback error:', err);
-      setEmberMessage("Had trouble analyzing candidates. Please try again.");
+      showSuccess('Sent!', 'Coffee chat request sent');
+      setPendingChats(prev => prev + 1);
+    } catch {
+      showError('Error', 'Failed to send request');
     }
-  };
+  }, [candidate, showSuccess, showError]);
 
-  // ============================================
-  // LOADING STATE
-  // ============================================
+  /* ---- Modal data ---- */
+
+  const buildModalData = useCallback((match: MatchResult): MatchDetailData => {
+    if (!candidate) {
+      return {
+        id: match.role.id,
+        name: match.role.employers.company_name,
+        subtitle: match.role.title,
+        archetype: match.employerArchetype,
+        overallScore: match.overallMatchScore,
+        traitScore: match.traitMatchScore,
+        cultureScore: match.cultureMatchScore,
+        workStyleScore: match.breakdown.workStyleFit,
+        communicationScore: Math.round((match.breakdown.extraversionFit + match.breakdown.agreeablenessFit) / 2),
+      };
+    }
+
+    const employer = match.role.employers;
+    return {
+      id: match.role.id,
+      name: employer.company_name,
+      subtitle: match.role.title,
+      archetype: match.employerArchetype,
+      overallScore: match.overallMatchScore,
+      traitScore: match.traitMatchScore,
+      cultureScore: match.cultureMatchScore,
+      workStyleScore: match.breakdown.workStyleFit,
+      communicationScore: Math.round((match.breakdown.extraversionFit + match.breakdown.agreeablenessFit) / 2),
+      dimensionAnalysis: [
+        { name: 'Openness', candidate_score: candidate.openness_score, employer_preference: employer.openness_preference || 50, fit_score: match.breakdown.opennessFit, gap: Math.abs(candidate.openness_score - (employer.openness_preference || 50)), direction: candidate.openness_score > (employer.openness_preference || 50) ? 'above' : candidate.openness_score < (employer.openness_preference || 50) ? 'below' : 'aligned' },
+        { name: 'Conscientiousness', candidate_score: candidate.conscientiousness_score, employer_preference: employer.conscientiousness_preference || 50, fit_score: match.breakdown.conscientiousnessFit, gap: Math.abs(candidate.conscientiousness_score - (employer.conscientiousness_preference || 50)), direction: candidate.conscientiousness_score > (employer.conscientiousness_preference || 50) ? 'above' : candidate.conscientiousness_score < (employer.conscientiousness_preference || 50) ? 'below' : 'aligned' },
+        { name: 'Extraversion', candidate_score: candidate.extraversion_score, employer_preference: employer.extraversion_preference || 50, fit_score: match.breakdown.extraversionFit, gap: Math.abs(candidate.extraversion_score - (employer.extraversion_preference || 50)), direction: candidate.extraversion_score > (employer.extraversion_preference || 50) ? 'above' : candidate.extraversion_score < (employer.extraversion_preference || 50) ? 'below' : 'aligned' },
+        { name: 'Agreeableness', candidate_score: candidate.agreeableness_score, employer_preference: employer.agreeableness_preference || 50, fit_score: match.breakdown.agreeablenessFit, gap: Math.abs(candidate.agreeableness_score - (employer.agreeableness_preference || 50)), direction: candidate.agreeableness_score > (employer.agreeableness_preference || 50) ? 'above' : candidate.agreeableness_score < (employer.agreeableness_preference || 50) ? 'below' : 'aligned' },
+        { name: 'Stability', candidate_score: 100 - candidate.neuroticism_score, employer_preference: 100 - (employer.neuroticism_preference || 50), fit_score: match.breakdown.neuroticismFit, gap: Math.abs(candidate.neuroticism_score - (employer.neuroticism_preference || 50)), direction: candidate.neuroticism_score < (employer.neuroticism_preference || 50) ? 'above' : candidate.neuroticism_score > (employer.neuroticism_preference || 50) ? 'below' : 'aligned' },
+      ],
+    };
+  }, [candidate]);
+
+  /* ---- Profile strength ---- */
+
+  const profileStrength = useMemo(() => {
+    if (!candidate) return 0;
+    let count = 0;
+    if (candidate.openness_score !== null) count++; // OCEAN assessment
+    if (candidate.headline) count++;
+    if (candidate.location) count++;
+    if (candidate.work_style) count++;
+    if (candidate.visual_perception_data) count++;
+    if (candidate.work_values_data) count++;
+    if (candidate.situational_judgment_data) count++;
+    if (candidate.cognitive_patterns_data) count++;
+    return count;
+  }, [candidate]);
+
+  /* ---- Derived strengths ---- */
+
+  const strengths = useMemo(() => {
+    if (!candidate || !archetype) return [];
+    const items: { icon: React.ReactNode; title: string; description: string }[] = [];
+
+    // From archetype strengths
+    archetype.strengths.forEach(s => {
+      items.push({
+        icon: <Award className="w-4 h-4" style={{ color: '#8b5cf6' }} />,
+        title: s,
+        description: `A core strength of ${archetype.name} archetype`,
+      });
+    });
+
+    // From high OCEAN scores
+    if (candidate.openness_score >= 80) {
+      items.push({
+        icon: <Lightbulb className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+        title: 'Creative Problem Solving',
+        description: 'Your high openness makes you stand out in innovation-focused roles',
+      });
+    }
+    if (candidate.conscientiousness_score >= 80) {
+      items.push({
+        icon: <Target className="w-4 h-4" style={{ color: '#06b6d4' }} />,
+        title: 'Exceptional Reliability',
+        description: 'Your high conscientiousness signals strong discipline and follow-through',
+      });
+    }
+    if (candidate.extraversion_score >= 80) {
+      items.push({
+        icon: <Users className="w-4 h-4" style={{ color: '#10b981' }} />,
+        title: 'Natural Leadership',
+        description: 'Your high extraversion means you thrive in team and client-facing roles',
+      });
+    }
+    if (candidate.agreeableness_score >= 80) {
+      items.push({
+        icon: <Heart className="w-4 h-4" style={{ color: '#ec4899' }} />,
+        title: 'Team Harmony',
+        description: 'Your high agreeableness makes you a valued collaborator and mediator',
+      });
+    }
+    if (candidate.neuroticism_score <= 20) {
+      items.push({
+        icon: <Shield className="w-4 h-4" style={{ color: '#10b981' }} />,
+        title: 'Emotional Resilience',
+        description: 'Your exceptional emotional stability helps you thrive under pressure',
+      });
+    }
+
+    // From backend insights
+    if (insights?.strengths) {
+      insights.strengths.forEach(s => {
+        if (items.length < 6) {
+          items.push({
+            icon: <CheckCircle2 className="w-4 h-4" style={{ color: '#10b981' }} />,
+            title: 'AI Insight',
+            description: s,
+          });
+        }
+      });
+    }
+
+    return items.slice(0, 6);
+  }, [candidate, archetype, insights]);
+
+  /* ---- Derived growth opportunities ---- */
+
+  const growthAreas = useMemo(() => {
+    if (!candidate || !archetype) return [];
+    const items: { icon: React.ReactNode; title: string; description: string; tip: string }[] = [];
+
+    if (candidate.openness_score < 40) {
+      items.push({
+        icon: <Compass className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+        title: 'Expanding Horizons',
+        description: 'Lower openness may limit opportunities in innovation-driven environments',
+        tip: 'Try exploring creative side projects or brainstorming sessions to build comfort with new ideas',
+      });
+    }
+    if (candidate.conscientiousness_score < 40) {
+      items.push({
+        icon: <ClipboardList className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+        title: 'Building Structure',
+        description: 'Lower conscientiousness may be a concern for process-heavy roles',
+        tip: 'Adopt a task management system and set clear deadlines to demonstrate reliability',
+      });
+    }
+    if (candidate.extraversion_score < 40) {
+      items.push({
+        icon: <Users className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+        title: 'Expanding Your Network',
+        description: 'Lower extraversion may limit visibility in team-oriented cultures',
+        tip: 'Start with small networking events or virtual coffee chats to build comfort in social settings',
+      });
+    }
+    if (candidate.agreeableness_score < 40) {
+      items.push({
+        icon: <Heart className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+        title: 'Collaborative Edge',
+        description: 'Lower agreeableness may create friction in harmony-focused teams',
+        tip: 'Practice active listening and acknowledge others\' perspectives before presenting your own',
+      });
+    }
+    if (candidate.neuroticism_score >= 70) {
+      items.push({
+        icon: <Shield className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+        title: 'Stress Management',
+        description: 'Higher emotional sensitivity may impact performance in high-pressure environments',
+        tip: 'Develop mindfulness or breathing techniques to build resilience during stressful periods',
+      });
+    }
+
+    // From backend insights
+    if (insights?.growth_areas) {
+      insights.growth_areas.forEach(g => {
+        if (items.length < 4) {
+          items.push({
+            icon: <AlertCircle className="w-4 h-4" style={{ color: '#f59e0b' }} />,
+            title: 'Growth Opportunity',
+            description: g,
+            tip: 'Focus on targeted development in this area to broaden your match potential',
+          });
+        }
+      });
+    }
+
+    return items.slice(0, 4);
+  }, [candidate, archetype, insights]);
+
+  /* ---- Compatibility map ---- */
+
+  const compatibilityMap = useMemo(() => {
+    if (!archetype) return [];
+    return getAllCompatibilityForCandidate(archetype.key);
+  }, [archetype]);
+
+  /* ---- Loading ---- */
 
   if (isLoading) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center">
-          <EmberMascot size="lg" animated mood="thinking" />
+          <EmberFirefly size="lg" mood="thinking" animated />
           <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Ember is warming up...
+            Preparing your insights...
           </p>
         </div>
       </div>
     );
   }
 
-  // ============================================
-  // NO ASSESSMENT STATE
-  // ============================================
+  /* ---- No assessment state ---- */
 
-  if (!hasAssessment) {
+  if (!candidate) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
-          <EmberMascot size="xl" mood="neutral" />
+          <EmberFirefly size="xl" mood="neutral" />
           <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
-            Hey! I'm Ember
+            Complete Your Assessment First
           </h2>
-          <p className="mb-2 text-lg" style={{ color: 'var(--color-textSecondary)' }}>
-            Your personality matching companion
-          </p>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            {isEmployer
-              ? "Complete your culture quiz first so I can find candidates who match your company's personality."
-              : "Take your personality assessment first so I can find roles that match who you truly are."
-            }
+            Take our personality assessment to unlock Ember insights, discover your archetype, and find your best matches.
           </p>
-          <Button
-            onClick={() => navigate(isEmployer ? '/app/employer/culture' : '/app/personality')}
-            leftIcon={<Sparkles className="w-4 h-4" />}
-          >
-            {isEmployer ? 'Take Culture Quiz' : 'Start Assessment'}
-          </Button>
+          <Button onClick={() => navigate('/app/personality')}>Start Assessment</Button>
         </div>
       </div>
     );
   }
 
-  // ============================================
-  // EMPLOYER VIEW
-  // ============================================
+  /* ---- Derived values ---- */
 
-  if (isEmployer) {
-    return (
-      <div className="min-h-[80vh]" style={{ backgroundColor: 'var(--color-background)' }}>
-        {/* Header */}
-        <div className="border-b px-6 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <EmberMascot size="sm" mood={isAnalyzing ? 'thinking' : candidateResults.length > 0 ? 'happy' : 'neutral'} animated={isAnalyzing} />
-              <div>
-                <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-                  Ember - Personality Matcher
-                </h1>
-                <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                  {isAnalyzing ? 'Analyzing candidates...' : emberMessage}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => employerId && runEmployerAnalysis(employerId)}
-              disabled={isAnalyzing}
-              leftIcon={<RefreshCw className={cn("w-4 h-4", isAnalyzing && "animate-spin")} />}
-            >
-              Re-analyze
-            </Button>
-          </div>
-        </div>
+  const candidateOcean: OCEANScores = {
+    openness: candidate.openness_score,
+    conscientiousness: candidate.conscientiousness_score,
+    extraversion: candidate.extraversion_score,
+    agreeableness: candidate.agreeableness_score,
+    neuroticism: candidate.neuroticism_score,
+  };
 
-        <div className="max-w-6xl mx-auto p-6">
-          {showTyping && (
-            <div className="mb-6">
-              <EmberTypingMessage messages={analyzeMessages} onComplete={() => setShowTyping(false)} />
-            </div>
-          )}
+  const avgMatchScore = matches.length > 0
+    ? Math.round(matches.reduce((sum, m) => sum + m.overallMatchScore, 0) / matches.length)
+    : 0;
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Candidate List */}
-            <div className="lg:col-span-2 space-y-3">
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-                Candidate Personality Rankings
-              </h2>
+  const topMatchScore = matches.length > 0 ? matches[0].overallMatchScore : 0;
 
-              {candidateResults.length === 0 ? (
-                <div className="p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <Users className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-                  <p style={{ color: 'var(--color-textMuted)' }}>No candidates with completed assessments yet.</p>
-                </div>
-              ) : (
-                candidateResults.map((result, idx) => {
-                  const ArchIcon = ARCHETYPE_ICONS[result.candidate_archetype.key] || User;
-                  return (
-                    <button
-                      key={result.candidate_id}
-                      onClick={() => setSelectedCandidate(result)}
-                      className={cn(
-                        "w-full p-4 rounded-2xl text-left transition-all",
-                        selectedCandidate?.candidate_id === result.candidate_id
-                          ? "ring-2 ring-[var(--color-accent)]"
-                          : "hover:bg-[var(--color-surfaceHover)]"
-                      )}
-                      style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-                            <ArchIcon className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
-                          </div>
-                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[var(--color-surface)] flex items-center justify-center text-xs font-bold" style={{ color: 'var(--color-textMuted)', border: '1px solid var(--color-border)' }}>
-                            {idx + 1}
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>{result.candidate_name}</h3>
-                          <p className="text-sm truncate" style={{ color: 'var(--color-textSecondary)' }}>{result.candidate_headline || result.candidate_archetype.name}</p>
-                          {result.candidate_location && (
-                            <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--color-textMuted)' }}>
-                              <MapPin className="w-3 h-3" /> {result.candidate_location}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold" style={{ color: getMatchColor(result.overall_score) }}>
-                            {result.overall_score}%
-                          </div>
-                          <div className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${getMatchColor(result.overall_score)}20`, color: getMatchColor(result.overall_score) }}>
-                            {getMatchLabel(result.overall_score)}
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+  const topMatches = matches.slice(0, 5);
 
-            {/* Selected Candidate Detail */}
-            <div className="lg:col-span-1">
-              {selectedCandidate ? (
-                <div className="sticky top-6 p-5 rounded-2xl space-y-4" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <div className="text-center pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                    <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-                      {(() => { const I = ARCHETYPE_ICONS[selectedCandidate.candidate_archetype.key] || User; return <I className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />; })()}
-                    </div>
-                    <h3 className="font-semibold text-lg" style={{ color: 'var(--color-text)' }}>{selectedCandidate.candidate_name}</h3>
-                    <p className="text-sm" style={{ color: 'var(--color-accent)' }}>{selectedCandidate.candidate_archetype.name}</p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>{selectedCandidate.candidate_archetype.description}</p>
-                    <div className="text-3xl font-bold mt-3" style={{ color: getMatchColor(selectedCandidate.overall_score) }}>
-                      {selectedCandidate.overall_score}%
-                    </div>
-                    <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>Personality Fit</p>
-                  </div>
+  // Percentile position: what % of matches does the top score beat
+  const percentile = matches.length > 1
+    ? Math.round((matches.filter(m => m.overallMatchScore < topMatchScore).length / matches.length) * 100)
+    : 0;
 
-                  <div className="space-y-3">
-                    {[
-                      { label: 'Trait Match', value: selectedCandidate.trait_match_score, icon: Heart, color: 'var(--color-accent)' },
-                      { label: 'Culture Fit', value: selectedCandidate.culture_match_score, icon: Star, color: 'var(--color-warning)' },
-                    ].map(item => (
-                      <div key={item.label}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <item.icon className="w-4 h-4" style={{ color: item.color }} />
-                            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{item.label}</span>
-                          </div>
-                          <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{item.value}%</span>
-                        </div>
-                        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                          <div className="h-full rounded-full transition-all" style={{ width: `${item.value}%`, backgroundColor: item.color }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-                    <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{selectedCandidate.ember_summary}</p>
-                  </div>
-
-                  {selectedCandidate.top_insights.length > 0 && (
-                    <div className="space-y-2">
-                      {selectedCandidate.top_insights.map((insight, i) => {
-                        const Icon = getInsightIcon(insight.category);
-                        return (
-                          <div key={i} className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-textSecondary)' }}>
-                            <Icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: getInsightColor(insight.category) }} />
-                            {insight.message}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <Button
-                    className="w-full"
-                    size="sm"
-                    leftIcon={<Coffee className="w-4 h-4" />}
-                    onClick={async () => {
-                      if (!employerId || !selectedCandidate) return;
-                      try {
-                        await supabase.from('coffee_chats').insert({
-                          candidate_id: selectedCandidate.candidate_id,
-                          employer_id: employerId,
-                          initiated_by: 'employer',
-                          status: 'pending',
-                          match_score: selectedCandidate.overall_score,
-                        });
-                        showSuccess('Sent!', 'Coffee chat invitation sent');
-                      } catch {
-                        showError('Error', 'Failed to send invitation');
-                      }
-                    }}
-                  >
-                    invite to coffee chat
-                  </Button>
-                </div>
-              ) : (
-                <div className="sticky top-6 p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <EmberMascot size="md" mood="neutral" />
-                  <p className="mt-4" style={{ color: 'var(--color-textMuted)' }}>Select a candidate to see their personality analysis</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ============================================
-  // CANDIDATE VIEW
-  // ============================================
+  /* ---- Render ---- */
 
   return (
-    <div className="min-h-[80vh]" style={{ backgroundColor: 'var(--color-background)' }}>
-      {/* Header */}
-      <div className="border-b px-6 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <EmberMascot
-              size="sm"
-              mood={isAnalyzing ? 'thinking' : matches.length > 0 ? 'happy' : 'neutral'}
-              animated={isAnalyzing}
-            />
-            <div>
-              <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-                Ember - Personality Matcher
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
+
+        {/* ===== 2a. HERO HEADER ===== */}
+        <div
+          className="rounded-2xl p-6 md:p-8"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <EmberFirefly size="xl" mood="happy" />
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text)' }}>
+                Ember Insights
               </h1>
-              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                {isAnalyzing ? 'Analyzing your matches...' : emberMessage}
+              <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
+                Your personalized personality matching dashboard powered by AI
               </p>
+              <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                {archetype && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
+                    style={{ backgroundColor: `var(--color-accent)15`, color: 'var(--color-accent)' }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {archetype.name}
+                  </span>
+                )}
+                {archetype && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}
+                  >
+                    {archetype.confidence}% confidence
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {archetype && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
-                {(() => { const I = ARCHETYPE_ICONS[archetype.key] || Sparkles; return <I className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />; })()}
-                <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{archetype.name}</span>
-              </div>
-            )}
-            <Button
-              variant="outline"
+
+          {/* Profile Completeness */}
+          <div className="mt-5 pt-5" style={{ borderTop: '1px solid var(--color-border)' }}>
+            <ProfileCompleteness
+              completedCount={profileStrength}
+              totalCount={8}
+              variant="bar"
               size="sm"
-              onClick={() => candidateId && runCandidateAnalysis(candidateId)}
-              disabled={isAnalyzing}
-              leftIcon={<RefreshCw className={cn("w-4 h-4", isAnalyzing && "animate-spin")} />}
-            >
-              Re-analyze
-            </Button>
+            />
           </div>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Typing animation */}
-        {showTyping && (
-          <div className="mb-6">
-            <EmberTypingMessage messages={analyzeMessages} onComplete={() => setShowTyping(false)} />
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Matches List */}
-          <div className="lg:col-span-2 space-y-3">
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-              Your Personality Matches
-            </h2>
-
-            {matches.length === 0 && !isAnalyzing ? (
-              <div className="p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-                <p style={{ color: 'var(--color-textMuted)' }}>No active roles available yet. Check back soon!</p>
+        {/* ===== 2b. MATCH LANDSCAPE ===== */}
+        <Section
+          title="Match Landscape"
+          icon={<BarChart3 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />}
+        >
+          {matches.length === 0 ? (
+            <p className="text-sm py-4 text-center" style={{ color: 'var(--color-textMuted)' }}>
+              No matches available yet. Check back once employers post roles!
+            </p>
+          ) : (
+            <>
+              {/* Score Distribution Histogram */}
+              <div className="mb-5">
+                <h3 className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: 'var(--color-textMuted)' }}>
+                  Score Distribution
+                </h3>
+                <ScoreDistribution matches={matches} />
               </div>
-            ) : (
-              matches.map((match, idx) => (
-                <button
-                  key={match.role_id}
-                  onClick={() => {
-                    setSelectedMatch(match);
-                    setExpandedInsights(false);
-                    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className={cn(
-                    "w-full p-5 rounded-2xl text-left transition-all",
-                    selectedMatch?.role_id === match.role_id
-                      ? "ring-2 ring-[var(--color-accent)]"
-                      : "hover:bg-[var(--color-surfaceHover)]"
-                  )}
-                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="relative">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-                        <Building2 className="w-7 h-7" style={{ color: 'var(--color-accent)' }} />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: getMatchColor(match.overall_score), color: 'white' }}>
-                        {idx + 1}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>{match.role_title}</h3>
-                          <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{match.company_name}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            {match.company_industry && (
-                              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{match.company_industry}</span>
-                            )}
-                            {match.role_location && (
-                              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                                <MapPin className="w-3 h-3" /> {match.role_location}
-                              </span>
-                            )}
-                            {match.work_style && (
-                              <span className="text-xs capitalize" style={{ color: 'var(--color-textMuted)' }}>{match.work_style}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-xl font-bold" style={{ color: getMatchColor(match.overall_score) }}>
-                            {match.overall_score}%
-                          </div>
-                          <div className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${getMatchColor(match.overall_score)}20`, color: getMatchColor(match.overall_score) }}>
-                            {getMatchLabel(match.overall_score)}
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="flex gap-4 mt-3">
-                        <div className="flex items-center gap-1.5">
-                          <Heart className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
-                          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{match.trait_match_score}% Traits</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Star className="w-3.5 h-3.5" style={{ color: 'var(--color-warning)' }} />
-                          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{match.culture_match_score}% Culture</span>
-                        </div>
-                      </div>
-
-                      {idx < 3 && match.insights.length > 0 && (
-                        <div className="mt-2">
-                          <div className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-textSecondary)' }}>
-                            {(() => { const I = getInsightIcon(match.insights[0].category); return <I className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: getInsightColor(match.insights[0].category) }} />; })()}
-                            {match.insights[0].message}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <ChevronRight className="w-5 h-5 flex-shrink-0 mt-4" style={{ color: 'var(--color-textMuted)' }} />
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-
-          {/* Selected Match Detail */}
-          <div className="lg:col-span-1" ref={detailRef}>
-            {selectedMatch ? (
-              <div className="sticky top-6 p-5 rounded-2xl space-y-5" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                {/* Score header */}
-                <div className="text-center pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                  <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-                    <Building2 className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
-                  </div>
-                  <h3 className="font-semibold text-lg" style={{ color: 'var(--color-text)' }}>{selectedMatch.role_title}</h3>
-                  <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{selectedMatch.company_name}</p>
-
-                  <div className="flex justify-center gap-4 mt-4">
-                    <ScoreRing score={selectedMatch.overall_score} label="Overall" />
-                    <ScoreRing score={selectedMatch.trait_match_score} size={60} label="Traits" />
-                    <ScoreRing score={selectedMatch.culture_match_score} size={60} label="Culture" />
-                  </div>
+              {/* Key Stats Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: 'var(--color-background)' }}>
+                  <div className="text-lg font-bold" style={{ color: 'var(--color-success)' }}>{topMatchScore}%</div>
+                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Top Match</div>
                 </div>
-
-                {/* Ember's take */}
-                <div className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <EmberMascot size="sm" mood={selectedMatch.overall_score >= 75 ? 'happy' : 'neutral'} />
-                  <div>
-                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>Ember's Take</p>
-                    <p className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{selectedMatch.ember_summary}</p>
-                  </div>
+                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: 'var(--color-background)' }}>
+                  <div className="text-lg font-bold" style={{ color: 'var(--color-accent)' }}>{avgMatchScore}%</div>
+                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Average Score</div>
                 </div>
-
-                {/* Dimension Analysis */}
-                {selectedMatch.dimension_analysis?.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>Personality Dimensions</h4>
-                    <div className="space-y-3">
-                      {selectedMatch.dimension_analysis.map(dim => (
-                        <DimensionBar
-                          key={dim.name}
-                          name={dim.name}
-                          candidateScore={dim.candidate_score}
-                          employerPreference={dim.employer_preference}
-                          inRange={dim.in_role_range}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Insights */}
-                {selectedMatch.insights.length > 0 && (
-                  <div>
-                    <button
-                      className="flex items-center justify-between w-full"
-                      onClick={() => setExpandedInsights(!expandedInsights)}
-                    >
-                      <h4 className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                        Personality Insights ({selectedMatch.insights.length})
-                      </h4>
-                      {expandedInsights ? (
-                        <ChevronUp className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
-                      )}
-                    </button>
-                    <div className={cn("space-y-2 mt-2", !expandedInsights && "max-h-[120px] overflow-hidden")}>
-                      {selectedMatch.insights.map((insight, i) => {
-                        const Icon = getInsightIcon(insight.category);
-                        return (
-                          <div key={i} className="flex items-start gap-2 text-xs p-2 rounded-lg" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textSecondary)' }}>
-                            <Icon className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: getInsightColor(insight.category) }} />
-                            {insight.message}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Role info */}
-                <div className="pt-4 border-t space-y-2 text-sm" style={{ borderColor: 'var(--color-border)' }}>
-                  {selectedMatch.role_location && (
-                    <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                      <MapPin className="w-4 h-4" /> {selectedMatch.role_location}
-                    </div>
-                  )}
-                  {selectedMatch.work_style && (
-                    <div className="flex items-center gap-2 capitalize" style={{ color: 'var(--color-textMuted)' }}>
-                      <Briefcase className="w-4 h-4" /> {selectedMatch.work_style}
-                    </div>
-                  )}
-                  {formatSalary(selectedMatch.salary_min, selectedMatch.salary_max) && (
-                    <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                      <span className="w-4 h-4 text-center text-xs">$</span>
-                      {formatSalary(selectedMatch.salary_min, selectedMatch.salary_max)}
-                    </div>
-                  )}
+                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: 'var(--color-background)' }}>
+                  <div className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>{matches.length}</div>
+                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Total Matches</div>
                 </div>
-
-                <div className="p-2 rounded-lg text-center text-xs" style={{ backgroundColor: `${getMatchColor(selectedMatch.overall_score)}15`, color: getMatchColor(selectedMatch.overall_score) }}>
-                  {selectedMatch.ember_recommendation}
+                <div className="rounded-xl p-3 text-center" style={{ backgroundColor: 'var(--color-background)' }}>
+                  <div className="text-lg font-bold" style={{ color: '#f59e0b' }}>{percentile}th</div>
+                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Top Percentile</div>
                 </div>
-
-                <Button
-                  className="w-full"
-                  size="sm"
-                  leftIcon={<Coffee className="w-4 h-4" />}
-                  onClick={async () => {
-                    if (!candidateId || !selectedMatch) return;
-                    try {
-                      const { data: employer } = await supabase
-                        .from('roles')
-                        .select('employer_id')
-                        .eq('id', selectedMatch.role_id)
-                        .single();
-                      if (!employer) return;
-                      await supabase.from('coffee_chats').insert({
-                        candidate_id: candidateId,
-                        employer_id: employer.employer_id,
-                        role_id: selectedMatch.role_id,
-                        initiated_by: 'candidate',
-                        status: 'pending',
-                        message: `Interested in ${selectedMatch.role_title}`,
-                        role_title: selectedMatch.role_title,
-                        match_score: selectedMatch.overall_score,
-                      });
-                      showSuccess('Sent!', 'Coffee chat request sent');
-                    } catch {
-                      showError('Error', 'Failed to send request');
-                    }
-                  }}
-                >
-                  request coffee chat
-                </Button>
               </div>
-            ) : (
-              <div className="sticky top-6 p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                <EmberMascot size="md" mood="neutral" />
-                <p className="mt-4" style={{ color: 'var(--color-textMuted)' }}>
-                  Select a match to see Ember's detailed personality analysis
+            </>
+          )}
+        </Section>
+
+        {/* ===== 2c. IDEAL ENVIRONMENT PROFILE ===== */}
+        <Section
+          title="Ideal Environment Profile"
+          icon={<Map className="w-5 h-5" style={{ color: '#8b5cf6' }} />}
+        >
+          {archetype && (
+            <div className="space-y-5">
+              {/* Archetype header */}
+              <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  <span className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{archetype.name}</span>
+                </div>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
+                  {archetype.description}
                 </p>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Your Ideal Workplace */}
+                <div>
+                  <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+                    Your Ideal Workplace
+                  </h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
+                    You thrive in environments like {archetype.idealEnvironments.join(', ').toLowerCase()}.
+                    Your strengths in {archetype.strengths.map(s => s.toLowerCase()).join(', ')} make
+                    you a natural fit for teams that value these qualities and provide room for them to flourish.
+                  </p>
+
+                  {/* Culture Values That Suit You */}
+                  <h3 className="text-sm font-semibold mt-4 mb-2" style={{ color: 'var(--color-text)' }}>
+                    Culture Values That Suit You
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {ARCHETYPES[archetype.key]?.idealCultures?.map((culture) => (
+                      <span
+                        key={culture}
+                        className="text-xs px-2.5 py-1 rounded-full font-medium"
+                        style={{ backgroundColor: `var(--color-accent)15`, color: 'var(--color-accent)' }}
+                      >
+                        {culture}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* OCEAN Radar Chart */}
+                <div>
+                  <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+                    Your OCEAN Signature
+                  </h3>
+                  <RadarChart
+                    scores={{ ...candidateOcean }}
+                    size={260}
+                    animated
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </Section>
+
+        {/* ===== 2d. ARCHETYPE COMPATIBILITY MAP ===== */}
+        {archetype && compatibilityMap.length > 0 && (
+          <Section
+            title="Archetype Compatibility Map"
+            icon={<Zap className="w-5 h-5" style={{ color: '#f59e0b' }} />}
+          >
+            <p className="text-sm mb-4" style={{ color: 'var(--color-textMuted)' }}>
+              As <strong style={{ color: 'var(--color-text)' }}>{archetype.name}</strong>, here&apos;s how you match with different company cultures
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {compatibilityMap.map((entry) => (
+                <CompatibilityCard
+                  key={entry.employerArchetype}
+                  employerArchetype={entry.employerArchetype}
+                  bonus={entry.bonus}
+                  synergy_note={entry.synergy_note}
+                  friction_note={entry.friction_note}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* ===== 2e. STRENGTHS IN THE JOB MARKET ===== */}
+        {strengths.length > 0 && (
+          <Section
+            title="Strengths in the Job Market"
+            icon={<Star className="w-5 h-5" style={{ color: '#10b981' }} />}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {strengths.map((s, i) => (
+                <InsightCard
+                  key={i}
+                  icon={s.icon}
+                  title={s.title}
+                  description={s.description}
+                  color="#10b981"
+                />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* ===== 2f. GROWTH OPPORTUNITIES ===== */}
+        {growthAreas.length > 0 && (
+          <Section
+            title="Growth Opportunities"
+            icon={<Rocket className="w-5 h-5" style={{ color: '#f59e0b' }} />}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {growthAreas.map((g, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl p-4 transition-all hover:shadow-sm"
+                  style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+                    >
+                      {g.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>{g.title}</h4>
+                      <p className="text-xs leading-relaxed mb-2" style={{ color: 'var(--color-textMuted)' }}>{g.description}</p>
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-accent)' }}>{g.tip}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* ===== 2g. TOP 5 MATCHES ===== */}
+        <Section
+          title="Top Matches"
+          icon={<Heart className="w-5 h-5" style={{ color: 'var(--color-warning)' }} />}
+        >
+          {topMatches.length === 0 ? (
+            <p className="text-sm py-4 text-center" style={{ color: 'var(--color-textMuted)' }}>
+              No active roles available yet. Check back soon!
+            </p>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {topMatches.map((match) => {
+                  const companyName = match.role.employers.company_name;
+                  return (
+                    <div
+                      key={match.role.id}
+                      className="flex items-center gap-4 p-4 rounded-xl border transition-all hover:shadow-sm cursor-pointer"
+                      style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
+                      onClick={() => setModalMatch(match)}
+                    >
+                      {/* Company avatar */}
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: avatarGradient(companyName) }}
+                      >
+                        <span className="text-base font-semibold text-white">
+                          {companyName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-1" style={{ color: 'var(--color-text)' }}>
+                          {companyName}
+                        </h3>
+                        <p className="text-xs line-clamp-1" style={{ color: 'var(--color-textSecondary)' }}>
+                          {match.role.title}
+                        </p>
+                        {/* Mini score breakdown */}
+                        <div className="flex gap-2 mt-1 text-[10px]" style={{ color: 'var(--color-textMuted)' }}>
+                          <span className="flex items-center gap-0.5"><Brain className="w-2.5 h-2.5" style={{ color: 'var(--color-accent)' }} />{match.traitMatchScore}%</span>
+                          <span className="flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" style={{ color: 'var(--color-warning)' }} />{match.cultureMatchScore}%</span>
+                          <span className="flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" style={{ color: 'var(--color-success)' }} />{match.breakdown.workStyleFit}%</span>
+                        </div>
+                      </div>
+
+                      {/* Highlight pills (mobile hidden) */}
+                      <div className="hidden md:flex flex-wrap gap-1 max-w-[180px]">
+                        {match.highlightPills.map((pill, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                            style={{
+                              backgroundColor: pill.includes('Culture') ? `var(--color-success)15` : `var(--color-accent)15`,
+                              color: pill.includes('Culture') ? 'var(--color-success)' : 'var(--color-accent)',
+                            }}
+                          >
+                            {pill}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Score ring */}
+                      <ScoreRing score={match.overallMatchScore} size={44} />
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={(e) => { e.stopPropagation(); setModalMatch(match); }}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="xs"
+                          onClick={async (e) => { e.stopPropagation(); await handleRequestChat(match); }}
+                        >
+                          <Coffee className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {matches.length > 5 && (
+                <div className="mt-4 text-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    rightIcon={<ChevronRight className="w-4 h-4" />}
+                    onClick={() => navigate('/app/matches')}
+                  >
+                    View all {matches.length} matches
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </Section>
+
+        {/* ===== 2h. RECOMMENDED ACTIONS ===== */}
+        <Section
+          title="Recommended Actions"
+          icon={<ClipboardList className="w-5 h-5" style={{ color: 'var(--color-success)' }} />}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {!candidate.headline && (
+              <button
+                onClick={() => navigate('/app/settings')}
+                className="flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:shadow-sm"
+                style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+              >
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `var(--color-warning)15` }}>
+                  <AlertCircle className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Complete your profile</p>
+                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Add a headline to improve match accuracy</p>
+                </div>
+                <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
+            )}
+
+            <button
+              onClick={() => navigate('/app/assessment')}
+              className="flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:shadow-sm"
+              style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `var(--color-accent)15` }}>
+                <Brain className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Take supplementary assessments</p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Deepen your personality profile</p>
+              </div>
+              <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
+            </button>
+
+            <button
+              onClick={() => navigate('/app/matches')}
+              className="flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:shadow-sm"
+              style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `var(--color-success)15` }}>
+                <Target className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Explore all matches</p>
+                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Browse and filter all available roles</p>
+              </div>
+              <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
+            </button>
+
+            {pendingChats > 0 && (
+              <button
+                onClick={() => navigate('/app/chats')}
+                className="flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:shadow-sm"
+                style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+              >
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#fef3c715' }}>
+                  <Coffee className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Review pending chats</p>
+                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>You have {pendingChats} pending coffee chat{pendingChats !== 1 ? 's' : ''}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
             )}
           </div>
-        </div>
+        </Section>
       </div>
+
+      {/* Match Detail Modal */}
+      {modalMatch && candidate && (
+        <MatchDetailModal
+          isOpen={!!modalMatch}
+          onClose={() => setModalMatch(null)}
+          role="candidate"
+          matchData={buildModalData(modalMatch)}
+          candidateId={candidate.id}
+          employerId={modalMatch.role.employers.id}
+          roleId={modalMatch.role.id}
+          onRequestChat={() => handleRequestChat(modalMatch)}
+          onAskEmber={() => {}}
+        />
+      )}
     </div>
   );
 }

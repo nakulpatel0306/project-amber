@@ -60,6 +60,8 @@ class CompatibilityResult:
     """Result of a compatibility calculation"""
     trait_match_score: float      # 0-100
     culture_match_score: float    # 0-100
+    work_style_score: float       # 0-100
+    communication_score: float    # 0-100
     overall_match_score: float    # 0-100
     breakdown: dict               # Detailed breakdown for display
 
@@ -183,6 +185,39 @@ def calculate_role_fit(candidate: CandidateOCEAN, role: RoleRequirements) -> tup
     return overall, breakdown
 
 
+def calculate_work_style_score(
+    candidate_work_style: Optional[str],
+    role: Optional[RoleRequirements] = None
+) -> float:
+    """
+    Calculate work style compatibility as an independent score (0-100).
+    """
+    if not candidate_work_style or not role or not role.work_style:
+        return 75  # Default reasonable match
+
+    if candidate_work_style == role.work_style:
+        return 100
+    elif candidate_work_style == 'flexible' or role.work_style == 'flexible':
+        return 85
+    elif (candidate_work_style == 'hybrid' and role.work_style in ['remote', 'onsite']) or \
+         (role.work_style == 'hybrid' and candidate_work_style in ['remote', 'onsite']):
+        return 65
+    else:
+        return 40
+
+
+def calculate_communication_fit(candidate: CandidateOCEAN, employer: EmployerPreferences) -> float:
+    """
+    Calculate communication compatibility (0-100) derived from
+    extraversion and agreeableness alignment.
+    """
+    e_diff = abs(candidate.extraversion - employer.extraversion_preference)
+    a_diff = abs(candidate.agreeableness - employer.agreeableness_preference)
+    # Weighted blend: extraversion drives communication style, agreeableness drives tone
+    score = 100 - (e_diff * 0.55 + a_diff * 0.45)
+    return round(max(0, min(100, score)))
+
+
 def calculate_culture_match(
     candidate: CandidateOCEAN,
     candidate_work_style: Optional[str],
@@ -203,18 +238,7 @@ def calculate_culture_match(
     breakdown = {}
 
     # 1. Work style match
-    work_style_score = 75  # Default reasonable match
-    if candidate_work_style and role and role.work_style:
-        if candidate_work_style == role.work_style:
-            work_style_score = 100
-        elif candidate_work_style == 'flexible' or role.work_style == 'flexible':
-            work_style_score = 85  # Flexible matches anything well
-        elif (candidate_work_style == 'hybrid' and role.work_style in ['remote', 'onsite']) or \
-             (role.work_style == 'hybrid' and candidate_work_style in ['remote', 'onsite']):
-            work_style_score = 65  # Partial match
-        else:
-            work_style_score = 40  # Mismatch
-
+    work_style_score = calculate_work_style_score(candidate_work_style, role)
     scores.append(work_style_score)
     weights.append(0.30)
     breakdown['work_style_fit'] = round(work_style_score)
@@ -270,11 +294,124 @@ def calculate_culture_match(
 def calculate_overall_match(
     trait_match: float,
     culture_match: float,
+    work_style: float,
+    communication: float,
 ) -> float:
     """
-    Overall = 50% trait match + 50% culture match
+    Overall = 40% trait + 30% culture + 20% work style + 10% communication
     """
-    return round(trait_match * 0.5 + culture_match * 0.5)
+    return round(
+        trait_match * 0.40
+        + culture_match * 0.30
+        + work_style * 0.20
+        + communication * 0.10
+    )
+
+
+def calculate_confidence(candidate_data: dict) -> int:
+    """
+    Calculate a confidence score (0-100) based on how complete the candidate's data is.
+    - Core OCEAN scores present: +40
+    - Profile complete (headline, bio, location): +30
+    - Supplementary assessments completed: +30 (7.5 each)
+    """
+    score = 0
+
+    # OCEAN scores present
+    ocean_fields = [
+        'openness_score', 'conscientiousness_score', 'extraversion_score',
+        'agreeableness_score', 'neuroticism_score',
+    ]
+    if all(candidate_data.get(f) is not None for f in ocean_fields):
+        score += 40
+
+    # Profile completeness
+    profile_fields = ['headline', 'bio', 'location']
+    filled = sum(1 for f in profile_fields if candidate_data.get(f))
+    score += round(30 * filled / len(profile_fields))
+
+    # Supplementary assessments
+    assessment_fields = [
+        'work_style_assessment_completed',
+        'communication_assessment_completed',
+        'values_assessment_completed',
+        'leadership_assessment_completed',
+    ]
+    for f in assessment_fields:
+        if candidate_data.get(f):
+            score += 7  # ~7.5 rounded
+
+    return min(100, score)
+
+
+def calculate_reverse_compatibility(
+    employer: EmployerPreferences,
+    candidate_data: dict,
+) -> float:
+    """
+    Score how well the employer's culture fits the *candidate's* preferences.
+    Uses candidate's preferred_work_style, preferred_company_size, and archetype
+    idealEnvironments to evaluate reverse fit.
+    """
+    scores = []
+
+    # Work style preference match
+    preferred_ws = candidate_data.get('preferred_work_style')
+    employer_ws = candidate_data.get('_employer_work_style')  # passed in externally
+    if preferred_ws and employer_ws:
+        if preferred_ws == employer_ws:
+            scores.append(100)
+        elif preferred_ws == 'flexible' or employer_ws == 'flexible':
+            scores.append(85)
+        elif 'hybrid' in (preferred_ws, employer_ws):
+            scores.append(65)
+        else:
+            scores.append(40)
+
+    # Culture values overlap with archetype ideal cultures
+    ideal_cultures = candidate_data.get('_ideal_cultures', [])
+    employer_values = [v.lower() for v in (employer.culture_values or [])]
+    if ideal_cultures and employer_values:
+        overlap = len(set(ideal_cultures) & set(employer_values))
+        total = max(len(ideal_cultures), 1)
+        scores.append(round(min(100, (overlap / total) * 100 + 20)))
+
+    # Company size preference
+    preferred_size = candidate_data.get('preferred_company_size')
+    employer_size = candidate_data.get('_employer_company_size')
+    if preferred_size and employer_size:
+        if preferred_size == employer_size:
+            scores.append(100)
+        else:
+            scores.append(60)
+
+    if not scores:
+        return 65  # Neutral default
+
+    return round(sum(scores) / len(scores))
+
+
+def calculate_bidirectional_match(
+    candidate: CandidateOCEAN,
+    employer: EmployerPreferences,
+    candidate_data: dict,
+    candidate_work_style: Optional[str] = None,
+    role: Optional[RoleRequirements] = None,
+) -> dict:
+    """
+    Calculate both forward (candidate→employer) and reverse (employer→candidate) scores.
+    Returns dict with forward_score, reverse_score, and combined_score.
+    """
+    forward = calculate_compatibility(candidate, employer, candidate_work_style, role)
+    reverse = calculate_reverse_compatibility(employer, candidate_data)
+    combined = round(forward.overall_match_score * 0.7 + reverse * 0.3)
+
+    return {
+        'forward_score': forward.overall_match_score,
+        'reverse_score': reverse,
+        'combined_score': combined,
+        'forward_result': forward,
+    }
 
 
 def calculate_compatibility(
@@ -299,18 +436,24 @@ def calculate_compatibility(
     culture_match, culture_breakdown = calculate_culture_match(
         candidate, candidate_work_style, employer, role
     )
-    overall = calculate_overall_match(trait_match, culture_match)
+    work_style = calculate_work_style_score(candidate_work_style, role)
+    communication = calculate_communication_fit(candidate, employer)
+    overall = calculate_overall_match(trait_match, culture_match, work_style, communication)
 
     breakdown = {
         **trait_breakdown,
         **culture_breakdown,
         'trait_match': trait_match,
         'culture_match': culture_match,
+        'work_style_score': work_style,
+        'communication_score': communication,
     }
 
     return CompatibilityResult(
         trait_match_score=trait_match,
         culture_match_score=culture_match,
+        work_style_score=work_style,
+        communication_score=communication,
         overall_match_score=overall,
         breakdown=breakdown
     )

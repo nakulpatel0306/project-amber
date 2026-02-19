@@ -1,9 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Trophy,
   MapPin,
   Coffee,
-  ChevronRight,
+  Search,
+  SlidersHorizontal,
+  X,
+  ChevronDown,
+  ArrowUpDown,
+  Eye,
+  Brain,
+  Heart,
+  Briefcase,
+  Zap,
+  Target,
+  Star,
+  Users,
+  Check,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { EmberFirefly } from '../ember/EmberFirefly';
@@ -12,17 +26,53 @@ import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
 import { determineArchetype } from '../../lib/archetypes';
+import { MatchDetailModal, type MatchDetailData } from '../matches/MatchDetailModal';
 
-interface TopCandidate {
-  rank: number;
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+interface EmployerData {
+  id: string;
+  user_id: string;
+  company_name: string;
+  openness_preference: number;
+  conscientiousness_preference: number;
+  extraversion_preference: number;
+  agreeableness_preference: number;
+  neuroticism_preference: number;
+  culture_values: string[];
+  work_style?: string;
+}
+
+interface RoleOption {
+  id: string;
+  title: string;
+  work_style: string | null;
+  required_openness_min: number | null;
+  required_openness_max: number | null;
+  required_conscientiousness_min: number | null;
+  required_conscientiousness_max: number | null;
+  required_extraversion_min: number | null;
+  required_extraversion_max: number | null;
+  required_agreeableness_min: number | null;
+  required_agreeableness_max: number | null;
+  required_neuroticism_min: number | null;
+  required_neuroticism_max: number | null;
+}
+
+interface CandidateResult {
   candidateId: string;
   name: string;
   headline: string;
   location: string;
-  archetype: string;
+  workStyle: string;
+  archetype: { name: string; key: string; description?: string; strengths: string[] };
   overallScore: number;
   traitScore: number;
   cultureScore: number;
+  workStyleFit: number;
+  valuesFit: number;
   breakdown: {
     opennessFit: number;
     conscientiousnessFit: number;
@@ -30,134 +80,430 @@ interface TopCandidate {
     agreeablenessFit: number;
     neuroticismFit: number;
   };
+  candidateOcean: OCEANScores;
 }
 
-function ScoreRing({ score, size = 64, label }: { score: number; size?: number; label?: string }) {
-  const radius = (size - 6) / 2;
+type SortOption = 'overall' | 'culture' | 'trait' | 'archetype';
+
+/* ------------------------------------------------------------------ */
+/*  ScoreRing                                                          */
+/* ------------------------------------------------------------------ */
+
+function ScoreRing({ score, size = 52 }: { score: number; size?: number }) {
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
-  const color = score >= 85 ? 'var(--color-success)' : score >= 70 ? 'var(--color-accent)' : 'var(--color-warning)';
+  const color = scoreColor(score);
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-border)" strokeWidth={3} />
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={3}
-            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-            className="transition-all duration-1000 ease-out" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold" style={{ color }}>{score}</span>
-        </div>
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-border)" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth}
+          strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold" style={{ color }}>{score}</span>
       </div>
-      {label && <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{label}</span>}
     </div>
   );
 }
 
-const OCEAN_LABELS = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Stability'];
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function scoreColor(score: number): string {
+  if (score >= 85) return 'var(--color-success)';
+  if (score >= 70) return 'var(--color-accent)';
+  if (score >= 55) return 'var(--color-warning)';
+  return 'var(--color-textMuted)';
+}
+
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #6366f1, #8b5cf6)',
+  'linear-gradient(135deg, #f43f5e, #ec4899)',
+  'linear-gradient(135deg, #14b8a6, #06b6d4)',
+  'linear-gradient(135deg, #f59e0b, #ef4444)',
+  'linear-gradient(135deg, #8b5cf6, #d946ef)',
+  'linear-gradient(135deg, #10b981, #3b82f6)',
+];
+
+function avatarGradient(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                     */
+/* ------------------------------------------------------------------ */
 
 export function TopCandidates() {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
+  const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState(true);
-  const [candidates, setCandidates] = useState<TopCandidate[]>([]);
-  const [selectedCandidate, setSelectedCandidate] = useState<TopCandidate | null>(null);
-  const [employerId, setEmployerId] = useState<string | null>(null);
+  const [employer, setEmployer] = useState<EmployerData | null>(null);
+  const [candidates, setCandidates] = useState<CandidateResult[]>([]);
+
+  // Roles
+  const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [minScore, setMinScore] = useState(0);
+  const [maxScore, setMaxScore] = useState(100);
+  const [selectedArchetypes, setSelectedArchetypes] = useState<Set<string>>(new Set());
+  const [selectedWorkStyleFilter, setSelectedWorkStyleFilter] = useState<string | null>(null);
+
+  // Sort
+  const [sortBy, setSortBy] = useState<SortOption>('overall');
+
+  // Modal
+  const [modalCandidate, setModalCandidate] = useState<CandidateResult | null>(null);
+
+  // Shortlist (visual only, component state)
+  const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
+
+  // Raw candidates data (before scoring — allows re-scoring when role changes)
+  const [rawCandidates, setRawCandidates] = useState<any[]>([]);
+
+  /* ---- Derived data ---- */
+
+  const uniqueArchetypes = useMemo(
+    () => [...new Set(candidates.map(c => c.archetype.name))].sort(),
+    [candidates]
+  );
+
+  const activeFilterCount =
+    (minScore > 0 ? 1 : 0) +
+    (maxScore < 100 ? 1 : 0) +
+    (selectedArchetypes.size > 0 ? 1 : 0) +
+    (selectedWorkStyleFilter ? 1 : 0);
+
+  const filteredCandidates = useMemo(() => {
+    let result = candidates.filter(c => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (
+          !c.name.toLowerCase().includes(q) &&
+          !c.headline.toLowerCase().includes(q) &&
+          !c.archetype.name.toLowerCase().includes(q) &&
+          !(c.location || '').toLowerCase().includes(q)
+        ) return false;
+      }
+      if (c.overallScore < minScore || c.overallScore > maxScore) return false;
+      if (selectedArchetypes.size > 0 && !selectedArchetypes.has(c.archetype.name)) return false;
+      if (selectedWorkStyleFilter && c.workStyle !== selectedWorkStyleFilter) return false;
+      return true;
+    });
+
+    switch (sortBy) {
+      case 'overall':
+        result.sort((a, b) => b.overallScore - a.overallScore);
+        break;
+      case 'culture':
+        result.sort((a, b) => b.cultureScore - a.cultureScore);
+        break;
+      case 'trait':
+        result.sort((a, b) => b.traitScore - a.traitScore);
+        break;
+      case 'archetype':
+        result.sort((a, b) => a.archetype.name.localeCompare(b.archetype.name));
+        break;
+    }
+
+    return result;
+  }, [candidates, searchQuery, minScore, maxScore, selectedArchetypes, selectedWorkStyleFilter, sortBy]);
+
+  /* ---- Data Loading ---- */
 
   useEffect(() => {
     if (!user) return;
-    loadTopCandidates();
+    loadInitialData();
   }, [user]);
 
-  const loadTopCandidates = async () => {
+  const loadInitialData = async () => {
     if (!user) return;
     setIsLoading(true);
 
     try {
-      const { data: employer } = await supabase
+      // Fetch employer
+      const { data: emp } = await supabase
         .from('employers')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (!employer) {
+      if (!emp) {
         setIsLoading(false);
         return;
       }
+      setEmployer(emp);
 
-      setEmployerId(employer.id);
+      // Fetch roles for this employer
+      const { data: rolesData } = await supabase
+        .from('roles')
+        .select('id, title, work_style, required_openness_min, required_openness_max, required_conscientiousness_min, required_conscientiousness_max, required_extraversion_min, required_extraversion_max, required_agreeableness_min, required_agreeableness_max, required_neuroticism_min, required_neuroticism_max')
+        .eq('employer_id', emp.id);
 
-      const employerOcean: OCEANScores = {
-        openness: employer.openness_preference || 50,
-        conscientiousness: employer.conscientiousness_preference || 50,
-        extraversion: employer.extraversion_preference || 50,
-        agreeableness: employer.agreeableness_preference || 50,
-        neuroticism: employer.neuroticism_preference || 50,
-      };
+      if (rolesData && rolesData.length > 0) {
+        setRoles(rolesData);
+      }
 
+      // Fetch all candidates with completed assessments
       const { data: candidatesData } = await supabase
         .from('candidates')
         .select('*, profiles!inner(full_name, email)')
         .not('openness_score', 'is', null);
 
-      if (!candidatesData) {
+      if (!candidatesData || candidatesData.length === 0) {
+        setCandidates([]);
         setIsLoading(false);
         return;
       }
 
-      const results: TopCandidate[] = candidatesData.map((c: any) => {
-        const candidateOcean: OCEANScores = {
-          openness: c.openness_score || 50,
-          conscientiousness: c.conscientiousness_score || 50,
-          extraversion: c.extraversion_score || 50,
-          agreeableness: c.agreeableness_score || 50,
-          neuroticism: c.neuroticism_score || 50,
-        };
-
-        const result = calculateCompatibility({
-          candidateOCEAN: candidateOcean,
-          employerPreferences: {
-            ...employerOcean,
-            cultureValues: employer.culture_values || [],
-          },
-          candidateWorkStyle: c.work_style || undefined,
-        });
-
-        const arch = determineArchetype(candidateOcean);
-
-        return {
-          rank: 0,
-          candidateId: c.id,
-          name: c.profiles?.full_name || 'Unknown',
-          headline: c.headline || arch.name,
-          location: c.location || '',
-          archetype: arch.name,
-          overallScore: result.overallMatchScore,
-          traitScore: result.traitMatchScore,
-          cultureScore: result.cultureMatchScore,
-          breakdown: {
-            opennessFit: result.breakdown.opennessFit,
-            conscientiousnessFit: result.breakdown.conscientiousnessFit,
-            extraversionFit: result.breakdown.extraversionFit,
-            agreeablenessFit: result.breakdown.agreeablenessFit,
-            neuroticismFit: result.breakdown.neuroticismFit,
-          },
-        };
-      });
-
-      results.sort((a, b) => b.overallScore - a.overallScore);
-      const top10 = results.slice(0, 10).map((c, i) => ({ ...c, rank: i + 1 }));
-      setCandidates(top10);
-
-      if (top10.length > 0) setSelectedCandidate(top10[0]);
+      setRawCandidates(candidatesData);
+      scoreCandidates(candidatesData, emp, null);
     } catch (err) {
       console.error('Error loading top candidates:', err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const scoreCandidates = useCallback((
+    candidatesData: any[],
+    emp: EmployerData,
+    role: RoleOption | null,
+  ) => {
+    const employerOcean: OCEANScores = {
+      openness: emp.openness_preference || 50,
+      conscientiousness: emp.conscientiousness_preference || 50,
+      extraversion: emp.extraversion_preference || 50,
+      agreeableness: emp.agreeableness_preference || 50,
+      neuroticism: emp.neuroticism_preference || 50,
+    };
+
+    const results: CandidateResult[] = candidatesData.map((c: any) => {
+      const candidateOcean: OCEANScores = {
+        openness: c.openness_score || 50,
+        conscientiousness: c.conscientiousness_score || 50,
+        extraversion: c.extraversion_score || 50,
+        agreeableness: c.agreeableness_score || 50,
+        neuroticism: c.neuroticism_score || 50,
+      };
+
+      const compatInput: any = {
+        candidateOCEAN: candidateOcean,
+        employerPreferences: {
+          ...employerOcean,
+          cultureValues: emp.culture_values || [],
+        },
+        candidateWorkStyle: c.work_style || undefined,
+      };
+
+      // If a role is selected, include role requirements
+      if (role) {
+        compatInput.roleWorkStyle = role.work_style || undefined;
+        compatInput.roleRequirements = {
+          required_openness_min: role.required_openness_min,
+          required_openness_max: role.required_openness_max,
+          required_conscientiousness_min: role.required_conscientiousness_min,
+          required_conscientiousness_max: role.required_conscientiousness_max,
+          required_extraversion_min: role.required_extraversion_min,
+          required_extraversion_max: role.required_extraversion_max,
+          required_agreeableness_min: role.required_agreeableness_min,
+          required_agreeableness_max: role.required_agreeableness_max,
+          required_neuroticism_min: role.required_neuroticism_min,
+          required_neuroticism_max: role.required_neuroticism_max,
+          work_style: role.work_style,
+        };
+      }
+
+      const result = calculateCompatibility(compatInput);
+      const arch = determineArchetype(candidateOcean);
+
+      return {
+        candidateId: c.id,
+        name: c.profiles?.full_name || 'Unknown',
+        headline: c.headline || arch.name,
+        location: c.location || '',
+        workStyle: c.work_style || '',
+        archetype: { name: arch.name, key: arch.key, description: arch.description, strengths: arch.strengths },
+        overallScore: result.overallMatchScore,
+        traitScore: result.traitMatchScore,
+        cultureScore: result.cultureMatchScore,
+        workStyleFit: result.breakdown.workStyleFit,
+        valuesFit: result.breakdown.valuesFit,
+        breakdown: {
+          opennessFit: result.breakdown.opennessFit,
+          conscientiousnessFit: result.breakdown.conscientiousnessFit,
+          extraversionFit: result.breakdown.extraversionFit,
+          agreeablenessFit: result.breakdown.agreeablenessFit,
+          neuroticismFit: result.breakdown.neuroticismFit,
+        },
+        candidateOcean,
+      };
+    });
+
+    results.sort((a, b) => b.overallScore - a.overallScore);
+    setCandidates(results);
+  }, []);
+
+  /* ---- Role change handler ---- */
+
+  const handleRoleChange = useCallback((roleId: string | null) => {
+    setSelectedRoleId(roleId);
+    if (!employer || rawCandidates.length === 0) return;
+
+    const role = roleId ? roles.find(r => r.id === roleId) || null : null;
+    scoreCandidates(rawCandidates, employer, role);
+  }, [employer, rawCandidates, roles, scoreCandidates]);
+
+  /* ---- Modal data ---- */
+
+  const buildModalData = useCallback((c: CandidateResult): MatchDetailData => {
+    if (!employer) {
+      return {
+        id: c.candidateId,
+        name: c.name,
+        subtitle: c.headline,
+        archetype: c.archetype,
+        overallScore: c.overallScore,
+        traitScore: c.traitScore,
+        cultureScore: c.cultureScore,
+        workStyleScore: c.workStyleFit,
+        communicationScore: Math.round((c.breakdown.extraversionFit + c.breakdown.agreeablenessFit) / 2),
+      };
+    }
+
+    return {
+      id: c.candidateId,
+      name: c.name,
+      subtitle: c.headline,
+      archetype: c.archetype,
+      overallScore: c.overallScore,
+      traitScore: c.traitScore,
+      cultureScore: c.cultureScore,
+      workStyleScore: c.workStyleFit,
+      communicationScore: Math.round((c.breakdown.extraversionFit + c.breakdown.agreeablenessFit) / 2),
+      dimensionAnalysis: [
+        {
+          name: 'Openness',
+          candidate_score: c.candidateOcean.openness,
+          employer_preference: employer.openness_preference || 50,
+          fit_score: c.breakdown.opennessFit,
+          gap: Math.abs(c.candidateOcean.openness - (employer.openness_preference || 50)),
+          direction: c.candidateOcean.openness > (employer.openness_preference || 50) ? 'above' : c.candidateOcean.openness < (employer.openness_preference || 50) ? 'below' : 'aligned',
+        },
+        {
+          name: 'Conscientiousness',
+          candidate_score: c.candidateOcean.conscientiousness,
+          employer_preference: employer.conscientiousness_preference || 50,
+          fit_score: c.breakdown.conscientiousnessFit,
+          gap: Math.abs(c.candidateOcean.conscientiousness - (employer.conscientiousness_preference || 50)),
+          direction: c.candidateOcean.conscientiousness > (employer.conscientiousness_preference || 50) ? 'above' : c.candidateOcean.conscientiousness < (employer.conscientiousness_preference || 50) ? 'below' : 'aligned',
+        },
+        {
+          name: 'Extraversion',
+          candidate_score: c.candidateOcean.extraversion,
+          employer_preference: employer.extraversion_preference || 50,
+          fit_score: c.breakdown.extraversionFit,
+          gap: Math.abs(c.candidateOcean.extraversion - (employer.extraversion_preference || 50)),
+          direction: c.candidateOcean.extraversion > (employer.extraversion_preference || 50) ? 'above' : c.candidateOcean.extraversion < (employer.extraversion_preference || 50) ? 'below' : 'aligned',
+        },
+        {
+          name: 'Agreeableness',
+          candidate_score: c.candidateOcean.agreeableness,
+          employer_preference: employer.agreeableness_preference || 50,
+          fit_score: c.breakdown.agreeablenessFit,
+          gap: Math.abs(c.candidateOcean.agreeableness - (employer.agreeableness_preference || 50)),
+          direction: c.candidateOcean.agreeableness > (employer.agreeableness_preference || 50) ? 'above' : c.candidateOcean.agreeableness < (employer.agreeableness_preference || 50) ? 'below' : 'aligned',
+        },
+        {
+          name: 'Stability',
+          candidate_score: 100 - c.candidateOcean.neuroticism,
+          employer_preference: 100 - (employer.neuroticism_preference || 50),
+          fit_score: c.breakdown.neuroticismFit,
+          gap: Math.abs(c.candidateOcean.neuroticism - (employer.neuroticism_preference || 50)),
+          direction: c.candidateOcean.neuroticism < (employer.neuroticism_preference || 50) ? 'above' : c.candidateOcean.neuroticism > (employer.neuroticism_preference || 50) ? 'below' : 'aligned',
+        },
+      ],
+    };
+  }, [employer]);
+
+  /* ---- Chat handler ---- */
+
+  const handleInviteChat = useCallback(async (candidate: CandidateResult) => {
+    if (!employer) return;
+    try {
+      const insertData: any = {
+        candidate_id: candidate.candidateId,
+        employer_id: employer.id,
+        initiated_by: 'employer',
+        status: 'pending',
+        match_score: candidate.overallScore,
+      };
+      if (selectedRoleId) {
+        const role = roles.find(r => r.id === selectedRoleId);
+        if (role) {
+          insertData.role_id = selectedRoleId;
+          insertData.role_title = role.title;
+        }
+      }
+      await supabase.from('coffee_chats').insert(insertData);
+      showSuccess('Sent!', 'Coffee chat invitation sent');
+    } catch {
+      showError('Error', 'Failed to send invitation');
+    }
+  }, [employer, selectedRoleId, roles, showSuccess, showError]);
+
+  /* ---- Shortlist toggle ---- */
+
+  const toggleShortlist = (candidateId: string) => {
+    setShortlisted(prev => {
+      const next = new Set(prev);
+      if (next.has(candidateId)) {
+        next.delete(candidateId);
+      } else {
+        next.add(candidateId);
+      }
+      return next;
+    });
+  };
+
+  /* ---- Archetype filter toggle ---- */
+
+  const toggleArchetypeFilter = (name: string) => {
+    setSelectedArchetypes(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  };
+
+  const clearFilters = () => {
+    setMinScore(0);
+    setMaxScore(100);
+    setSelectedArchetypes(new Set());
+    setSelectedWorkStyleFilter(null);
+    setSearchQuery('');
+  };
+
+  /* ---- Loading ---- */
 
   if (isLoading) {
     return (
@@ -166,6 +512,22 @@ export function TopCandidates() {
           <EmberFirefly size="lg" mood="thinking" animated />
           <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
             Ranking candidates by culture fit...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!employer) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <EmberFirefly size="xl" mood="neutral" />
+          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
+            Complete your setup
+          </h2>
+          <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
+            Set up your employer profile to start finding candidates.
           </p>
         </div>
       </div>
@@ -188,141 +550,365 @@ export function TopCandidates() {
     );
   }
 
-  return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-          <Trophy className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
-          Top Candidates
-        </h1>
-        <p style={{ color: 'var(--color-textSecondary)' }}>
-          Candidates ranked by personality fit for your culture
-        </p>
-      </div>
+  /* ---- Main Render ---- */
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Candidate list */}
-        <div className="lg:col-span-2 space-y-3">
-          {candidates.map(c => (
-            <button
-              key={c.candidateId}
-              onClick={() => setSelectedCandidate(c)}
-              className={`w-full p-4 rounded-2xl text-left transition-all ${
-                selectedCandidate?.candidateId === c.candidateId
-                  ? 'ring-2 ring-[var(--color-accent)]'
-                  : 'hover:bg-[var(--color-surfaceHover)]'
-              }`}
-              style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-            >
-              <div className="flex items-center gap-4">
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      {/* Header */}
+      <div className="border-b px-6 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                <Trophy className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+                Top Candidates
+              </h1>
+              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+                {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? 's' : ''} found
+                {shortlisted.size > 0 && (
+                  <span style={{ color: 'var(--color-accent)' }}> &middot; {shortlisted.size} shortlisted</span>
+                )}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Role dropdown */}
+              {roles.length > 0 && (
                 <div className="relative">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center"
-                    style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
-                  >
-                    <span className="text-lg font-medium text-white">{c.name.charAt(0)}</span>
-                  </div>
-                  <div
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                  <select
+                    value={selectedRoleId || ''}
+                    onChange={e => handleRoleChange(e.target.value || null)}
+                    className="appearance-none pl-8 pr-8 py-2 rounded-xl text-sm font-medium cursor-pointer"
                     style={{
-                      backgroundColor: c.rank <= 3 ? 'var(--color-accent)' : 'var(--color-surface)',
-                      color: c.rank <= 3 ? 'white' : 'var(--color-textMuted)',
-                      border: c.rank > 3 ? '1px solid var(--color-border)' : 'none',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-textSecondary)',
+                      border: '1px solid var(--color-border)',
                     }}
                   >
-                    {c.rank}
-                  </div>
+                    <option value="">All Roles</option>
+                    {roles.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+                  </select>
+                  <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--color-textMuted)' }} />
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--color-textMuted)' }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>{c.name}</h3>
-                  <p className="text-sm truncate" style={{ color: 'var(--color-textSecondary)' }}>{c.headline}</p>
-                  {c.location && (
-                    <span className="text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--color-textMuted)' }}>
-                      <MapPin className="w-3 h-3" /> {c.location}
-                    </span>
-                  )}
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-bold" style={{ color: c.overallScore >= 85 ? 'var(--color-success)' : c.overallScore >= 70 ? 'var(--color-accent)' : 'var(--color-warning)' }}>
-                    {c.overallScore}%
-                  </div>
-                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{c.archetype}</p>
-                </div>
-                <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
-              </div>
-            </button>
-          ))}
-        </div>
+              )}
 
-        {/* Detail panel */}
-        <div className="lg:col-span-1">
-          {selectedCandidate ? (
-            <div className="sticky top-6 p-5 rounded-2xl space-y-5" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <div className="text-center pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                <div className="flex justify-center gap-3">
-                  <ScoreRing score={selectedCandidate.overallScore} label="Overall" />
-                  <ScoreRing score={selectedCandidate.traitScore} size={50} label="Traits" />
-                  <ScoreRing score={selectedCandidate.cultureScore} size={50} label="Culture" />
-                </div>
-                <h3 className="font-semibold text-lg mt-3" style={{ color: 'var(--color-text)' }}>{selectedCandidate.name}</h3>
-                <p className="text-sm" style={{ color: 'var(--color-accent)' }}>{selectedCandidate.archetype}</p>
+              {/* Sort */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value as SortOption)}
+                  className="appearance-none pl-8 pr-8 py-2 rounded-xl text-sm font-medium cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-textSecondary)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <option value="overall">Overall Match</option>
+                  <option value="culture">Culture Fit</option>
+                  <option value="trait">Trait Match</option>
+                  <option value="archetype">Archetype</option>
+                </select>
+                <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--color-textMuted)' }} />
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--color-textMuted)' }} />
               </div>
 
-              {/* OCEAN bars */}
-              <div>
-                <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>OCEAN Breakdown</h4>
-                <div className="space-y-2">
-                  {[
-                    selectedCandidate.breakdown.opennessFit,
-                    selectedCandidate.breakdown.conscientiousnessFit,
-                    selectedCandidate.breakdown.extraversionFit,
-                    selectedCandidate.breakdown.agreeablenessFit,
-                    selectedCandidate.breakdown.neuroticismFit,
-                  ].map((fit, i) => (
-                    <div key={i}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{OCEAN_LABELS[i]}</span>
-                        <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{fit}%</span>
-                      </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                        <div className="h-full rounded-full" style={{ width: `${fit}%`, backgroundColor: fit >= 80 ? 'var(--color-success)' : fit >= 60 ? 'var(--color-accent)' : 'var(--color-warning)' }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                className="w-full"
-                size="sm"
-                leftIcon={<Coffee className="w-4 h-4" />}
-                onClick={async () => {
-                  if (!employerId || !selectedCandidate) return;
-                  try {
-                    await supabase.from('coffee_chats').insert({
-                      candidate_id: selectedCandidate.candidateId,
-                      employer_id: employerId,
-                      initiated_by: 'employer',
-                      status: 'pending',
-                      match_score: selectedCandidate.overallScore,
-                    });
-                    showSuccess('Sent!', 'Coffee chat invitation sent');
-                  } catch {
-                    showError('Error', 'Failed to send invitation');
-                  }
+              {/* Filter toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: showFilters || activeFilterCount > 0 ? 'var(--color-accent)' : 'var(--color-surface)',
+                  color: showFilters || activeFilterCount > 0 ? 'white' : 'var(--color-textSecondary)',
+                  border: showFilters || activeFilterCount > 0 ? 'none' : '1px solid var(--color-border)',
                 }}
               >
-                invite to coffee chat
-              </Button>
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </button>
             </div>
-          ) : (
-            <div className="sticky top-6 p-8 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <EmberFirefly size="md" mood="neutral" />
-              <p className="mt-4" style={{ color: 'var(--color-textMuted)' }}>Select a candidate for details</p>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
+            <input
+              type="text"
+              placeholder="Search by name, headline, archetype, or location..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none"
+              style={{
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+              }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <X className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
+            )}
+          </div>
+
+          {/* Filter panel */}
+          {showFilters && (
+            <div className="mt-4 p-4 rounded-xl space-y-4" style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
+              {/* Match score range */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-textMuted)' }}>Match Score Range</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={minScore}
+                    onChange={e => setMinScore(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                    className="w-20 px-3 py-2 rounded-lg text-sm text-center"
+                    style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                    placeholder="0"
+                  />
+                  <span className="text-sm" style={{ color: 'var(--color-textMuted)' }}>to</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={maxScore}
+                    onChange={e => setMaxScore(Math.max(0, Math.min(100, parseInt(e.target.value) || 100)))}
+                    className="w-20 px-3 py-2 rounded-lg text-sm text-center"
+                    style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                    placeholder="100"
+                  />
+                  <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>%</span>
+                </div>
+              </div>
+
+              {/* Archetype checkboxes */}
+              {uniqueArchetypes.length > 0 && (
+                <div>
+                  <label className="text-xs font-medium mb-2 block" style={{ color: 'var(--color-textMuted)' }}>Archetype</label>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueArchetypes.map(arch => (
+                      <button
+                        key={arch}
+                        onClick={() => toggleArchetypeFilter(arch)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                        style={{
+                          backgroundColor: selectedArchetypes.has(arch) ? 'var(--color-accent)' : 'var(--color-surface)',
+                          color: selectedArchetypes.has(arch) ? 'white' : 'var(--color-textSecondary)',
+                          border: selectedArchetypes.has(arch) ? 'none' : '1px solid var(--color-border)',
+                        }}
+                      >
+                        {selectedArchetypes.has(arch) && <Check className="w-3 h-3" />}
+                        {arch}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Work style preference */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-textMuted)' }}>Work Style Preference</label>
+                <select
+                  value={selectedWorkStyleFilter || ''}
+                  onChange={e => setSelectedWorkStyleFilter(e.target.value || null)}
+                  className="w-full max-w-xs px-3 py-2 rounded-lg text-sm"
+                  style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="">All</option>
+                  <option value="remote">Remote</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="onsite">Onsite</option>
+                </select>
+              </div>
+
+              {activeFilterCount > 0 && (
+                <div className="flex justify-end">
+                  <button onClick={clearFilters} className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>
+                    Clear all filters
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Results Grid */}
+      <div className="max-w-6xl mx-auto p-6">
+        {filteredCandidates.length === 0 ? (
+          <div className="p-12 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <Users className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
+            <p className="font-medium mb-1" style={{ color: 'var(--color-text)' }}>No candidates match your filters</p>
+            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+              Try adjusting your filters or search query.
+            </p>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters} className="mt-4 text-sm font-medium" style={{ color: 'var(--color-accent)' }}>
+                Clear all filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCandidates.map((c) => {
+              const isShortlisted = shortlisted.has(c.candidateId);
+              return (
+                <div
+                  key={c.candidateId}
+                  className="p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer group relative"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: isShortlisted ? 'var(--color-accent)' : 'var(--color-border)',
+                  }}
+                  onClick={() => setModalCandidate(c)}
+                >
+                  {/* Shortlist indicator */}
+                  {isShortlisted && (
+                    <div
+                      className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--color-accent)' }}
+                    >
+                      <Star className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+
+                  {/* Top row: avatar + score ring */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      {/* Candidate initial avatar */}
+                      <div
+                        className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: avatarGradient(c.name) }}
+                      >
+                        <span className="text-lg font-semibold text-white">
+                          {c.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold line-clamp-1" style={{ color: 'var(--color-text)' }}>
+                          {c.name}
+                        </h3>
+                        <p className="text-sm line-clamp-1" style={{ color: 'var(--color-textSecondary)' }}>
+                          {c.headline}
+                        </p>
+                      </div>
+                    </div>
+                    <ScoreRing score={c.overallScore} size={48} />
+                  </div>
+
+                  {/* Archetype badge */}
+                  <div className="mb-3">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: `var(--color-accent)15`, color: 'var(--color-accent)' }}
+                    >
+                      <Target className="w-3 h-3" />
+                      {c.archetype.name}
+                    </span>
+                  </div>
+
+                  {/* Top trait pills (from archetype strengths) */}
+                  {c.archetype.strengths.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {c.archetype.strengths.slice(0, 3).map((strength, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}
+                        >
+                          {strength}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Location + work style */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {c.location && (
+                      <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-md" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                        <MapPin className="w-3 h-3" />{c.location}
+                      </span>
+                    )}
+                    {c.workStyle && (
+                      <span className="text-xs px-2 py-1 rounded-md" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-textMuted)' }}>
+                        {c.workStyle.charAt(0).toUpperCase() + c.workStyle.slice(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Score mini breakdown */}
+                  <div className="flex gap-3 mb-4 text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    <span className="flex items-center gap-1"><Brain className="w-3 h-3" style={{ color: 'var(--color-accent)' }} />{c.traitScore}%</span>
+                    <span className="flex items-center gap-1"><Heart className="w-3 h-3" style={{ color: 'var(--color-warning)' }} />{c.cultureScore}%</span>
+                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" style={{ color: 'var(--color-success)' }} />{c.workStyleFit}%</span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      leftIcon={<Coffee className="w-3.5 h-3.5" />}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await handleInviteChat(c);
+                      }}
+                    >
+                      Invite to Chat
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      rightIcon={<Eye className="w-3.5 h-3.5" />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModalCandidate(c);
+                      }}
+                    >
+                      Details
+                    </Button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleShortlist(c.candidateId);
+                      }}
+                      className="p-2 rounded-lg border transition-all"
+                      style={{
+                        borderColor: isShortlisted ? 'var(--color-accent)' : 'var(--color-border)',
+                        backgroundColor: isShortlisted ? 'var(--color-accent)' : 'transparent',
+                        color: isShortlisted ? 'white' : 'var(--color-textMuted)',
+                      }}
+                      title={isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Match Detail Modal */}
+      {modalCandidate && (
+        <MatchDetailModal
+          isOpen={!!modalCandidate}
+          onClose={() => setModalCandidate(null)}
+          role="employer"
+          matchData={buildModalData(modalCandidate)}
+          candidateId={modalCandidate.candidateId}
+          employerId={employer.id}
+          roleId={selectedRoleId || undefined}
+          onRequestChat={() => handleInviteChat(modalCandidate)}
+          onAskEmber={() => {
+            navigate('/app/employer/ember');
+          }}
+        />
+      )}
     </div>
   );
 }

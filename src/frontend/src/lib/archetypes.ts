@@ -17,6 +17,7 @@ export interface Archetype {
   description: string;
   strengths: string[];
   idealEnvironments: string[];
+  idealCultures: string[];
 }
 
 export const ARCHETYPES: Record<string, Archetype> = {
@@ -27,6 +28,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Creative thinker who thrives on new ideas and unconventional solutions',
     strengths: ['Creative problem-solving', 'Adaptability', 'Visionary thinking'],
     idealEnvironments: ['Startups', 'R&D teams', 'Creative agencies'],
+    idealCultures: ['Innovation', 'Creativity', 'Risk', 'Agility'],
   },
   the_architect: {
     key: 'the_architect',
@@ -35,6 +37,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Systematic builder who creates order from complexity',
     strengths: ['Organization', 'Process design', 'Quality assurance'],
     idealEnvironments: ['Engineering teams', 'Operations', 'Project management'],
+    idealCultures: ['Excellence', 'Quality', 'Stability', 'Integrity'],
   },
   the_connector: {
     key: 'the_connector',
@@ -43,6 +46,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Natural relationship builder who brings people together',
     strengths: ['Networking', 'Team building', 'Communication'],
     idealEnvironments: ['Sales', 'HR', 'Community management'],
+    idealCultures: ['Collaboration', 'Empathy', 'Trust', 'Diversity'],
   },
   the_catalyst: {
     key: 'the_catalyst',
@@ -51,6 +55,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Bold leader who drives change and inspires action',
     strengths: ['Leadership', 'Strategic thinking', 'Influence'],
     idealEnvironments: ['Management', 'Consulting', 'Entrepreneurship'],
+    idealCultures: ['Speed', 'Autonomy', 'Growth', 'Impact'],
   },
   the_craftsperson: {
     key: 'the_craftsperson',
@@ -59,6 +64,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Detail-oriented perfectionist who takes pride in quality work',
     strengths: ['Precision', 'Deep expertise', 'Reliability'],
     idealEnvironments: ['Specialized roles', 'Research', 'Technical writing'],
+    idealCultures: ['Quality', 'Excellence', 'Stability', 'Integrity'],
   },
   the_harmonizer: {
     key: 'the_harmonizer',
@@ -67,6 +73,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Empathetic mediator who creates balance and resolves conflict',
     strengths: ['Conflict resolution', 'Empathy', 'Team cohesion'],
     idealEnvironments: ['Support roles', 'Counseling', 'Team leads'],
+    idealCultures: ['Collaboration', 'Empathy', 'Balance', 'Mission'],
   },
   the_explorer: {
     key: 'the_explorer',
@@ -75,6 +82,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Curious adventurer who adapts quickly and embraces the unknown',
     strengths: ['Adaptability', 'Curiosity', 'Resilience'],
     idealEnvironments: ['Travel', 'Consulting', 'Diverse teams'],
+    idealCultures: ['Innovation', 'Autonomy', 'Risk', 'Growth'],
   },
   the_strategist: {
     key: 'the_strategist',
@@ -83,6 +91,7 @@ export const ARCHETYPES: Record<string, Archetype> = {
     description: 'Analytical thinker who plans ahead and sees the big picture',
     strengths: ['Analysis', 'Planning', 'Decision-making'],
     idealEnvironments: ['Strategy', 'Analytics', 'Finance'],
+    idealCultures: ['Excellence', 'Growth', 'Impact', 'Quality'],
   },
 };
 
