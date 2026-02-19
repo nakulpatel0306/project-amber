@@ -204,7 +204,7 @@ const forCandidates = [
 
 const forEmployers = [
   { text: 'Define your company culture scientifically', icon: Zap },
-  { text: 'Get your Top 10 candidates on a silver platter', icon: Trophy },
+  { text: 'Get your best candidates on a silver platter', icon: Trophy },
   { text: 'AI-ranked candidates by personality fit', icon: TrendingUp },
   { text: 'Reduce turnover with better culture matches', icon: Shield },
 ];

@@ -529,24 +529,26 @@ export function CultureInsights() {
   if (preferences.conscientiousness > 60) { attractors.push('Clear goals & accountability'); repellers.push('Ambiguous expectations'); }
   else { attractors.push('Flexible deadlines & autonomy'); repellers.push('Micromanagement & rigid timelines'); }
 
-  // Culture strengths & gaps
+  // Culture strengths (top dimensions) & growth areas (bottom dimensions)
+  const dimensionMeta: { key: string; icon: React.ElementType; strengthLabel: string; strengthDesc: string; gapLabel: string; gapDesc: string; color: string }[] = [
+    { key: 'openness', icon: Lightbulb, strengthLabel: 'Innovation-First', strengthDesc: 'Your culture prizes creative thinking and new approaches', gapLabel: 'Innovation Opportunities', gapDesc: 'Creating more space for creative experimentation could attract diverse thinkers', color: '#8B5CF6' },
+    { key: 'conscientiousness', icon: Target, strengthLabel: 'Results-Driven', strengthDesc: 'Clear accountability and high performance standards', gapLabel: 'Structure Opportunities', gapDesc: 'Adding clearer goals and processes could boost team performance', color: '#10B981' },
+    { key: 'extraversion', icon: Users, strengthLabel: 'Highly Collaborative', strengthDesc: 'Strong team dynamics and open communication', gapLabel: 'Collaboration Opportunities', gapDesc: 'More team interaction and social touchpoints could enhance outcomes', color: '#F59E0B' },
+    { key: 'agreeableness', icon: Heart, strengthLabel: 'People-First', strengthDesc: 'Empathy and support are core to your culture', gapLabel: 'Empathy Opportunities', gapDesc: 'More emphasis on interpersonal warmth could improve retention', color: '#EC4899' },
+    { key: 'neuroticism', icon: Shield, strengthLabel: 'Resilient & Steady', strengthDesc: 'Calm under pressure with consistent performance', gapLabel: 'Resilience Opportunities', gapDesc: 'Building stress-management practices could strengthen your team', color: '#06B6D4' },
+  ];
+
   const cultureStrengths: { icon: React.ElementType; label: string; desc: string; color: string }[] = [];
   const cultureGaps: { icon: React.ElementType; label: string; desc: string; color: string }[] = [];
 
-  if (preferences.openness >= 65) cultureStrengths.push({ icon: Lightbulb, label: 'Innovation-First', desc: 'Your culture prizes creative thinking and new approaches', color: '#8B5CF6' });
-  else if (preferences.openness <= 35) cultureGaps.push({ icon: Lightbulb, label: 'Innovation Opportunities', desc: 'Consider creating space for creative experimentation', color: '#8B5CF6' });
-
-  if (preferences.conscientiousness >= 65) cultureStrengths.push({ icon: Target, label: 'Results-Driven', desc: 'Clear accountability and high performance standards', color: '#10B981' });
-  else if (preferences.conscientiousness <= 35) cultureGaps.push({ icon: Target, label: 'Structure Opportunities', desc: 'Adding clearer goals could boost team performance', color: '#10B981' });
-
-  if (preferences.extraversion >= 65) cultureStrengths.push({ icon: Users, label: 'Highly Collaborative', desc: 'Strong team dynamics and open communication', color: '#F59E0B' });
-  else if (preferences.extraversion <= 35) cultureGaps.push({ icon: Users, label: 'Collaboration Opportunities', desc: 'More team interaction could enhance outcomes', color: '#F59E0B' });
-
-  if (preferences.agreeableness >= 65) cultureStrengths.push({ icon: Heart, label: 'People-First', desc: 'Empathy and support are core to your culture', color: '#EC4899' });
-  else if (preferences.agreeableness <= 35) cultureGaps.push({ icon: Heart, label: 'Empathy Opportunities', desc: 'More emphasis on interpersonal warmth could improve retention', color: '#EC4899' });
-
-  if (preferences.neuroticism >= 65) cultureStrengths.push({ icon: Shield, label: 'Resilient & Steady', desc: 'Calm under pressure with consistent performance', color: '#06B6D4' });
-  else if (preferences.neuroticism <= 35) cultureGaps.push({ icon: Shield, label: 'Resilience Opportunities', desc: 'Building stress-management practices could help', color: '#06B6D4' });
+  // Top 2 dimensions are strengths, bottom 2 are growth areas
+  const sortedDimensions = [...dimensionMeta].sort((a, b) => (preferences[b.key as keyof typeof preferences] || 0) - (preferences[a.key as keyof typeof preferences] || 0));
+  sortedDimensions.slice(0, 2).forEach(d => {
+    cultureStrengths.push({ icon: d.icon, label: d.strengthLabel, desc: d.strengthDesc, color: d.color });
+  });
+  sortedDimensions.slice(-2).forEach(d => {
+    cultureGaps.push({ icon: d.icon, label: d.gapLabel, desc: d.gapDesc, color: d.color });
+  });
 
   // Compatibility signals
   const idealCompanySize = preferences.openness > 60 && preferences.extraversion < 50
@@ -617,7 +619,7 @@ export function CultureInsights() {
         {/* 2. OCEAN Mind Map + Dimension Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           <motion.div
-            className="lg:col-span-2 p-6 rounded-2xl border"
+            className="lg:col-span-3 p-6 rounded-2xl border"
             style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -639,6 +641,7 @@ export function CultureInsights() {
               labels={Object.fromEntries(Object.entries(DIMENSION_INFO).map(([k, v]) => [k, v.label]))}
               centerLabel="IDEAL"
               centerSubLabel="candidate"
+              size="lg"
               animated
               onDimensionClick={handleDimensionClick}
               selectedDimension={selectedDimension}
@@ -650,7 +653,7 @@ export function CultureInsights() {
 
           {/* Dimension Breakdown / Detail */}
           <motion.div
-            className="lg:col-span-3 p-6 rounded-2xl border"
+            className="lg:col-span-2 p-6 rounded-2xl border"
             style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -939,6 +942,7 @@ export function CultureInsights() {
         </motion.div>
 
         {/* 8. Culture Strengths & Growth Areas */}
+        {/* 8. Culture Strengths & Growth Areas — always shown */}
         {(cultureStrengths.length > 0 || cultureGaps.length > 0) && (
           <motion.div
             className="p-6 rounded-2xl border mb-6"
@@ -947,10 +951,13 @@ export function CultureInsights() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
           >
-            <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
               <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Culture Strengths & Growth Areas
             </h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
+              Where your culture excels and where intentional development could broaden your talent appeal
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {cultureStrengths.length > 0 && (
                 <div>

@@ -495,7 +495,7 @@ export function PersonalityInsights() {
         {/* 2. OCEAN Radar Chart + Dimension Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           <motion.div
-            className="lg:col-span-2 p-6 rounded-2xl border"
+            className="lg:col-span-3 p-6 rounded-2xl border"
             style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -515,6 +515,7 @@ export function PersonalityInsights() {
               scores={scores}
               colors={Object.fromEntries(Object.entries(OCEAN_INFO).map(([k, v]) => [k, v.color]))}
               labels={Object.fromEntries(Object.entries(OCEAN_INFO).map(([k, v]) => [k, v.label]))}
+              size="lg"
               animated
               onDimensionClick={(key) => setSelectedDimension(selectedDimension === key ? null : key as keyof typeof OCEAN_INFO)}
               selectedDimension={selectedDimension}
@@ -526,7 +527,7 @@ export function PersonalityInsights() {
 
           {/* 3. Dimension Breakdown */}
           <motion.div
-            className="lg:col-span-3 p-6 rounded-2xl border"
+            className="lg:col-span-2 p-6 rounded-2xl border"
             style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

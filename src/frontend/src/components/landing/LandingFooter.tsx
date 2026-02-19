@@ -110,7 +110,7 @@ export function LandingFooter() {
               {[
                 { label: 'Post a Role', href: '/auth/signup?role=employer' },
                 { label: 'Browse Candidates', href: '/auth/signup?role=employer' },
-                { label: 'Top 10 Matches', href: '/auth/signup?role=employer' },
+                { label: 'Best Matches', href: '/auth/signup?role=employer' },
                 { label: 'Pricing', href: '/app/pricing' },
                 { label: 'Enterprise', href: '/auth/signup?role=employer' },
               ].map(item => (

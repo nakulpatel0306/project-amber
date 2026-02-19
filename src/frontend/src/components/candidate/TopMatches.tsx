@@ -173,7 +173,7 @@ export function TopMatches() {
         <div className="text-center">
           <EmberFirefly size="lg" mood="thinking" animated />
           <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Calculating your top 10 matches...
+            Calculating your top matches...
           </p>
         </div>
       </div>
@@ -189,7 +189,7 @@ export function TopMatches() {
             No matches yet
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Complete your personality assessment to see your top 10 role matches.
+            Complete your personality assessment to see your top role matches.
           </p>
           <Button onClick={() => navigate('/app/personality')}>
             Start Assessment
@@ -206,7 +206,7 @@ export function TopMatches() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <Trophy className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
-            your top 10 matches
+            Your Top Matches
           </h1>
           <p style={{ color: 'var(--color-textSecondary)' }}>
             {archetype ? `As ${archetype.name}, here are your best personality fits` : 'Roles ranked by personality compatibility'}
