@@ -12,16 +12,17 @@ import {
   ChevronRight,
   Target,
   RotateCcw,
-  Lightbulb,
-  Zap,
-  Heart,
-  Anchor,
   Clock,
   X,
+  Sparkles,
+  Puzzle,
+  Brain,
+  MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
+import { determineEmployerArchetype } from '../../data/employerArchetypes';
 import { supabase } from '../../lib/supabase';
 
 
@@ -264,7 +265,7 @@ export function EmployerDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       {/* Welcome Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1
           className="text-2xl font-bold mb-2"
           style={{ color: 'var(--color-text)' }}
@@ -283,7 +284,7 @@ export function EmployerDashboard() {
       {/* Setup Banner (if not complete) */}
       {(!hasCompletedProfile || !hasCompletedCultureQuiz) && (
         <div
-          className="p-6 rounded-2xl mb-8 border"
+          className="p-5 rounded-2xl mb-6 border"
           style={{
             background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.05))',
             borderColor: 'var(--color-accent)',
@@ -364,115 +365,205 @@ export function EmployerDashboard() {
       )}
 
       {/* Culture Profile Summary (when quiz is complete) */}
-      {hasCompletedCultureQuiz && culturePreferences && (
-        <div
-          className="p-6 rounded-2xl mb-8 border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2
-              className="text-lg font-semibold flex items-center gap-2"
-              style={{ color: 'var(--color-text)' }}
+      {hasCompletedCultureQuiz && culturePreferences && (() => {
+        const preferences = {
+          openness: culturePreferences.openness,
+          conscientiousness: culturePreferences.conscientiousness,
+          extraversion: culturePreferences.extraversion,
+          agreeableness: culturePreferences.agreeableness,
+          neuroticism: 100 - culturePreferences.neuroticism,
+        };
+
+        const archetypeScores = {
+          innovation: preferences.openness,
+          collaboration: (preferences.extraversion + preferences.agreeableness) / 2,
+          results: preferences.conscientiousness,
+          warmth: preferences.agreeableness,
+          growth: (preferences.openness + preferences.conscientiousness) / 2,
+          excellence: preferences.conscientiousness,
+        };
+        const archetypes = determineEmployerArchetype(archetypeScores);
+
+        const decisionStyle = preferences.openness > 60 && preferences.conscientiousness > 60
+          ? 'Data-Informed Innovation'
+          : preferences.openness > 60
+          ? 'Intuition-Led'
+          : preferences.conscientiousness > 60
+          ? 'Data-Driven'
+          : 'Balanced Analysis';
+        const communicationStyle = preferences.extraversion > 60 && preferences.agreeableness > 60
+          ? 'Open & Supportive'
+          : preferences.extraversion > 60
+          ? 'Direct & Energetic'
+          : preferences.agreeableness > 60
+          ? 'Thoughtful & Caring'
+          : 'Balanced Dialogue';
+        const teamDynamic = preferences.extraversion > 60
+          ? 'Collaborative-First'
+          : preferences.conscientiousness > 60
+          ? 'Structured & Focused'
+          : 'Flexible Hybrid';
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Card 1: Culture Archetype */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             >
-              <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              Ideal Candidate Profile
-            </h2>
-            <div className="flex items-center gap-3">
-              {lastCultureUpdate && (
-                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                  last updated {lastCultureUpdate.toLocaleDateString()}
-                </span>
-              )}
-              <Link to="/app/employer/insights">
-                <Button variant="outline" size="sm">
-                  View Details
-                </Button>
-              </Link>
-              <Link to="/app/employer/culture-assessment">
-                <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="w-3 h-3" />}>
-                  Retake
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Ideal Candidate OCEAN Preferences */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            {[
-              { key: 'openness', label: 'Openness', icon: Lightbulb, color: '#8B5CF6' },
-              { key: 'conscientiousness', label: 'Conscient.', icon: Target, color: '#10B981' },
-              { key: 'extraversion', label: 'Extraversion', icon: Zap, color: '#F59E0B' },
-              { key: 'agreeableness', label: 'Agreeable.', icon: Heart, color: '#EC4899' },
-              { key: 'neuroticism', label: 'Stability', icon: Anchor, color: '#06B6D4' },
-            ].map(({ key, label, icon: Icon, color }) => {
-              const value = key === 'neuroticism'
-                ? 100 - culturePreferences[key as keyof CulturePreferences]
-                : culturePreferences[key as keyof CulturePreferences];
-              return (
-                <div
-                  key={key}
-                  className="p-4 rounded-xl text-center"
-                  style={{ backgroundColor: 'var(--color-background)' }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center"
-                    style={{ backgroundColor: `${color}15` }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color }} />
-                  </div>
-                  <div
-                    className="text-2xl font-bold mb-1"
-                    style={{ color }}
-                  >
-                    {value}
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    {label}
-                  </div>
-                  <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-1000"
-                      style={{
-                        width: `${value}%`,
-                        backgroundColor: color,
-                      }}
-                    />
-                  </div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                  <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  Culture Archetype
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Link to="/app/employer/insights">
+                    <Button variant="ghost" size="sm">Details</Button>
+                  </Link>
+                  <Link to="/app/employer/culture-assessment">
+                    <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="w-3 h-3" />}>Retake</Button>
+                  </Link>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Culture Values */}
-          {cultureValues.length > 0 && (
-            <div>
-              <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                Your Culture Values
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="text-sm font-semibold px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
+                >
+                  {archetypes.primary.name}
+                </span>
+              </div>
+              <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--color-textMuted)' }}>
+                {archetypes.primary.description}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {cultureValues.slice(0, 5).map((value, index) => (
+              <div className="flex flex-wrap gap-1.5">
+                {archetypes.primary.strengths.slice(0, 4).map((s) => (
                   <span
-                    key={value}
-                    className="px-3 py-1.5 rounded-full text-sm font-medium capitalize"
-                    style={{
-                      backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
-                      color: index === 0 ? 'white' : 'var(--color-text)',
-                    }}
+                    key={s}
+                    className="px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}
                   >
-                    {value}
+                    {s}
                   </span>
                 ))}
               </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Card 2: Culture Preferences (OCEAN Bars) */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
+                <Brain className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                Culture Preferences
+              </h2>
+              <div className="space-y-2.5">
+                {[
+                  { label: 'Openness', value: preferences.openness, color: '#8B5CF6' },
+                  { label: 'Conscientiousness', value: preferences.conscientiousness, color: '#10B981' },
+                  { label: 'Extraversion', value: preferences.extraversion, color: '#F59E0B' },
+                  { label: 'Agreeableness', value: preferences.agreeableness, color: '#EC4899' },
+                  { label: 'Stability', value: preferences.neuroticism, color: '#06B6D4' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item.label}</span>
+                      <span className="text-xs font-semibold" style={{ color: item.color }}>{item.value}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
+                      <div
+                        className="h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${item.value}%`, backgroundColor: item.color }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 3: Operating Style */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
+                <Puzzle className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                Operating Style
+              </h2>
+              <div className="space-y-2">
+                {[
+                  { icon: Brain, label: 'Decision', value: decisionStyle, color: '#8B5CF6' },
+                  { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: '#10B981' },
+                  { icon: Users, label: 'Team Dynamic', value: teamDynamic, color: '#F59E0B' },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="p-2.5 rounded-lg"
+                    style={{ backgroundColor: `${item.color}10` }}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div
+                        className="w-5 h-5 rounded flex items-center justify-center"
+                        style={{ backgroundColor: `${item.color}20` }}
+                      >
+                        <item.icon className="w-3 h-3" style={{ color: item.color }} />
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--color-textMuted)' }}>{item.label}</span>
+                    </div>
+                    <p className="text-xs font-semibold leading-tight" style={{ color: item.color }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 4: Ideal Candidates + Culture Values */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                  <Target className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  Ideal Candidates
+                </h2>
+                {lastCultureUpdate && (
+                  <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    {lastCultureUpdate.toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1.5 mb-3">
+                {archetypes.primary.idealCandidates.slice(0, 4).map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#8B5CF6' }} />
+                    <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              {cultureValues.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {cultureValues.slice(0, 4).map((value, index) => (
+                    <span
+                      key={value}
+                      className="px-2 py-0.5 rounded-full text-xs font-medium capitalize"
+                      style={{
+                        backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
+                        color: index === 0 ? 'white' : 'var(--color-text)',
+                      }}
+                    >
+                      {value}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -487,9 +578,6 @@ export function EmployerDashboard() {
             </p>
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               {stat.label}
-            </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--color-accent)' }}>
-              {stat.change}
             </p>
           </div>
         ))}
@@ -563,18 +651,9 @@ export function EmployerDashboard() {
               ))}
             </div>
           ) : (
-            <div
-              className="text-center py-8 rounded-lg"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <Users
-                className="w-10 h-10 mx-auto mb-3 opacity-40"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
-              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                Define your culture to see matched candidates
-              </p>
-            </div>
+            <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+              Define your culture to see matched candidates
+            </p>
           )}
         </div>
 
@@ -632,14 +711,7 @@ export function EmployerDashboard() {
               </Link>
             </div>
           ) : (
-            <div
-              className="text-center py-8 rounded-lg"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <Briefcase
-                className="w-10 h-10 mx-auto mb-3 opacity-40"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
+            <div className="text-center py-6">
               <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
                 No active roles yet
               </p>
@@ -761,18 +833,9 @@ export function EmployerDashboard() {
             ))}
           </div>
         ) : (
-          <div
-            className="text-center py-8 rounded-lg"
-            style={{ backgroundColor: 'var(--color-background)' }}
-          >
-            <Coffee
-              className="w-10 h-10 mx-auto mb-3 opacity-40"
-              style={{ color: 'var(--color-textMuted)' }}
-            />
-            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-              No coffee chat activity yet
-            </p>
-          </div>
+          <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+            No coffee chat activity yet
+          </p>
         )}
       </div>
 

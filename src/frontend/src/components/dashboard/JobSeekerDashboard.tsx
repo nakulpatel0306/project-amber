@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Target,
   Coffee,
   ArrowRight,
   CheckCircle2,
@@ -13,16 +12,19 @@ import {
   Brain,
   Lightbulb,
   Zap,
-  Anchor,
   Clock,
   X,
   MapPin,
   Briefcase,
   BarChart3,
+  Sparkles,
+  Puzzle,
+  Battery,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
+import { getArchetypeByName } from '../../lib/archetypes';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility } from '../../lib/compatibilityScoring';
 
@@ -70,7 +72,7 @@ export function JobSeekerDashboard() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [personalityScores, setPersonalityScores] = useState<PersonalityScores | null>(null);
   const [topTraits, setTopTraits] = useState<string[]>([]);
-  const [lastAssessmentDate, setLastAssessmentDate] = useState<Date | null>(null);
+  const [_lastAssessmentDate, setLastAssessmentDate] = useState<Date | null>(null);
 
   // Stats
   const [profileCompletion, setProfileCompletion] = useState(0);
@@ -322,7 +324,7 @@ export function JobSeekerDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       {/* Welcome Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1
           className="text-2xl font-bold mb-2"
           style={{ color: 'var(--color-text)' }}
@@ -339,7 +341,7 @@ export function JobSeekerDashboard() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Profile Completion', value: `${profileCompletion}%`, icon: Users },
           { label: 'Matches Available', value: String(matchesAvailable), icon: Briefcase },
@@ -370,7 +372,7 @@ export function JobSeekerDashboard() {
       {/* Progress Banner (if not complete) */}
       {(!hasCompletedProfile || !hasCompletedAssessment) && (
         <div
-          className="p-6 rounded-2xl mb-8 border"
+          className="p-5 rounded-2xl mb-6 border"
           style={{
             background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.05))',
             borderColor: 'var(--color-accent)',
@@ -451,107 +453,209 @@ export function JobSeekerDashboard() {
       )}
 
       {/* Personality Profile Summary (when assessment is complete) */}
-      {hasCompletedAssessment && personalityScores && (
-        <div
-          className="p-6 rounded-2xl mb-8 border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2
-              className="text-lg font-semibold flex items-center gap-2"
-              style={{ color: 'var(--color-text)' }}
+      {hasCompletedAssessment && personalityScores && (() => {
+        const scores = {
+          openness: personalityScores.openness,
+          conscientiousness: personalityScores.conscientiousness,
+          extraversion: personalityScores.extraversion,
+          agreeableness: personalityScores.agreeableness,
+          neuroticism: 100 - personalityScores.neuroticism,
+        };
+
+        const primaryArchetype = topTraits[0] ? getArchetypeByName(topTraits[0]) : null;
+
+        const decisionStyle = scores.conscientiousness > 65
+          ? (scores.openness > 60 ? 'Strategic Analyzer' : 'Methodical Planner')
+          : (scores.openness > 60 ? 'Intuitive Explorer' : 'Adaptive Pragmatist');
+        const communicationStyle = scores.extraversion > 65
+          ? (scores.agreeableness > 60 ? 'Warm Collaborator' : 'Direct Communicator')
+          : (scores.agreeableness > 60 ? 'Thoughtful Listener' : 'Focused Contributor');
+        const problemSolvingStyle = scores.openness > 65
+          ? (scores.conscientiousness > 60 ? 'Creative Systematizer' : 'Divergent Thinker')
+          : (scores.conscientiousness > 60 ? 'Structured Problem-Solver' : 'Practical Troubleshooter');
+
+        const energizers: string[] = [];
+        const drainers: string[] = [];
+        if (scores.openness > 60) { energizers.push('New challenges & ideas'); drainers.push('Repetitive routine tasks'); }
+        else { energizers.push('Mastering proven methods'); drainers.push('Constant change & ambiguity'); }
+        if (scores.extraversion > 60) { energizers.push('Team brainstorming'); drainers.push('Extended solo work'); }
+        else { energizers.push('Deep focused work'); drainers.push('Back-to-back meetings'); }
+        if (scores.agreeableness > 60) { energizers.push('Helping others succeed'); drainers.push('Competitive pressure'); }
+        else { energizers.push('Healthy competition'); drainers.push('Endless consensus-building'); }
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Card 1: Your Archetype */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             >
-              <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-              Your Personality Profile
-            </h2>
-            <div className="flex items-center gap-3">
-              {lastAssessmentDate && (
-                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                  completed {lastAssessmentDate.toLocaleDateString()}
-                </span>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                  <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  Your Archetype
+                </h2>
+                <Link to="/app/insights">
+                  <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3 h-3" />}>
+                    Full Insights
+                  </Button>
+                </Link>
+              </div>
+              {topTraits[0] && (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="text-sm font-semibold px-2.5 py-0.5 rounded-full"
+                      style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
+                    >
+                      {topTraits[0]}
+                    </span>
+                  </div>
+                  {primaryArchetype && (
+                    <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--color-textMuted)' }}>
+                      {primaryArchetype.description}
+                    </p>
+                  )}
+                  {primaryArchetype && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {primaryArchetype.strengths.slice(0, 3).map((s) => (
+                        <span
+                          key={s}
+                          className="px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-              <Link to="/app/insights">
-                <Button variant="ghost" size="sm" leftIcon={<ArrowRight className="w-3 h-3" />}>
-                  Full Insights
-                </Button>
-              </Link>
             </div>
-          </div>
 
-          {/* OCEAN Scores */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            {[
-              { key: 'openness', label: 'Openness', icon: Lightbulb, color: '#8B5CF6' },
-              { key: 'conscientiousness', label: 'Conscient.', icon: Target, color: '#10B981' },
-              { key: 'extraversion', label: 'Extraversion', icon: Zap, color: '#F59E0B' },
-              { key: 'agreeableness', label: 'Agreeable.', icon: Heart, color: '#EC4899' },
-              { key: 'neuroticism', label: 'Stability', icon: Anchor, color: '#06B6D4' },
-            ].map(({ key, label, icon: Icon, color }) => {
-              const value = key === 'neuroticism'
-                ? 100 - personalityScores[key as keyof PersonalityScores]
-                : personalityScores[key as keyof PersonalityScores];
-              return (
-                <div
-                  key={key}
-                  className="p-4 rounded-xl text-center"
-                  style={{ backgroundColor: 'var(--color-background)' }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center"
-                    style={{ backgroundColor: `${color}20` }}
-                  >
-                    <Icon className="w-4 h-4" style={{ color }} />
+            {/* Card 2: OCEAN Scores */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
+                <Brain className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                OCEAN Scores
+              </h2>
+              <div className="space-y-2.5">
+                {[
+                  { label: 'Openness', value: scores.openness, color: '#8B5CF6' },
+                  { label: 'Conscientiousness', value: scores.conscientiousness, color: '#10B981' },
+                  { label: 'Extraversion', value: scores.extraversion, color: '#F59E0B' },
+                  { label: 'Agreeableness', value: scores.agreeableness, color: '#EC4899' },
+                  { label: 'Stability', value: scores.neuroticism, color: '#06B6D4' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item.label}</span>
+                      <span className="text-xs font-semibold" style={{ color: item.color }}>{item.value}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
+                      <div
+                        className="h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${item.value}%`, backgroundColor: item.color }}
+                      />
+                    </div>
                   </div>
-                  <div
-                    className="text-2xl font-bold mb-1"
-                    style={{ color }}
-                  >
-                    {value}
-                  </div>
-                  <div className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    {label}
-                  </div>
-                  <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-1000"
-                      style={{
-                        width: `${value}%`,
-                        backgroundColor: color,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Top Traits */}
-          {topTraits.length > 0 && (
-            <div>
-              <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>
-                Your Top Traits
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {topTraits.slice(0, 5).map((trait, index) => (
-                  <span
-                    key={trait}
-                    className="px-3 py-1.5 rounded-full text-sm font-medium"
-                    style={{
-                      backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
-                      color: index === 0 ? 'white' : 'var(--color-text)',
-                    }}
-                  >
-                    {trait}
-                  </span>
                 ))}
               </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Card 3: Operating Style */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
+                <Puzzle className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                Operating Style
+              </h2>
+              <div className="space-y-2">
+                {[
+                  { icon: Brain, label: 'Decision', value: decisionStyle, color: '#8B5CF6' },
+                  { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: '#10B981' },
+                  { icon: Lightbulb, label: 'Problem-Solving', value: problemSolvingStyle, color: '#F59E0B' },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="p-2.5 rounded-lg"
+                    style={{ backgroundColor: `${item.color}10` }}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div
+                        className="w-5 h-5 rounded flex items-center justify-center"
+                        style={{ backgroundColor: `${item.color}20` }}
+                      >
+                        <item.icon className="w-3 h-3" style={{ color: item.color }} />
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--color-textMuted)' }}>{item.label}</span>
+                    </div>
+                    <p className="text-xs font-semibold leading-tight" style={{ color: item.color }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 4: Energy & Fit */}
+            <div
+              className="p-5 rounded-2xl border"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
+                <Battery className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                Energy & Fit
+              </h2>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <p className="text-xs font-medium mb-1.5 flex items-center gap-1" style={{ color: '#10B981' }}>
+                    <Zap className="w-3 h-3" /> Energizers
+                  </p>
+                  {energizers.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 mb-1">
+                      <CheckCircle2 className="w-3 h-3 flex-shrink-0" style={{ color: '#10B981' }} />
+                      <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-xs font-medium mb-1.5 flex items-center gap-1" style={{ color: '#EF4444' }}>
+                    <X className="w-3 h-3" /> Drainers
+                  </p>
+                  {drainers.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 mb-1">
+                      <X className="w-3 h-3 flex-shrink-0" style={{ color: '#EF4444' }} />
+                      <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {primaryArchetype && primaryArchetype.idealEnvironments && (
+                <div>
+                  <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text)' }}>
+                    Ideal Environments
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {primaryArchetype.idealEnvironments.slice(0, 3).map((env) => (
+                      <span
+                        key={env}
+                        className="px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}
+                      >
+                        {env}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Top Matches (full-width) */}
       <div
@@ -627,32 +731,14 @@ export function JobSeekerDashboard() {
               ))}
             </div>
           ) : (
-            <div
-              className="text-center py-8 rounded-lg"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <Target
-                className="w-10 h-10 mx-auto mb-3 opacity-40"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
-              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                No matches available yet. Check back soon!
-              </p>
-            </div>
+            <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+              No matches available yet. Check back soon!
+            </p>
           )
         ) : (
-          <div
-            className="text-center py-8 rounded-lg"
-            style={{ backgroundColor: 'var(--color-background)' }}
-          >
-            <Target
-              className="w-10 h-10 mx-auto mb-3 opacity-40"
-              style={{ color: 'var(--color-textMuted)' }}
-            />
-            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-              Complete your assessment to see job matches
-            </p>
-          </div>
+          <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+            Complete your assessment to see job matches
+          </p>
         )}
       </div>
 
@@ -710,18 +796,9 @@ export function JobSeekerDashboard() {
               ))}
             </div>
           ) : (
-            <div
-              className="text-center py-8 rounded-lg"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <Coffee
-                className="w-10 h-10 mx-auto mb-3 opacity-40"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
-              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                No upcoming coffee chats yet
-              </p>
-            </div>
+            <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+              No upcoming coffee chats yet
+            </p>
           )}
         </div>
 
@@ -781,18 +858,9 @@ export function JobSeekerDashboard() {
               ))}
             </div>
           ) : (
-            <div
-              className="text-center py-8 rounded-lg"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <TrendingUp
-                className="w-10 h-10 mx-auto mb-3 opacity-40"
-                style={{ color: 'var(--color-textMuted)' }}
-              />
-              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                No recent activity yet
-              </p>
-            </div>
+            <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+              No recent activity yet
+            </p>
           )}
         </div>
       </div>
