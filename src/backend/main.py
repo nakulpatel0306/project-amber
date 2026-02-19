@@ -16,8 +16,14 @@ request/response models. Routes are organized into sections:
 """
 
 import os
-from fastapi import FastAPI, HTTPException, Depends
+import re
+import time
+import pathlib
+import collections
+import httpx
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
@@ -111,7 +117,7 @@ app.add_middleware(
 app.add_middleware(
     AuthMiddleware,
     exclude_paths=["/", "/health", "/docs", "/redoc", "/openapi.json"],
-    exclude_prefixes=["/api/assessment/", "/api/auth/"],
+    exclude_prefixes=["/api/assessment/", "/api/auth/", "/api/logo"],  # Assessment, auth, and logo proxy endpoints are public
 )
 
 
@@ -1290,6 +1296,87 @@ async def create_portal_session(request: CreatePortalRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+# ============ Company Logo Proxy ============
+# Serves logo images via a caching proxy so the logo.dev API key is never
+# exposed to the frontend.  Logos are fetched once from logo.dev and stored
+# on disk; subsequent requests are served directly from the cache.
+
+LOGO_CACHE_DIR = pathlib.Path(__file__).resolve().parent / "cache" / "logos"
+LOGO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+_DOMAIN_RE = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$")
+
+# Simple per-IP rate limiter: stores deque of timestamps per IP.
+_logo_rate: dict[str, collections.deque] = {}
+_LOGO_RATE_LIMIT = 60   # max requests
+_LOGO_RATE_WINDOW = 60   # per this many seconds
+
+
+def _check_logo_rate_limit(ip: str) -> bool:
+    """Return True if the request is within the rate limit."""
+    now = time.monotonic()
+    timestamps = _logo_rate.get(ip)
+    if timestamps is None:
+        timestamps = collections.deque()
+        _logo_rate[ip] = timestamps
+    # Evict entries older than the window
+    while timestamps and now - timestamps[0] > _LOGO_RATE_WINDOW:
+        timestamps.popleft()
+    if len(timestamps) >= _LOGO_RATE_LIMIT:
+        return False
+    timestamps.append(now)
+    return True
+
+
+@app.get("/api/logo")
+async def get_logo(domain: str, request: Request):
+    """Proxy a single company logo through our backend with disk caching."""
+    # --- rate limit ---
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_logo_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again later.")
+
+    # --- validate domain ---
+    domain = domain.strip().lower()
+    if not domain or not _DOMAIN_RE.match(domain) or len(domain) > 253:
+        raise HTTPException(status_code=400, detail="Invalid domain parameter.")
+
+    # --- check disk cache ---
+    cache_file = LOGO_CACHE_DIR / f"{domain}.png"
+    if cache_file.exists() and cache_file.stat().st_size > 0:
+        return FileResponse(
+            path=str(cache_file),
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=604800"},
+        )
+
+    # --- fetch from logo.dev ---
+    token = os.environ.get("LOGO_DEV_API_KEY")
+    if not token:
+        raise HTTPException(status_code=500, detail="LOGO_DEV_API_KEY not configured")
+
+    logo_url = f"https://img.logo.dev/{domain}?token={token}&size=80&format=png"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(logo_url)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail="Failed to fetch logo from upstream.")
+        content_type = resp.headers.get("content-type", "")
+        if "image" not in content_type:
+            raise HTTPException(status_code=502, detail="Upstream did not return an image.")
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Failed to fetch logo from upstream.")
+
+    # --- write to cache ---
+    cache_file.write_bytes(resp.content)
+
+    return FileResponse(
+        path=str(cache_file),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=604800"},
+    )
 
 
 # ============ Main Entry Point ============

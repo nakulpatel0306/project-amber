@@ -66,6 +66,10 @@ htmlcov/
 .tox/
 .nox/
 
+# Cached logo files (fetched from logo.dev at runtime)
+src/backend/cache/logos/*.png
+src/backend/cache/logos/*.svg
+
 # Misc
 *.bak
 *.tmp

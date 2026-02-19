@@ -11,7 +11,7 @@
   "scripts": {
     "setup": "chmod +x setup_project_structure.sh && ./setup_project_structure.sh",
     "frontend": "cd src/frontend && npm run dev",
-    "backend": "cd src/backend && python main.py",
+    "backend": "cd src/backend && .venv/bin/python main.py",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "cd src/frontend && npm test",
