@@ -18,9 +18,12 @@ from engine.compatibility import (
     EmployerPreferences,
     RoleRequirements,
     calculate_compatibility,
+    calculate_confidence,
+    calculate_reverse_compatibility,
     CompatibilityResult,
     CULTURE_OCEAN_MAP,
 )
+from agent.archetype_compatibility import get_archetype_modifier
 
 
 # ============================================
@@ -517,6 +520,22 @@ def run_ember_analysis(
     # Determine personality archetype
     archetype = determine_archetype(candidate_ocean)
 
+    # Archetype compatibility modifier
+    employer_archetype_name = employer_data.get('archetype_name', '')
+    arch_compat = get_archetype_modifier(archetype.get('key', ''), employer_archetype_name)
+
+    # Confidence score
+    confidence = calculate_confidence(candidate_data)
+
+    # Reverse compatibility (employer → candidate fit)
+    reverse_candidate_data = {
+        **candidate_data,
+        '_employer_work_style': role_data.get('work_style') if role_data else None,
+        '_employer_company_size': employer_data.get('company_size'),
+        '_ideal_cultures': archetype.get('ideal_cultures', []),
+    }
+    reverse_score = calculate_reverse_compatibility(employer_prefs, reverse_candidate_data)
+
     # Generate dimension analysis
     dimensions = generate_dimension_analysis(candidate_ocean, employer_prefs, role_reqs)
 
@@ -531,10 +550,18 @@ def run_ember_analysis(
     role_title = role_data.get('title') if role_data else None
     summary, recommendation = generate_summary(archetype, compatibility, company_name, role_title)
 
+    # Apply archetype bonus to overall score (clamped 0-100)
+    adjusted_overall = max(0, min(100, compatibility.overall_match_score + arch_compat['bonus']))
+
     return {
-        'overall_score': compatibility.overall_match_score,
+        'overall_score': adjusted_overall,
         'trait_match_score': compatibility.trait_match_score,
         'culture_match_score': compatibility.culture_match_score,
+        'work_style_score': compatibility.work_style_score,
+        'communication_score': compatibility.communication_score,
+        'confidence_score': confidence,
+        'reverse_score': reverse_score,
+        'archetype_compatibility': arch_compat,
         'candidate_archetype': archetype,
         'breakdown': compatibility.breakdown,
         'insights': [

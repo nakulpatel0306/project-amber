@@ -4,6 +4,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { CoffeeChatCard, CoffeeChatData, ChatStatus } from './CoffeeChatCard';
+import { CoffeeChatPrep } from './CoffeeChatPrep';
+import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
 
@@ -179,11 +181,9 @@ export function CandidateCoffeeChats() {
             }}
           >
             {f.label}
-            {f.value !== 'all' && (
-              <span className="ml-1">
-                ({chats.filter(c => c.status === f.value).length})
-              </span>
-            )}
+            <span className="ml-1">
+              ({f.value === 'all' ? chats.length : chats.filter(c => c.status === f.value).length})
+            </span>
           </button>
         ))}
       </div>
@@ -194,35 +194,42 @@ export function CandidateCoffeeChats() {
           className="text-center py-16 rounded-2xl border"
           style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
         >
-          <EmberFirefly size="lg" mood="neutral" />
+          <EmberFirefly size="lg" mood="happy" animated />
           <h3 className="mt-6 text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
             No Coffee Chats Yet
           </h3>
           <p className="mt-2 text-sm max-w-sm mx-auto" style={{ color: 'var(--color-textMuted)' }}>
-            Request a coffee chat from your matches or Ember results to start connecting with teams.
+            No coffee chats yet — find your matches and start connecting!
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredChats.map(chat => (
-            <CoffeeChatCard
-              key={chat.id}
-              chat={chat}
-              userRole="candidate"
-              onAccept={id => updateChatStatus(id, 'accepted')}
-              onDecline={id => updateChatStatus(id, 'cancelled')}
-              onSchedule={id => {
-                setActiveChatId(id);
-                setScheduleModalOpen(true);
-              }}
-              onComplete={id => updateChatStatus(id, 'completed')}
-              onFeedback={id => {
-                const chat = chats.find(c => c.id === id);
-                setActiveChatId(id);
-                setActiveChatPartner(chat?.partner_name || '');
-                setFeedbackModalOpen(true);
-              }}
-            />
+            <div key={chat.id}>
+              <CoffeeChatCard
+                chat={chat}
+                userRole="candidate"
+                onAccept={id => updateChatStatus(id, 'accepted')}
+                onDecline={id => updateChatStatus(id, 'cancelled')}
+                onSchedule={id => {
+                  setActiveChatId(id);
+                  setScheduleModalOpen(true);
+                }}
+                onComplete={id => updateChatStatus(id, 'completed')}
+                onFeedback={id => {
+                  const c = chats.find(ch => ch.id === id);
+                  setActiveChatId(id);
+                  setActiveChatPartner(c?.partner_name || '');
+                  setFeedbackModalOpen(true);
+                }}
+              />
+              {(chat.status === 'accepted' || chat.status === 'scheduled') && (
+                <CoffeeChatPrep chatId={chat.id} />
+              )}
+              {chat.status === 'completed' && chat.rating && (
+                <CoffeeChatFollowUp chat={chat} />
+              )}
+            </div>
           ))}
         </div>
       )}

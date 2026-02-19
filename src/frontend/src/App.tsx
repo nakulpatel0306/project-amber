@@ -42,7 +42,7 @@ import { BlogPage, SciencePage, HelpCenterPage, ChangelogPage, StatusPage, About
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
 import { AssessmentFlow, Assessment, AssessmentResults, MatchingAgent, PersonalityInsights, Leaderboard } from './components/candidate';
 import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResults, CreateRole, ManageRoles, BrowseCandidates, TopCandidates, EmployerLeaderboard } from './components/employer';
-import { EmberAgent } from './components/ember';
+import { EmberAgent, EmberEmployerPage } from './components/ember';
 import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
 import { PricingPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
@@ -284,7 +284,7 @@ function App() {
                     path="employer/ember"
                     element={
                       <ProtectedRoute allowedRoles={['employer']}>
-                        <EmberAgent />
+                        <EmberEmployerPage />
                       </ProtectedRoute>
                     }
                   />
