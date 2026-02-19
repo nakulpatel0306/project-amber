@@ -1,3 +1,9 @@
 export { EmberAgent } from './EmberAgent';
 export { EmberEmployerPage } from './EmberEmployerPage';
 export { EmberFirefly } from './EmberFirefly';
+export { PlayerCard } from './gallery/PlayerCard';
+export { PlayerCardGrid } from './gallery/PlayerCardGrid';
+export { GalleryFilterBar } from './gallery/GalleryFilterBar';
+export { DeepDive } from './gallery/DeepDive';
+export { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
+export { CompareView } from './gallery/CompareView';

@@ -10,6 +10,8 @@ interface RadarChartProps {
   showLabels?: boolean;
   onDimensionClick?: (key: string) => void;
   selectedDimension?: string | null;
+  overlayScores?: Record<string, number>;
+  overlayLabel?: string;
 }
 
 const DEFAULT_COLORS: Record<string, string> = {
@@ -37,6 +39,8 @@ export function RadarChart({
   showLabels = true,
   onDimensionClick,
   selectedDimension,
+  overlayScores,
+  overlayLabel,
 }: RadarChartProps) {
   const [isVisible, setIsVisible] = useState(!animated);
 
@@ -92,6 +96,10 @@ export function RadarChart({
           <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.25" />
           <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.08" />
         </linearGradient>
+        <linearGradient id="radarOverlayFill" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
+        </linearGradient>
       </defs>
 
       {/* Grid rings */}
@@ -138,6 +146,25 @@ export function RadarChart({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}
       />
+
+      {/* Overlay polygon */}
+      {overlayScores && (() => {
+        const overlayPoints = keys.map((key, i) => getPoint(i, isVisible ? (overlayScores[key] ?? 0) : 0));
+        const overlayPath = overlayPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+        return (
+          <motion.path
+            d={overlayPath}
+            fill="url(#radarOverlayFill)"
+            stroke="#3b82f6"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeDasharray="6 3"
+            initial={animated ? { opacity: 0 } : undefined}
+            animate={{ opacity: 0.8 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+          />
+        );
+      })()}
 
       {/* Data points */}
       {keys.map((key, i) => {
@@ -210,6 +237,13 @@ export function RadarChart({
           </g>
         );
       })}
+      {/* Overlay legend */}
+      {overlayScores && overlayLabel && (
+        <g>
+          <rect x={size * 0.05} y={size - 20} width="10" height="10" rx="2" fill="#3b82f6" opacity="0.5" />
+          <text x={size * 0.05 + 14} y={size - 11} fill="var(--color-textMuted)" fontSize="10">{overlayLabel}</text>
+        </g>
+      )}
     </svg>
   );
 }

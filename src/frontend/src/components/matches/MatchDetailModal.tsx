@@ -293,7 +293,8 @@ export function MatchDetailModal({
     if (onAskEmber) {
       onAskEmber();
     } else {
-      navigate(role === 'candidate' ? '/app/ember' : '/app/employer/ember');
+      const basePath = role === 'candidate' ? '/app/ember' : '/app/employer/ember';
+      navigate(`${basePath}?deepdive=${matchData.id}`);
     }
     onClose();
   };
