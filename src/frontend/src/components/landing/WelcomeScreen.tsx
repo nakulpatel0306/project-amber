@@ -1,39 +1,39 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  Briefcase,
-  Users,
-  Sparkles,
-  Heart,
-  Target,
-  Coffee,
-  Zap,
-  Shield,
-  TrendingUp,
   Award,
   Brain,
-  MessageCircle,
+  Briefcase,
   ChevronRight,
+  Coffee,
+  Heart,
+  MessageCircle,
+  Shield,
+  Sparkles,
+  Target,
+  TrendingUp,
   Trophy,
+  Users,
+  Zap
 } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { EmberFirefly } from '../ember/EmberFirefly';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  FloatingThemeSelector,
-  FAQAccordion,
-  CursorSpotlight,
-  FloatingCoffeeBeans,
-  MagneticButton,
-  TiltCard,
-  ScrollProgress,
   AnimatedBlobs,
+  CursorSpotlight,
+  FAQAccordion,
+  FloatingCoffeeBeans,
+  FloatingThemeSelector,
   InteractiveGreeting,
+  MagneticButton,
+  ScrollProgress,
+  TiltCard,
   TypewriterText,
 } from '.';
-import { LandingNav } from './LandingNav';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation';
+import { EmberFirefly } from '../ember/EmberFirefly';
+import { Button } from '../ui/Button';
 import { LandingFooter } from './LandingFooter';
+import { LandingNav } from './LandingNav';
 
 const typewriterWords = [
   'Your Personality',
@@ -100,7 +100,7 @@ const valueProps = [
   },
 ];
 
-// Company logos fetched from Clearbit Logo API for exact brand logos
+// Company logos served via our backend caching proxy (/api/logo?domain=...)
 const COMPANIES = [
   { name: 'Google', domain: 'google.com' },
   { name: 'Apple', domain: 'apple.com' },
@@ -127,6 +127,8 @@ const COMPANIES = [
   { name: 'Datadog', domain: 'datadoghq.com' },
 ];
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 function CompanyLogo({ name, domain }: { name: string; domain: string }) {
   const [imgError, setImgError] = useState(false);
 
@@ -134,10 +136,12 @@ function CompanyLogo({ name, domain }: { name: string; domain: string }) {
     <div className="flex flex-col items-center gap-2">
       {!imgError ? (
         <img
-          src={`https://logo.clearbit.com/${domain}?size=80`}
+          src={`${API_BASE}/api/logo?domain=${domain}`}
           alt={name}
-          className="h-8 w-8 rounded-lg object-contain"
+          className="h-8 w-auto max-w-[140px] rounded-lg object-contain"
+          style={{ opacity: 0.9 }}
           loading="lazy"
+          decoding="async"
           onError={() => setImgError(true)}
         />
       ) : (
