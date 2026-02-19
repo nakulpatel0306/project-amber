@@ -27,13 +27,21 @@ export function ArchetypeCard({
   const idealItems = idealEnvironments || idealCandidates || [];
   const isHighlighted = isPrimary || variant === 'primary';
 
+  const variantConfig = {
+    primary: { label: 'Primary', bgColor: 'var(--color-accent)', textColor: 'white', borderColor: 'var(--color-accent)', borderWidth: 2 },
+    secondary: { label: 'Secondary', bgColor: 'rgba(139, 92, 246, 0.15)', textColor: '#8B5CF6', borderColor: '#8B5CF680', borderWidth: 1.5 },
+    tertiary: { label: 'Tertiary', bgColor: 'rgba(6, 182, 212, 0.12)', textColor: '#06B6D4', borderColor: '#06B6D460', borderWidth: 1 },
+  };
+
+  const vConfig = variant ? variantConfig[variant] : (isHighlighted ? variantConfig.primary : null);
+
   return (
     <motion.div
       className="p-5 rounded-2xl border h-full"
       style={{
         backgroundColor: 'var(--color-surface)',
-        borderColor: isHighlighted ? 'var(--color-accent)' : 'var(--color-border)',
-        borderWidth: isHighlighted ? 2 : 1,
+        borderColor: vConfig ? vConfig.borderColor : 'var(--color-border)',
+        borderWidth: vConfig ? vConfig.borderWidth : 1,
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -41,15 +49,15 @@ export function ArchetypeCard({
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        {isHighlighted && (
+        {vConfig && (
           <span
             className="px-2 py-0.5 rounded-full text-xs font-medium"
             style={{
-              backgroundColor: 'var(--color-accent)',
-              color: 'white',
+              backgroundColor: vConfig.bgColor,
+              color: vConfig.textColor,
             }}
           >
-            Primary
+            {vConfig.label}
           </span>
         )}
         <h3

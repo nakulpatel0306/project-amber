@@ -193,7 +193,7 @@ export function TopCandidates() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
           <Trophy className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
-          top 10 candidates
+          Top Candidates
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
           Candidates ranked by personality fit for your culture

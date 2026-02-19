@@ -90,7 +90,7 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
     features: [
       'Culture assessment',
       'Browse candidate profiles',
-      'Top 10 candidate rankings',
+      'Candidate compatibility rankings',
       '2 coffee chat invites per month',
       '1 active role posting',
     ],

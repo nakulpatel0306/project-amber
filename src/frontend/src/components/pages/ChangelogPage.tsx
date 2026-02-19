@@ -103,7 +103,7 @@ const FALLBACK_CHANGELOG: ChangelogEntry[] = [
     items: [
       "Launch of employer culture assessment for teams",
       "Browse and filter candidates by personality compatibility",
-      "Top 10 candidate recommendations updated daily",
+      "Candidate recommendations updated daily",
       "Role creation with culture-fit requirements",
     ],
   },
