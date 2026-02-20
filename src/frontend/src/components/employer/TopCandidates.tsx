@@ -20,6 +20,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+// ScoreRing is defined locally in this component
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -27,6 +28,9 @@ import { supabase } from '../../lib/supabase';
 import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
 import { determineArchetype } from '../../lib/archetypes';
 import { MatchDetailModal, type MatchDetailData } from '../matches/MatchDetailModal';
+import { MatchPipeline } from '../matches/MatchPipeline';
+import { useSavedMatches } from '../../hooks/useSavedMatches';
+import type { PipelineTab } from '../../types/matching.types';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -170,8 +174,13 @@ export function TopCandidates() {
   // Modal
   const [modalCandidate, setModalCandidate] = useState<CandidateResult | null>(null);
 
-  // Shortlist (visual only, component state)
+  // Shortlist (now backed by Supabase)
   const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
+
+  // Pipeline
+  const [activeView, setActiveView] = useState<'browse' | 'pipeline'>('browse');
+  const [pipelineTab, setPipelineTab] = useState<PipelineTab>('saved');
+  const { savedMatches, unsave: unsaveMatch, counts: pipelineCounts } = useSavedMatches();
 
   // Raw candidates data (before scoring — allows re-scoring when role changes)
   const [rawCandidates, setRawCandidates] = useState<any[]>([]);
@@ -557,17 +566,51 @@ export function TopCandidates() {
       {/* Header */}
       <div className="border-b px-6 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
         <div className="max-w-6xl mx-auto">
+          {/* View tabs */}
+          <div className="flex items-center gap-1 mb-4 p-1 rounded-xl w-fit" style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
+            <button
+              onClick={() => setActiveView('browse')}
+              className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+              style={{
+                backgroundColor: activeView === 'browse' ? 'var(--color-accent)' : 'transparent',
+                color: activeView === 'browse' ? 'var(--color-accentText)' : 'var(--color-textSecondary)',
+              }}
+            >
+              Browse All
+            </button>
+            <button
+              onClick={() => setActiveView('pipeline')}
+              className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5"
+              style={{
+                backgroundColor: activeView === 'pipeline' ? 'var(--color-accent)' : 'transparent',
+                color: activeView === 'pipeline' ? 'var(--color-accentText)' : 'var(--color-textSecondary)',
+              }}
+            >
+              Pipeline
+              {(pipelineCounts.saved + pipelineCounts.pending + pipelineCounts.connected) > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                  {pipelineCounts.saved + pipelineCounts.pending + pipelineCounts.connected}
+                </span>
+              )}
+            </button>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
                 <Trophy className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                Top Candidates
+                {activeView === 'browse' ? 'Top Candidates' : 'Your Pipeline'}
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? 's' : ''} found
-                {shortlisted.size > 0 && (
-                  <span style={{ color: 'var(--color-accent)' }}> &middot; {shortlisted.size} shortlisted</span>
-                )}
+                {activeView === 'browse'
+                  ? <>
+                      {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? 's' : ''} found
+                      {shortlisted.size > 0 && (
+                        <span style={{ color: 'var(--color-accent)' }}> &middot; {shortlisted.size} shortlisted</span>
+                      )}
+                    </>
+                  : 'Track your shortlisted and pending candidates'
+                }
               </p>
             </div>
 
@@ -736,8 +779,31 @@ export function TopCandidates() {
         </div>
       </div>
 
+      {/* Pipeline View */}
+      {activeView === 'pipeline' && (
+        <div className="max-w-6xl mx-auto p-6">
+          <MatchPipeline
+            savedMatches={savedMatches}
+            activeTab={pipelineTab}
+            onTabChange={setPipelineTab}
+            counts={pipelineCounts}
+            mode="employer"
+            onViewInEmber={(matchId) => navigate(`/app/employer/ember?deepdive=${matchId}`)}
+            onRemove={async (id) => {
+              try {
+                await unsaveMatch(id);
+                showSuccess('Removed', 'Candidate removed');
+              } catch {
+                showError('Error', 'Failed to remove');
+              }
+            }}
+            onCoffeeChat={() => {}}
+          />
+        </div>
+      )}
+
       {/* Results Grid */}
-      <div className="max-w-6xl mx-auto p-6">
+      {activeView === 'browse' && <div className="max-w-6xl mx-auto p-6">
         {filteredCandidates.length === 0 ? (
           <div className="p-12 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <Users className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
@@ -891,7 +957,7 @@ export function TopCandidates() {
             })}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Match Detail Modal */}
       {modalCandidate && (

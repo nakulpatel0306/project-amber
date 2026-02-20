@@ -8,6 +8,7 @@ import {
   MessageCircle,
   ExternalLink,
   Star,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -42,6 +43,7 @@ interface CoffeeChatCardProps {
   onSchedule?: (chatId: string) => void;
   onComplete?: (chatId: string) => void;
   onFeedback?: (chatId: string) => void;
+  onViewMatch?: (chatId: string) => void;
 }
 
 const statusConfig: Record<ChatStatus, { label: string; color: string; bg: string }> = {
@@ -60,6 +62,7 @@ export function CoffeeChatCard({
   onSchedule,
   onComplete,
   onFeedback,
+  onViewMatch,
 }: CoffeeChatCardProps) {
   const status = statusConfig[chat.status];
   const isIncoming = chat.initiated_by !== userRole;
@@ -240,6 +243,18 @@ export function CoffeeChatCard({
         {chat.status === 'completed' && !chat.rating && (
           <Button size="sm" variant="outline" leftIcon={<Star className="w-4 h-4" />} onClick={() => onFeedback?.(chat.id)}>
             Leave Feedback
+          </Button>
+        )}
+
+        {/* View Match in Ember */}
+        {onViewMatch && (
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<Sparkles className="w-4 h-4" />}
+            onClick={() => onViewMatch(chat.id)}
+          >
+            View Match
           </Button>
         )}
 

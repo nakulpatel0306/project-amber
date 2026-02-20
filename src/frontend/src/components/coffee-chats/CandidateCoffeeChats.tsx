@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -9,20 +10,36 @@ import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
 
-const statusFilters: { value: string; label: string }[] = [
-  { value: 'all', label: 'All' },
+type TabValue = 'pending' | 'upcoming' | 'completed';
+
+const tabs: { value: TabValue; label: string }[] = [
   { value: 'pending', label: 'Pending' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'upcoming', label: 'Upcoming' },
   { value: 'completed', label: 'Completed' },
 ];
+
+const emptyStates: Record<TabValue, { mood: 'happy' | 'neutral' | 'thinking'; message: string }> = {
+  pending: {
+    mood: 'happy',
+    message: 'No pending requests. Explore your Ember matches to start connecting!',
+  },
+  upcoming: {
+    mood: 'neutral',
+    message: 'No upcoming chats. Accept a pending request to get started.',
+  },
+  completed: {
+    mood: 'thinking',
+    message: 'No completed chats yet. Your chat history will appear here.',
+  },
+};
 
 export function CandidateCoffeeChats() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [chats, setChats] = useState<CoffeeChatData[]>([]);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState<TabValue>('pending');
   const [_candidateId, setCandidateId] = useState<string | null>(null);
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -140,8 +157,23 @@ export function CandidateCoffeeChats() {
     }
   };
 
-  const filteredChats =
-    statusFilter === 'all' ? chats : chats.filter(c => c.status === statusFilter);
+  // Tab-based filtering
+  const tabCounts = useMemo(() => ({
+    pending: chats.filter(c => c.status === 'pending').length,
+    upcoming: chats.filter(c => c.status === 'accepted' || c.status === 'scheduled').length,
+    completed: chats.filter(c => c.status === 'completed').length,
+  }), [chats]);
+
+  const filteredChats = useMemo(() => {
+    switch (activeTab) {
+      case 'pending': return chats.filter(c => c.status === 'pending');
+      case 'upcoming': return chats.filter(c => c.status === 'accepted' || c.status === 'scheduled');
+      case 'completed': return chats.filter(c => c.status === 'completed');
+      default: return chats;
+    }
+  }, [chats, activeTab]);
+
+  const empty = emptyStates[activeTab];
 
   if (isLoading) {
     return (
@@ -167,22 +199,27 @@ export function CandidateCoffeeChats() {
         </p>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {statusFilters.map(f => (
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 p-1 rounded-xl mb-6" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+        {tabs.map(tab => (
           <button
-            key={f.value}
-            onClick={() => setStatusFilter(f.value)}
-            className="px-3 py-1.5 rounded-lg border text-xs font-medium transition-all"
+            key={tab.value}
+            onClick={() => setActiveTab(tab.value)}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all"
             style={{
-              backgroundColor: statusFilter === f.value ? 'rgba(217, 119, 6, 0.1)' : 'transparent',
-              borderColor: statusFilter === f.value ? 'var(--color-accent)' : 'var(--color-border)',
-              color: statusFilter === f.value ? 'var(--color-accent)' : 'var(--color-textSecondary)',
+              backgroundColor: activeTab === tab.value ? 'var(--color-accent)' : 'transparent',
+              color: activeTab === tab.value ? 'var(--color-accentText)' : 'var(--color-textSecondary)',
             }}
           >
-            {f.label}
-            <span className="ml-1">
-              ({f.value === 'all' ? chats.length : chats.filter(c => c.status === f.value).length})
+            {tab.label}
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px]"
+              style={{
+                backgroundColor: activeTab === tab.value ? 'rgba(255,255,255,0.2)' : 'var(--color-background)',
+                color: activeTab === tab.value ? 'white' : 'var(--color-textMuted)',
+              }}
+            >
+              {tabCounts[tab.value]}
             </span>
           </button>
         ))}
@@ -194,12 +231,12 @@ export function CandidateCoffeeChats() {
           className="text-center py-16 rounded-2xl border"
           style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
         >
-          <EmberFirefly size="lg" mood="happy" animated />
+          <EmberFirefly size="lg" mood={empty.mood} animated />
           <h3 className="mt-6 text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-            No Coffee Chats Yet
+            {activeTab === 'pending' ? 'No Pending Requests' : activeTab === 'upcoming' ? 'No Upcoming Chats' : 'No Completed Chats'}
           </h3>
           <p className="mt-2 text-sm max-w-sm mx-auto" style={{ color: 'var(--color-textMuted)' }}>
-            No coffee chats yet — find your matches and start connecting!
+            {empty.message}
           </p>
         </div>
       ) : (
@@ -221,6 +258,14 @@ export function CandidateCoffeeChats() {
                   setActiveChatId(id);
                   setActiveChatPartner(c?.partner_name || '');
                   setFeedbackModalOpen(true);
+                }}
+                onViewMatch={id => {
+                  const c = chats.find(ch => ch.id === id);
+                  if (c?.role_id) {
+                    navigate(`/app/ember?deepdive=${c.role_id}`);
+                  } else {
+                    navigate('/app/ember');
+                  }
                 }}
               />
               {(chat.status === 'accepted' || chat.status === 'scheduled') && (

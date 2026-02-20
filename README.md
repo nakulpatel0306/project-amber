@@ -14,6 +14,7 @@ Amber reimagines the job search by putting personality and culture at the center
 ## Features
 
 ### For Job Seekers
+
 - 15-minute personality assessment based on the Big Five model
 - Personality insights with archetype classification (8 archetypes: Innovator, Architect, Connector, Catalyst, Craftsperson, Harmonizer, Explorer, Strategist)
 - **Ember Agent** — AI-powered analysis showing compatibility scores with each employer and role
@@ -25,6 +26,7 @@ Amber reimagines the job search by putting personality and culture at the center
 - Supplementary assessments: Visual Perception, Work Values, Situational Judgment, and Cognitive Patterns
 
 ### For Employers
+
 - Culture quiz to define company values and ideal personality preferences
 - Culture insights dashboard with archetype-style company personality profiles
 - **Ember Agent** — AI-ranked candidate list sorted by culture and personality fit
@@ -38,17 +40,17 @@ Amber reimagines the job search by putting personality and culture at the center
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, TypeScript, Vite 7 |
-| Styling | Tailwind CSS 3 |
-| Icons | Lucide React |
-| State Management | React Context, Zustand |
-| Backend | Python 3.11+, FastAPI |
-| Database | Supabase (PostgreSQL) |
-| Authentication | Supabase Auth (Email, Google OAuth, GitHub OAuth) |
-| Payments | Stripe (checkout and customer portal) |
-| AI/Matching | Custom OCEAN-based compatibility engine + Ember agent |
+| Layer            | Technology                                            |
+| ---------------- | ----------------------------------------------------- |
+| Frontend         | React 19, TypeScript, Vite 7                          |
+| Styling          | Tailwind CSS 3                                        |
+| Icons            | Lucide React                                          |
+| State Management | React Context, Zustand                                |
+| Backend          | Python 3.11+, FastAPI                                 |
+| Database         | Supabase (PostgreSQL)                                 |
+| Authentication   | Supabase Auth (Email, Google OAuth, GitHub OAuth)     |
+| Payments         | Stripe (checkout and customer portal)                 |
+| AI/Matching      | Custom OCEAN-based compatibility engine + Ember agent |
 
 ## Quick Start
 
@@ -202,12 +204,12 @@ amber/
 
 Amber uses a warm, professional color palette:
 
-| Color | Hex | Usage |
-|-------|-----|-------|
+| Color     | Hex       | Usage                          |
+| --------- | --------- | ------------------------------ |
 | Amber 600 | `#D97706` | Primary accent, buttons, links |
 | Stone 500 | `#78716C` | Muted text, secondary elements |
-| Cream 100 | `#F5F3EF` | Light mode background |
-| Stone 900 | `#1C1917` | Dark mode background |
+| Cream 100 | `#F5F3EF` | Light mode background          |
+| Stone 900 | `#1C1917` | Dark mode background           |
 
 ### Themes
 
@@ -254,23 +256,24 @@ The backend validates JWT tokens from Supabase. When `SUPABASE_JWT_SECRET` is no
 
 ### Core Tables
 
-| Table | Purpose |
-|-------|---------|
-| `profiles` | Extends `auth.users` with role, avatar, onboarding status |
-| `candidates` | OCEAN scores, work preferences, assessment status, social links |
-| `employers` | Company info, culture values, OCEAN preferences, quiz status |
-| `roles` | Job listings with title, salary, location, and personality requirements |
-| `applications` | Match scores (trait, culture, overall) and application status |
-| `coffee_chats` | Scheduling, meeting links, feedback, and ratings |
-| `questions` | Assessment question definitions with trait scoring |
-| `assessments` | Assessment session tracking |
-| `assessment_responses` | Individual question responses |
-| `feedback` | Bug reports, feature requests, and satisfaction ratings |
-| `user_settings` | Notification, privacy, and theme preferences |
+| Table                  | Purpose                                                                 |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `profiles`             | Extends `auth.users` with role, avatar, onboarding status               |
+| `candidates`           | OCEAN scores, work preferences, assessment status, social links         |
+| `employers`            | Company info, culture values, OCEAN preferences, quiz status            |
+| `roles`                | Job listings with title, salary, location, and personality requirements |
+| `applications`         | Match scores (trait, culture, overall) and application status           |
+| `coffee_chats`         | Scheduling, meeting links, feedback, and ratings                        |
+| `questions`            | Assessment question definitions with trait scoring                      |
+| `assessments`          | Assessment session tracking                                             |
+| `assessment_responses` | Individual question responses                                           |
+| `feedback`             | Bug reports, feature requests, and satisfaction ratings                 |
+| `user_settings`        | Notification, privacy, and theme preferences                            |
 
 ### Row Level Security
 
 RLS policies ensure:
+
 - Users can only read and update their own data
 - Employers can view candidates who have completed assessments
 - Candidates can view active job listings
@@ -278,35 +281,35 @@ RLS policies ensure:
 
 ## API Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/` | No | Health check |
-| `GET` | `/health` | No | Detailed health status with latency |
-| `GET` | `/api/me` | Yes | Current authenticated user info |
-| `POST` | `/api/auth/check-email` | No | Check if an email already exists |
-| `POST` | `/api/assessment/start` | No | Start or resume an assessment |
-| `POST` | `/api/assessment/answer` | No | Submit an answer to a question |
-| `GET` | `/api/assessment/results/{id}` | No | Get assessment results and scores |
-| `GET` | `/api/assessment/questions` | No | List all assessment questions |
-| `GET` | `/api/candidates` | Yes* | List all candidates (employer only) |
-| `GET` | `/api/candidates/{id}` | Yes* | Get a specific candidate's details |
-| `POST` | `/api/matching/calculate` | No | Calculate match score for a candidate-role pair |
-| `GET` | `/api/matching/candidates/{role_id}` | No | Ranked candidates for a role |
-| `GET` | `/api/matching/roles/{candidate_id}` | No | Ranked roles for a candidate |
-| `GET` | `/api/ember/candidate-matches/{id}` | No | Ember: ranked role matches for a candidate |
-| `GET` | `/api/ember/employer-matches/{id}` | No | Ember: ranked candidate matches for an employer |
-| `GET` | `/api/ember/analysis` | No | Ember: detailed pair analysis with insights |
-| `POST` | `/api/coffee-chats` | No | Create a coffee chat request |
-| `GET` | `/api/coffee-chats/candidate/{id}` | No | Get a candidate's coffee chats |
-| `GET` | `/api/coffee-chats/employer/{id}` | No | Get an employer's coffee chats |
-| `PATCH` | `/api/coffee-chats/{id}/status` | No | Update coffee chat status |
-| `PATCH` | `/api/coffee-chats/{id}/schedule` | No | Schedule a coffee chat |
-| `PATCH` | `/api/coffee-chats/{id}/feedback` | No | Submit feedback for a coffee chat |
-| `POST` | `/api/feedback` | No | Submit user feedback |
-| `POST` | `/api/stripe/create-checkout-session` | No | Create a Stripe checkout session |
-| `POST` | `/api/stripe/create-portal-session` | No | Create a Stripe customer portal session |
+| Method  | Endpoint                              | Auth  | Description                                     |
+| ------- | ------------------------------------- | ----- | ----------------------------------------------- |
+| `GET`   | `/`                                   | No    | Health check                                    |
+| `GET`   | `/health`                             | No    | Detailed health status with latency             |
+| `GET`   | `/api/me`                             | Yes   | Current authenticated user info                 |
+| `POST`  | `/api/auth/check-email`               | No    | Check if an email already exists                |
+| `POST`  | `/api/assessment/start`               | No    | Start or resume an assessment                   |
+| `POST`  | `/api/assessment/answer`              | No    | Submit an answer to a question                  |
+| `GET`   | `/api/assessment/results/{id}`        | No    | Get assessment results and scores               |
+| `GET`   | `/api/assessment/questions`           | No    | List all assessment questions                   |
+| `GET`   | `/api/candidates`                     | Yes\* | List all candidates (employer only)             |
+| `GET`   | `/api/candidates/{id}`                | Yes\* | Get a specific candidate's details              |
+| `POST`  | `/api/matching/calculate`             | No    | Calculate match score for a candidate-role pair |
+| `GET`   | `/api/matching/candidates/{role_id}`  | No    | Ranked candidates for a role                    |
+| `GET`   | `/api/matching/roles/{candidate_id}`  | No    | Ranked roles for a candidate                    |
+| `GET`   | `/api/ember/candidate-matches/{id}`   | No    | Ember: ranked role matches for a candidate      |
+| `GET`   | `/api/ember/employer-matches/{id}`    | No    | Ember: ranked candidate matches for an employer |
+| `GET`   | `/api/ember/analysis`                 | No    | Ember: detailed pair analysis with insights     |
+| `POST`  | `/api/coffee-chats`                   | No    | Create a coffee chat request                    |
+| `GET`   | `/api/coffee-chats/candidate/{id}`    | No    | Get a candidate's coffee chats                  |
+| `GET`   | `/api/coffee-chats/employer/{id}`     | No    | Get an employer's coffee chats                  |
+| `PATCH` | `/api/coffee-chats/{id}/status`       | No    | Update coffee chat status                       |
+| `PATCH` | `/api/coffee-chats/{id}/schedule`     | No    | Schedule a coffee chat                          |
+| `PATCH` | `/api/coffee-chats/{id}/feedback`     | No    | Submit feedback for a coffee chat               |
+| `POST`  | `/api/feedback`                       | No    | Submit user feedback                            |
+| `POST`  | `/api/stripe/create-checkout-session` | No    | Create a Stripe checkout session                |
+| `POST`  | `/api/stripe/create-portal-session`   | No    | Create a Stripe customer portal session         |
 
-*Requires `SUPABASE_JWT_SECRET` to be configured.
+\*Requires `SUPABASE_JWT_SECRET` to be configured.
 
 ## Development
 
@@ -344,14 +347,14 @@ The production build outputs to `src/frontend/dist/`.
 
 From the project root:
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start both frontend and backend concurrently |
-| `npm run frontend` | Start only the frontend dev server |
-| `npm run backend` | Start only the backend server |
-| `npm run lint` | Lint both frontend and backend |
-| `npm run format` | Format both frontend and backend |
-| `npm run test` | Run all tests |
+| Command            | Description                                  |
+| ------------------ | -------------------------------------------- |
+| `npm run dev`      | Start both frontend and backend concurrently |
+| `npm run frontend` | Start only the frontend dev server           |
+| `npm run backend`  | Start only the backend server                |
+| `npm run lint`     | Lint both frontend and backend               |
+| `npm run format`   | Format both frontend and backend             |
+| `npm run test`     | Run all tests                                |
 
 ## License
 
