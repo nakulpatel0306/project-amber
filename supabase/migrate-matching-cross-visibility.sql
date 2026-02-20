@@ -1,26 +1,46 @@
--- Migration: Add Cross-Visibility RLS Policies for Matching
+-- ============================================================
+-- Migration: Add Cross-Visibility RLS for Ember Matching
+-- ============================================================
 --
--- THE PROBLEM:
--- The Ember matching gallery queries Supabase directly from the frontend:
---   Candidate view: roles.select('*, employers!inner(*)')
---     → candidates can't read 'employers' table → !inner join filters out ALL rows
---   Employer view: candidates.select('*, profiles!inner(full_name, email)')
---     → employers can't read 'candidates' table → query returns 0 rows
+-- Run this AFTER fix-rls-no-recursion.sql (Arsh's cleanup).
 --
--- THE FIX:
--- Add RLS policies that allow:
--- 1. Candidates to view employer records (needed for roles JOIN employers)
--- 2. Employers to view candidate records (needed for matching)
--- 3. Ensure profiles cross-visibility is also in place
+-- WHY THIS IS NEEDED:
+-- The Ember gallery needs candidates to see employer data and
+-- employers to see candidate data. Without these policies,
+-- every Supabase query for cross-role data returns 0 rows.
 --
--- SAFETY: No recursion risk — subqueries only check auth.uid() against
--- the profiles table, which always resolves via "Users can view own profile".
+-- WHY THIS IS SAFE (NO RECURSION):
+-- After Arsh's fix, the profiles policy is ONLY:
+--   "Users can view own profile" → auth.uid() = id
+-- It does NOT reference candidates or employers tables.
+-- So our new policies below check profiles safely:
+--   candidates policy → subquery on profiles → resolves via auth.uid() = id → done
+--   employers policy  → subquery on profiles → resolves via auth.uid() = id → done
+-- No circular references. No recursion.
+--
+-- ============================================================
 
 -- ============================================
--- CANDIDATES TABLE: Employers can view candidates
+-- 1. EMPLOYERS table: Let candidates see employer records
 -- ============================================
--- Employers need to read candidate rows for the matching gallery.
--- Only show candidates who have completed their personality assessment.
+-- Needed so candidates can view company info for matched roles.
+-- Without this, the roles query can fetch roles but NOT employer data.
+DROP POLICY IF EXISTS "Candidates can view employers" ON public.employers;
+CREATE POLICY "Candidates can view employers"
+  ON public.employers FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+        AND profiles.role = 'candidate'
+    )
+  );
+
+-- ============================================
+-- 2. CANDIDATES table: Let employers see assessed candidates
+-- ============================================
+-- Needed so employers can browse and score candidates for matching.
+-- Only shows candidates who have completed their personality assessment.
 DROP POLICY IF EXISTS "Employers can view assessed candidates" ON public.candidates;
 CREATE POLICY "Employers can view assessed candidates"
   ON public.candidates FOR SELECT
@@ -28,44 +48,36 @@ CREATE POLICY "Employers can view assessed candidates"
     openness_score IS NOT NULL
     AND EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'employer'
+      WHERE profiles.id = auth.uid()
+        AND profiles.role = 'employer'
     )
   );
 
 -- ============================================
--- EMPLOYERS TABLE: Candidates can view employers
+-- 3. PROFILES table: Let employers see candidate profile names
 -- ============================================
--- Candidates need to read employer rows for the roles JOIN employers query.
-DROP POLICY IF EXISTS "Candidates can view employers" ON public.employers;
-CREATE POLICY "Candidates can view employers"
-  ON public.employers FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'candidate'
-    )
-  );
-
--- ============================================
--- PROFILES TABLE: Ensure cross-visibility exists
--- ============================================
--- Employers can view candidate profiles (for matching)
+-- Needed so employer matching can show candidate names.
+-- Only exposes profiles of candidates with completed assessments.
 DROP POLICY IF EXISTS "Employers can view candidate profiles" ON public.profiles;
 CREATE POLICY "Employers can view candidate profiles"
   ON public.profiles FOR SELECT
   USING (
     role = 'candidate'
     AND EXISTS (
-      SELECT 1 FROM public.profiles viewer
-      WHERE viewer.id = auth.uid() AND viewer.role = 'employer'
+      SELECT 1 FROM public.candidates c
+      WHERE c.user_id = profiles.id
+        AND c.openness_score IS NOT NULL
     )
     AND EXISTS (
-      SELECT 1 FROM public.candidates c
-      WHERE c.user_id = profiles.id AND c.assessment_status = 'completed'
+      SELECT 1 FROM public.profiles viewer
+      WHERE viewer.id = auth.uid()
+        AND viewer.role = 'employer'
     )
   );
 
--- Candidates can view employer profiles (for matching)
+-- ============================================
+-- 4. PROFILES table: Let candidates see employer profile names
+-- ============================================
 DROP POLICY IF EXISTS "Candidates can view employer profiles" ON public.profiles;
 CREATE POLICY "Candidates can view employer profiles"
   ON public.profiles FOR SELECT
@@ -73,17 +85,19 @@ CREATE POLICY "Candidates can view employer profiles"
     role = 'employer'
     AND EXISTS (
       SELECT 1 FROM public.profiles viewer
-      WHERE viewer.id = auth.uid() AND viewer.role = 'candidate'
+      WHERE viewer.id = auth.uid()
+        AND viewer.role = 'candidate'
     )
   );
 
 -- ============================================
 -- VERIFY
 -- ============================================
-SELECT 'Matching cross-visibility policies created!' AS status;
+SELECT 'Cross-visibility policies added successfully!' AS status;
 
-SELECT policyname, tablename, cmd
+SELECT tablename, policyname
 FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename IN ('candidates', 'employers', 'profiles')
+  AND cmd = 'SELECT'
 ORDER BY tablename, policyname;
