@@ -383,18 +383,28 @@ export function useEmployerMatchData(): UseEmployerMatchDataReturn {
           return;
         }
 
-        // Step 4: Fetch profiles for those candidates (separate query)
+        // Step 4: Fetch profiles via RPC function (bypasses RLS — no self-referencing policy needed)
         const candidateUserIds = candidatesData.map((c: any) => c.user_id);
-        const { data: profilesData, error: profilesErr } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', candidateUserIds);
-
-        if (profilesErr) {
-          console.error('[Ember] Profiles fetch error:', profilesErr.message);
+        let profilesData: any[] = [];
+        try {
+          const { data: rpcData, error: rpcErr } = await supabase
+            .rpc('get_profiles_by_ids', { user_ids: candidateUserIds });
+          if (rpcErr) {
+            console.warn('[Ember] RPC get_profiles_by_ids failed, falling back to direct query:', rpcErr.message);
+            // Fallback: try direct query (works if profiles cross-visibility policy exists)
+            const { data: fallbackData } = await supabase
+              .from('profiles')
+              .select('id, full_name, email')
+              .in('id', candidateUserIds);
+            profilesData = fallbackData || [];
+          } else {
+            profilesData = rpcData || [];
+          }
+        } catch {
+          console.warn('[Ember] Profile lookup failed, using fallback names');
         }
 
-        console.log('[Ember] Profiles found:', profilesData?.length || 0);
+        console.log('[Ember] Profiles found:', profilesData.length);
 
         // Step 5: Merge profile names into candidate data
         const profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
