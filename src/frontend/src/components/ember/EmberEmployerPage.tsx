@@ -142,6 +142,7 @@ export function EmberEmployerPage() {
           role_id: selectedRoleId || null,
           employer_id: employer?.id || null,
           candidate_id: c.candidateId,
+          candidate_name: c.name,
           match_score: c.overallScore,
           notes: null,
           status: 'saved',
@@ -162,7 +163,7 @@ export function EmberEmployerPage() {
     });
   }, []);
 
-  const handleBrew = useCallback(async (note: string) => {
+  const handleBrew = useCallback(async (note: string, preferredDates: Date[]) => {
     if (!employer || !brewTarget) return;
     try {
       const insertData: any = {
@@ -172,6 +173,13 @@ export function EmberEmployerPage() {
         status: 'pending',
         match_score: brewTarget.overallScore,
         message: note || undefined,
+        // Store names directly to avoid cross-table JOINs blocked by RLS
+        candidate_name: brewTarget.name,
+        company_name: employer.company_name,
+        // Store preferred dates as ISO strings
+        preferred_dates: preferredDates.length > 0
+          ? preferredDates.map(d => d.toISOString())
+          : undefined,
       };
       if (selectedRoleId) {
         const role = roles.find(r => r.id === selectedRoleId);

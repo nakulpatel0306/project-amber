@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Star,
   Sparkles,
+  User,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -33,6 +34,8 @@ export interface CoffeeChatData {
   partner_location?: string;
   match_score?: number;
   role_title?: string;
+  // Preferred dates for scheduling
+  preferred_dates?: string[] | null;
 }
 
 interface CoffeeChatCardProps {
@@ -44,10 +47,12 @@ interface CoffeeChatCardProps {
   onComplete?: (chatId: string) => void;
   onFeedback?: (chatId: string) => void;
   onViewMatch?: (chatId: string) => void;
+  onMessage?: (chatId: string, partnerName: string) => void;
+  onViewDetails?: (chat: CoffeeChatData) => void;
 }
 
 const statusConfig: Record<ChatStatus, { label: string; color: string; bg: string }> = {
-  pending: { label: 'Pending', color: 'var(--color-warning)', bg: 'rgba(245, 158, 11, 0.1)' },
+  pending: { label: 'Pending', color: 'var(--color-warning)', bg: 'rgba(245, 158, 11, 0.2)' },
   accepted: { label: 'Accepted', color: 'var(--color-success)', bg: 'rgba(22, 163, 74, 0.1)' },
   scheduled: { label: 'Scheduled', color: 'var(--color-accent)', bg: 'rgba(217, 119, 6, 0.1)' },
   completed: { label: 'Completed', color: 'var(--color-textMuted)', bg: 'rgba(120, 113, 108, 0.1)' },
@@ -63,6 +68,8 @@ export function CoffeeChatCard({
   onComplete,
   onFeedback,
   onViewMatch,
+  onMessage,
+  onViewDetails,
 }: CoffeeChatCardProps) {
   const status = statusConfig[chat.status];
   const isIncoming = chat.initiated_by !== userRole;
@@ -80,22 +87,27 @@ export function CoffeeChatCard({
       }}
     >
       <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+        {/* Avatar - Clickable */}
+        <button
+          onClick={() => onViewDetails?.(chat)}
+          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform hover:scale-105"
           style={{
             background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
           }}
         >
           <Coffee className="w-6 h-6 text-white" />
-        </div>
+        </button>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>
+            <button
+              onClick={() => onViewDetails?.(chat)}
+              className="font-semibold hover:underline text-left"
+              style={{ color: 'var(--color-text)' }}
+            >
               {chat.partner_name}
-            </h3>
+            </button>
             <span
               className="px-2 py-0.5 rounded-full text-xs font-medium"
               style={{ backgroundColor: status.bg, color: status.color }}
@@ -151,6 +163,35 @@ export function CoffeeChatCard({
             >
               <MessageCircle className="w-3.5 h-3.5 inline mr-1.5" style={{ color: 'var(--color-textMuted)' }} />
               {chat.message}
+            </div>
+          )}
+
+          {/* Preferred dates for pending chats */}
+          {chat.preferred_dates && chat.preferred_dates.length > 0 && chat.status === 'pending' && (
+            <div
+              className="mt-3 p-3 rounded-xl"
+              style={{ backgroundColor: 'var(--color-background)' }}
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-textSecondary)' }}>
+                  Preferred Dates
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {chat.preferred_dates.map((dateStr, idx) => {
+                  const date = new Date(dateStr);
+                  return (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                    >
+                      {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -255,6 +296,30 @@ export function CoffeeChatCard({
             onClick={() => onViewMatch(chat.id)}
           >
             View Match
+          </Button>
+        )}
+
+        {/* Message button - available for non-cancelled chats */}
+        {onMessage && chat.status !== 'cancelled' && (
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<MessageCircle className="w-4 h-4" />}
+            onClick={() => onMessage(chat.id, chat.partner_name)}
+          >
+            Message
+          </Button>
+        )}
+
+        {/* View Profile button */}
+        {onViewDetails && (
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<User className="w-4 h-4" />}
+            onClick={() => onViewDetails(chat)}
+          >
+            View Profile
           </Button>
         )}
 

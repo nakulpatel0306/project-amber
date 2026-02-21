@@ -17,6 +17,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { MessagingProvider } from './contexts/MessagingContext';
 
 // Auth components
 import {
@@ -57,6 +58,7 @@ function App() {
         <ThemeProvider>
           <ToastProvider>
             <BrowserRouter>
+              <MessagingProvider>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<WelcomeScreen />} />
@@ -346,6 +348,7 @@ function App() {
                 {/* Catch all - 404 */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </MessagingProvider>
             </BrowserRouter>
           </ToastProvider>
         </ThemeProvider>

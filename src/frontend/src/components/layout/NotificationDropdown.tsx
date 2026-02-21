@@ -61,23 +61,23 @@ export function NotificationDropdown() {
           .single();
 
         if (employer) {
+          // Only show notifications for chats initiated by candidates (incoming requests)
           const { data: pendingChats } = await supabase
             .from('coffee_chats')
-            .select('id, created_at, candidates!inner(user_id, profiles:user_id(full_name))')
+            .select('id, created_at, candidate_name')
             .eq('employer_id', employer.id)
             .eq('status', 'pending')
+            .eq('initiated_by', 'candidate')
             .order('created_at', { ascending: false })
             .limit(3);
 
           if (pendingChats) {
             for (const chat of pendingChats) {
-              const candidate = chat.candidates as unknown as Record<string, unknown> | null;
-              const profile = candidate?.profiles as unknown as Record<string, unknown> | null;
               notifs.push({
                 id: `chat-${chat.id}`,
                 type: 'coffee_chat',
                 title: 'New Coffee Chat Request',
-                message: `${(profile?.full_name as string) || 'A candidate'} wants to chat`,
+                message: `${chat.candidate_name || 'A candidate'} wants to chat`,
                 read: false,
                 createdAt: new Date(chat.created_at),
                 actionUrl: '/app/employer/chats',
@@ -106,10 +106,10 @@ export function NotificationDropdown() {
           .single();
 
         if (candidate) {
-          // Pending coffee chats
+          // Pending coffee chats - use stored company_name to avoid RLS join issues
           const { data: pendingChats } = await supabase
             .from('coffee_chats')
-            .select('id, created_at, employers!inner(company_name)')
+            .select('id, created_at, company_name')
             .eq('candidate_id', candidate.id)
             .eq('status', 'pending')
             .eq('initiated_by', 'employer')
@@ -118,12 +118,11 @@ export function NotificationDropdown() {
 
           if (pendingChats) {
             for (const chat of pendingChats) {
-              const emp = chat.employers as unknown as Record<string, unknown> | null;
               notifs.push({
                 id: `chat-${chat.id}`,
                 type: 'coffee_chat',
                 title: 'Coffee Chat Invitation',
-                message: `${(emp?.company_name as string) || 'A company'} wants to chat`,
+                message: `${chat.company_name || 'A company'} wants to chat`,
                 read: false,
                 createdAt: new Date(chat.created_at),
                 actionUrl: '/app/chats',

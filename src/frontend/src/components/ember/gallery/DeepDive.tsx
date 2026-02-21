@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { ScoreRing } from '../../ui/ScoreRing';
-import { RadarChart } from '../../ui/RadarChart';
-import { GradientProgressBar } from '../../ui/GradientProgressBar';
+import { OceanMindMap } from '../../ui/OceanMindMap';
 import { EmberFirefly } from '../EmberFirefly';
 import { avatarGradient, getMatchColor } from '../../../utils/matchHelpers';
 import type { OCEANScores } from '../../../lib/compatibilityScoring';
@@ -134,6 +133,102 @@ export function DeepDive({
     if (fitScore >= 60) return 'Close';
     return 'Gap';
   };
+
+  // Calculate alignment-based color for candidate circles
+  // Brighter = more aligned with employer preference, muted = larger gap
+  const getAlignmentBasedColor = (baseColor: string, candidateScore: number, employerScore: number): string => {
+    const difference = Math.abs(candidateScore - employerScore);
+    const alignment = 100 - difference; // 100 = perfect match, 0 = max difference
+
+    // Parse hex color to RGB
+    const hex = baseColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Convert to HSL for better brightness control
+    const rNorm = r / 255;
+    const gNorm = g / 255;
+    const bNorm = b / 255;
+    const max = Math.max(rNorm, gNorm, bNorm);
+    const min = Math.min(rNorm, gNorm, bNorm);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case rNorm: h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6; break;
+        case gNorm: h = ((bNorm - rNorm) / d + 2) / 6; break;
+        case bNorm: h = ((rNorm - gNorm) / d + 4) / 6; break;
+      }
+    }
+
+    // Adjust saturation and lightness based on alignment
+    // High alignment (80-100): full saturation
+    // Medium alignment (60-79): slightly reduced saturation
+    // Low alignment (<60): significantly reduced saturation (grayed out)
+    let newS = s;
+    let newL = l;
+
+    if (alignment >= 80) {
+      // High alignment - keep vibrant
+      newS = s;
+      newL = l;
+    } else if (alignment >= 60) {
+      // Medium alignment - slightly muted
+      newS = s * 0.7;
+      newL = l + (1 - l) * 0.15; // slightly lighter
+    } else {
+      // Low alignment - significantly muted/grayed
+      newS = s * 0.35;
+      newL = l + (1 - l) * 0.3; // more washed out
+    }
+
+    // Convert HSL back to RGB
+    const hslToRgb = (h: number, s: number, l: number) => {
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p: number, q: number, t: number) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    };
+
+    const [newR, newG, newB] = hslToRgb(h, newS, newL);
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  };
+
+  // Base colors for OCEAN dimensions
+  const BASE_COLORS: Record<string, string> = {
+    openness: '#8B5CF6',
+    conscientiousness: '#10B981',
+    extraversion: '#F59E0B',
+    agreeableness: '#EC4899',
+    neuroticism: '#06B6D4',
+  };
+
+  // Calculate alignment-adjusted colors for candidate circles
+  const candidateAlignmentColors = Object.keys(BASE_COLORS).reduce((acc, key) => {
+    const candidateScore = (candidateOcean as unknown as Record<string, number>)[key] || 0;
+    const employerScore = (employerOcean as unknown as Record<string, number>)[key] || 0;
+    acc[key] = getAlignmentBasedColor(BASE_COLORS[key], candidateScore, employerScore);
+    return acc;
+  }, {} as Record<string, string>);
 
   return (
     <motion.div
@@ -271,52 +366,48 @@ export function DeepDive({
         </div>
       </div>
 
-      {/* 3. Radar Chart Overlay */}
+      {/* 3. Profile Comparison - Side by Side Circles */}
       <div
         className="rounded-2xl p-5 md:p-6"
         style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
       >
         <div className="flex items-center gap-2 mb-4">
           <Target className="w-5 h-5" style={{ color: '#8b5cf6' }} />
-          <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Profile Overlay</h2>
+          <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Profile Comparison</h2>
         </div>
-        <div className="max-w-xs mx-auto">
-          <RadarChart
-            scores={candidateOcean as unknown as Record<string, number>}
-            overlayScores={employerOcean as unknown as Record<string, number>}
-            overlayLabel={mode === 'candidate' ? 'Employer Preferences' : 'Your Preferences'}
-            size={280}
-            animated
-          />
-        </div>
-      </div>
-
-      {/* 4. Composite Score Grid */}
-      <div
-        className="rounded-2xl p-5 md:p-6"
-        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <Zap className="w-5 h-5" style={{ color: '#f59e0b' }} />
-          <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Compatibility Breakdown</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {compositeScores.map(({ label, score, icon: Icon }) => (
-            <div key={label} className="flex items-center gap-3">
-              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: getMatchColor(score) }} />
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{label}</span>
-                  <span className="text-xs font-bold" style={{ color: getMatchColor(score) }}>{score}%</span>
-                </div>
-                <GradientProgressBar value={score} />
-              </div>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Candidate Profile - colors adjusted by alignment */}
+          <div>
+            <p className="text-sm font-medium text-center mb-3" style={{ color: 'var(--color-textSecondary)' }}>
+              {mode === 'candidate' ? 'Your Profile' : 'Candidate Profile'}
+            </p>
+            <OceanMindMap
+              scores={candidateOcean as unknown as Record<string, number>}
+              colors={candidateAlignmentColors}
+              size="sm"
+              animated
+              centerLabel={mode === 'candidate' ? 'You' : name.split(' ')[0]}
+            />
+            <p className="text-[10px] text-center mt-2" style={{ color: 'var(--color-textMuted)' }}>
+              Brighter = better alignment with preferences
+            </p>
+          </div>
+          {/* Employer Preferences */}
+          <div>
+            <p className="text-sm font-medium text-center mb-3" style={{ color: 'var(--color-textSecondary)' }}>
+              {mode === 'candidate' ? 'Employer Preferences' : 'Your Preferences'}
+            </p>
+            <OceanMindMap
+              scores={employerOcean as unknown as Record<string, number>}
+              size="sm"
+              animated
+              centerLabel={mode === 'candidate' ? 'Employer' : 'You'}
+            />
+          </div>
         </div>
       </div>
 
-      {/* 5. Ember's Analysis */}
+      {/* 4. Ember's Analysis */}
       <div
         className="rounded-2xl p-5 md:p-6"
         style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}

@@ -22,18 +22,22 @@ CREATE INDEX IF NOT EXISTS idx_saved_matches_status ON saved_matches(status);
 -- RLS policies
 ALTER TABLE saved_matches ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own saved matches" ON saved_matches;
 CREATE POLICY "Users can view their own saved matches"
   ON saved_matches FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own saved matches" ON saved_matches;
 CREATE POLICY "Users can insert their own saved matches"
   ON saved_matches FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own saved matches" ON saved_matches;
 CREATE POLICY "Users can update their own saved matches"
   ON saved_matches FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own saved matches" ON saved_matches;
 CREATE POLICY "Users can delete their own saved matches"
   ON saved_matches FOR DELETE
   USING (auth.uid() = user_id);
@@ -47,7 +51,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS saved_matches_updated_at ON saved_matches;
 CREATE TRIGGER saved_matches_updated_at
   BEFORE UPDATE ON saved_matches
   FOR EACH ROW
   EXECUTE FUNCTION update_saved_matches_updated_at();
+
+-- Add candidate_name column for display without cross-table JOINs
+ALTER TABLE saved_matches ADD COLUMN IF NOT EXISTS candidate_name TEXT;

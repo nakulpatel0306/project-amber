@@ -3,14 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { calculateCompatibility, type OCEANScores } from '../lib/compatibilityScoring';
 import { determineArchetype, type Archetype } from '../lib/archetypes';
-import { generateHighlightPills } from '../utils/matchHelpers';
 import type {
   CandidateData,
   EmployerData,
-  RoleData,
   RoleOption,
-  MatchResult,
   CandidateResult,
+  EmployerResult,
   EmberInsights,
 } from '../types/matching.types';
 
@@ -18,7 +16,7 @@ const API_BASE = 'http://127.0.0.1:8000';
 
 interface UseCandidateMatchDataReturn {
   candidate: CandidateData | null;
-  matches: MatchResult[];
+  employers: EmployerResult[];
   archetype: (Archetype & { confidence: number }) | null;
   insights: EmberInsights | null;
   pendingChats: number;
@@ -47,7 +45,7 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<CandidateData | null>(null);
-  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [employers, setEmployers] = useState<EmployerResult[]>([]);
   const [archetype, setArchetype] = useState<(Archetype & { confidence: number }) | null>(null);
   const [insights, setInsights] = useState<EmberInsights | null>(null);
   const [pendingChats, setPendingChats] = useState(0);
@@ -90,109 +88,74 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
         const arch = determineArchetype(candidateOcean);
         setArchetype(arch);
 
-        // Step 2: Fetch active roles (separate from employers to avoid RLS join issues)
-        const { data: roles, error: rolesErr } = await supabase
-          .from('roles')
-          .select('*')
-          .eq('status', 'active');
-
-        if (rolesErr) {
-          console.error('[Ember] Roles fetch error:', rolesErr.message);
-        }
-
-        console.log('[Ember] Active roles found:', roles?.length || 0);
-
-        if (!roles || roles.length === 0) {
-          // No active roles — nothing to match against
-          setIsLoading(false);
-          return;
-        }
-
-        // Step 3: Fetch employers for those roles (separate query — avoids !inner join RLS issues)
-        const employerIds = [...new Set(roles.map((r: any) => r.employer_id))];
-        const { data: employers, error: empErr } = await supabase
-          .from('employers')
-          .select('*')
-          .in('id', employerIds);
+        // Step 2: Fetch employers via RPC function (bypasses RLS to avoid recursion)
+        const { data: employersRaw, error: empErr } = await supabase
+          .rpc('get_employers_for_candidate', { candidate_user_id: user.id });
+        const employersData = employersRaw as EmployerData[] | null;
 
         if (empErr) {
           console.error('[Ember] Employers fetch error:', empErr.message);
         }
 
-        console.log('[Ember] Employers found:', employers?.length || 0);
+        console.log('[Ember] Employers found:', employersData?.length || 0);
 
-        if (!employers || employers.length === 0) {
-          // RLS might still be blocking — log clearly
-          console.warn('[Ember] No employers returned. RLS policy "Candidates can view employers" may be missing. Run migrate-matching-cross-visibility.sql');
+        if (!employersData || employersData.length === 0) {
+          console.warn('[Ember] No employers returned. Make sure get_employers_for_candidate RPC function exists.');
           setIsLoading(false);
           return;
         }
 
-        // Step 4: Merge employers into roles and compute matches
-        const employerMap = new Map(employers.map((e: any) => [e.id, e]));
+        // Step 3: Score employers directly (like how employers score candidates)
+        const employerResults: EmployerResult[] = employersData
+          .filter((emp: EmployerData) => emp.openness_preference !== null) // Only employers with preferences set
+          .map((emp: EmployerData) => {
+            const employerOcean: OCEANScores = {
+              openness: emp.openness_preference || 50,
+              conscientiousness: emp.conscientiousness_preference || 50,
+              extraversion: emp.extraversion_preference || 50,
+              agreeableness: emp.agreeableness_preference || 50,
+              neuroticism: emp.neuroticism_preference || 50,
+            };
 
-        const matchResults: MatchResult[] = [];
-        for (const role of roles) {
-          const employer = employerMap.get(role.employer_id);
-          if (!employer) continue; // Skip roles whose employer we can't see
+            const result = calculateCompatibility({
+              candidateOCEAN: candidateOcean,
+              employerPreferences: {
+                ...employerOcean,
+                cultureValues: emp.culture_values || [],
+              },
+              candidateWorkStyle: cand.preferred_work_style || undefined,
+            });
 
-          const result = calculateCompatibility({
-            candidateOCEAN: candidateOcean,
-            employerPreferences: {
-              openness: employer.openness_preference || 50,
-              conscientiousness: employer.conscientiousness_preference || 50,
-              extraversion: employer.extraversion_preference || 50,
-              agreeableness: employer.agreeableness_preference || 50,
-              neuroticism: employer.neuroticism_preference || 50,
-              cultureValues: employer.culture_values || [],
-            },
-            candidateWorkStyle: cand.preferred_work_style || undefined,
-            roleWorkStyle: role.work_style || undefined,
-            roleRequirements: {
-              required_openness_min: role.required_openness_min,
-              required_openness_max: role.required_openness_max,
-              required_conscientiousness_min: role.required_conscientiousness_min,
-              required_conscientiousness_max: role.required_conscientiousness_max,
-              required_extraversion_min: role.required_extraversion_min,
-              required_extraversion_max: role.required_extraversion_max,
-              required_agreeableness_min: role.required_agreeableness_min,
-              required_agreeableness_max: role.required_agreeableness_max,
-              required_neuroticism_min: role.required_neuroticism_min,
-              required_neuroticism_max: role.required_neuroticism_max,
-              work_style: role.work_style,
-            },
+            const empArchetype = determineArchetype(employerOcean);
+
+            return {
+              employerId: emp.id,
+              companyName: emp.company_name,
+              description: emp.description || '',
+              industry: emp.industry || '',
+              location: emp.location || '',
+              companySize: emp.company_size || '',
+              logoUrl: emp.logo_url || null,
+              archetype: { name: empArchetype.name, key: empArchetype.key, description: empArchetype.description, strengths: empArchetype.strengths },
+              overallScore: result.overallMatchScore,
+              traitScore: result.traitMatchScore,
+              cultureScore: result.cultureMatchScore,
+              workStyleFit: result.breakdown.workStyleFit,
+              breakdown: {
+                opennessFit: result.breakdown.opennessFit,
+                conscientiousnessFit: result.breakdown.conscientiousnessFit,
+                extraversionFit: result.breakdown.extraversionFit,
+                agreeablenessFit: result.breakdown.agreeablenessFit,
+                neuroticismFit: result.breakdown.neuroticismFit,
+              },
+              employerOcean,
+              cultureValues: emp.culture_values || [],
+            };
           });
 
-          const employerOcean: OCEANScores = {
-            openness: employer.openness_preference || 50,
-            conscientiousness: employer.conscientiousness_preference || 50,
-            extraversion: employer.extraversion_preference || 50,
-            agreeableness: employer.agreeableness_preference || 50,
-            neuroticism: employer.neuroticism_preference || 50,
-          };
-          const empArchetype = determineArchetype(employerOcean);
-
-          // Attach employer data to role for downstream components
-          const roleWithEmployer = { ...role, employers: employer } as RoleData;
-
-          matchResults.push({
-            role: roleWithEmployer,
-            traitMatchScore: result.traitMatchScore,
-            cultureMatchScore: result.cultureMatchScore,
-            overallMatchScore: result.overallMatchScore,
-            employerArchetype: { name: empArchetype.name, key: empArchetype.key, description: empArchetype.description },
-            breakdown: result.breakdown,
-            highlightPills: generateHighlightPills({
-              cultureMatchScore: result.cultureMatchScore,
-              traitMatchScore: result.traitMatchScore,
-              breakdown: result.breakdown,
-            }),
-          });
-        }
-
-        matchResults.sort((a, b) => b.overallMatchScore - a.overallMatchScore);
-        setMatches(matchResults);
-        console.log('[Ember] Matches computed:', matchResults.length);
+        employerResults.sort((a, b) => b.overallScore - a.overallScore);
+        setEmployers(employerResults);
+        console.log('[Ember] Employer matches computed:', employerResults.length);
 
         const { count } = await supabase
           .from('coffee_chats')
@@ -226,7 +189,7 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
     loadData();
   }, [user]);
 
-  return { candidate, matches, archetype, insights, pendingChats, isLoading, error, setPendingChats };
+  return { candidate, employers, archetype, insights, pendingChats, isLoading, error, setPendingChats };
 }
 
 export function useEmployerMatchData(): UseEmployerMatchDataReturn {
@@ -365,11 +328,10 @@ export function useEmployerMatchData(): UseEmployerMatchDataReturn {
           setRoles(rolesData);
         }
 
-        // Step 3: Fetch candidates (separate query — no !inner join to avoid RLS chain issues)
-        const { data: candidatesData, error: candidatesErr } = await supabase
-          .from('candidates')
-          .select('*')
-          .not('openness_score', 'is', null);
+        // Step 3: Fetch candidates via RPC function (bypasses RLS to avoid recursion)
+        const { data: candidatesRaw, error: candidatesErr } = await supabase
+          .rpc('get_candidates_for_employer', { employer_user_id: user.id });
+        const candidatesData = candidatesRaw as CandidateData[] | null;
 
         if (candidatesErr) {
           console.error('[Ember] Candidates fetch error:', candidatesErr.message);
@@ -378,7 +340,7 @@ export function useEmployerMatchData(): UseEmployerMatchDataReturn {
         console.log('[Ember] Candidates found:', candidatesData?.length || 0);
 
         if (!candidatesData || candidatesData.length === 0) {
-          console.warn('[Ember] No candidates returned. RLS policy "Employers can view assessed candidates" may be missing. Run migrate-matching-cross-visibility.sql');
+          console.warn('[Ember] No candidates returned. Make sure get_candidates_for_employer RPC function exists.');
           setIsLoading(false);
           return;
         }
