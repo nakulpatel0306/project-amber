@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { MessagePanelContainer } from '../messaging/MessagePanelContainer';
 
 export function AppLayout() {
   return (
@@ -11,6 +12,7 @@ export function AppLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
+      <MessagePanelContainer />
     </div>
   );
 }

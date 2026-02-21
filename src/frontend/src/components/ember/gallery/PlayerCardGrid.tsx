@@ -1,13 +1,13 @@
 import { PlayerCard } from './PlayerCard';
-import type { MatchResult, CandidateResult } from '../../../types/matching.types';
+import type { EmployerResult, CandidateResult } from '../../../types/matching.types';
 
 interface CandidateGridProps {
   mode: 'candidate';
-  matches: MatchResult[];
+  employers: EmployerResult[];
   savedIds: Set<string>;
-  onDeepDive: (match: MatchResult) => void;
-  onBrew: (match: MatchResult) => void;
-  onToggleSave: (match: MatchResult) => void;
+  onDeepDive: (employer: EmployerResult) => void;
+  onBrew: (employer: EmployerResult) => void;
+  onToggleSave: (employer: EmployerResult) => void;
   isLoading?: boolean;
 }
 
@@ -66,9 +66,9 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
   }
 
   if (props.mode === 'candidate') {
-    const { matches, savedIds, onDeepDive, onBrew, onToggleSave } = props;
+    const { employers, savedIds, onDeepDive, onBrew, onToggleSave } = props;
 
-    if (matches.length === 0) {
+    if (employers.length === 0) {
       return (
         <div className="text-center py-16">
           <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
@@ -80,23 +80,23 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {matches.map((match, i) => (
+          {employers.map((employer, i) => (
             <PlayerCard
-              key={match.role.id}
-              id={match.role.id}
-              name={match.role.employers.company_name}
-              subtitle={match.role.title}
-              archetype={match.employerArchetype}
-              overallScore={match.overallMatchScore}
-              cultureScore={match.cultureMatchScore}
-              workStyleScore={match.breakdown.workStyleFit}
-              traitScore={match.traitMatchScore}
-              highlightPills={match.highlightPills}
+              key={employer.employerId}
+              id={employer.employerId}
+              name={employer.companyName}
+              subtitle={employer.industry}
+              archetype={employer.archetype}
+              overallScore={employer.overallScore}
+              cultureScore={employer.cultureScore}
+              workStyleScore={employer.workStyleFit}
+              traitScore={employer.traitScore}
+              highlightPills={[]}
               index={i}
-              isSaved={savedIds.has(match.role.id)}
-              onDeepDive={() => onDeepDive(match)}
-              onBrew={() => onBrew(match)}
-              onToggleSave={() => onToggleSave(match)}
+              isSaved={savedIds.has(employer.employerId)}
+              onDeepDive={() => onDeepDive(employer)}
+              onBrew={() => onBrew(employer)}
+              onToggleSave={() => onToggleSave(employer)}
             />
           ))}
       </div>

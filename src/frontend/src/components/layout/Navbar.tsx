@@ -26,6 +26,7 @@ import {
 import { cn } from '../../utils/cn';
 import { APP_NAME } from '../../utils/constants';
 import { NotificationDropdown } from './NotificationDropdown';
+import { BookmarkDropdown } from './BookmarkDropdown';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -107,6 +108,9 @@ export function Navbar() {
 
           {/* Right section */}
           <div className="flex items-center gap-3">
+            {/* Bookmarks (employers only) */}
+            <BookmarkDropdown />
+
             {/* Notifications */}
             <NotificationDropdown />
 

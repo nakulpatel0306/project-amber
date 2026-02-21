@@ -11,7 +11,7 @@ import { GalleryFilterBar } from './gallery/GalleryFilterBar';
 import { DeepDive } from './gallery/DeepDive';
 import { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
 import { Button } from '../ui/Button';
-import type { MatchResult, PageView, SortOption } from '../../types/matching.types';
+import type { EmployerResult, PageView, SortOption } from '../../types/matching.types';
 import type { OCEANScores } from '../../lib/compatibilityScoring';
 
 export function EmberAgent() {
@@ -21,26 +21,26 @@ export function EmberAgent() {
 
   // Data hooks
   const {
-    candidate, matches, archetype, isLoading, error: dataError, setPendingChats,
+    candidate, employers, archetype, isLoading, error: dataError, setPendingChats,
   } = useCandidateMatchData();
   const { isSaved, save, unsave, getSavedMatch } = useSavedMatches();
 
   // View state
   const deepdiveParam = searchParams.get('deepdive');
   const [view, setView] = useState<PageView>(deepdiveParam ? 'deepdive' : 'gallery');
-  const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
-  const [brewTarget, setBrewTarget] = useState<MatchResult | null>(null);
+  const [selectedEmployer, setSelectedEmployer] = useState<EmployerResult | null>(null);
+  const [brewTarget, setBrewTarget] = useState<EmployerResult | null>(null);
 
-  // Handle deepdive URL param once matches load
+  // Handle deepdive URL param once employers load
   useEffect(() => {
-    if (deepdiveParam && matches.length > 0 && !selectedMatch) {
-      const match = matches.find(m => m.role.id === deepdiveParam);
-      if (match) {
-        setSelectedMatch(match);
+    if (deepdiveParam && employers.length > 0 && !selectedEmployer) {
+      const emp = employers.find(e => e.employerId === deepdiveParam);
+      if (emp) {
+        setSelectedEmployer(emp);
         setView('deepdive');
       }
     }
-  }, [deepdiveParam, matches, selectedMatch]);
+  }, [deepdiveParam, employers, selectedEmployer]);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,14 +55,14 @@ export function EmberAgent() {
 
   // Derived filter data
   const industries = useMemo(() => {
-    const set = new Set(matches.map(m => m.role.employers.industry).filter(Boolean));
+    const set = new Set(employers.map(e => e.industry).filter(Boolean));
     return Array.from(set).sort();
-  }, [matches]);
+  }, [employers]);
 
   const locations = useMemo(() => {
-    const set = new Set(matches.map(m => m.role.employers.location || m.role.location).filter(Boolean));
+    const set = new Set(employers.map(e => e.location).filter(Boolean));
     return Array.from(set).sort();
-  }, [matches]);
+  }, [employers]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -74,9 +74,9 @@ export function EmberAgent() {
     return count;
   }, [selectedIndustry, selectedWorkStyle, selectedLocation, minScore, maxScore]);
 
-  // Filtered + sorted matches
-  const filteredMatches = useMemo(() => {
-    let result = [...matches];
+  // Filtered + sorted employers
+  const filteredEmployers = useMemo(() => {
+    let result = [...employers];
 
     // Quick filter
     if (quickFilter === 'top5') result = result.slice(0, 5);
@@ -85,31 +85,28 @@ export function EmberAgent() {
     // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(m =>
-        m.role.employers.company_name.toLowerCase().includes(q) ||
-        m.role.title.toLowerCase().includes(q)
+      result = result.filter(e =>
+        e.companyName.toLowerCase().includes(q) ||
+        e.industry.toLowerCase().includes(q)
       );
     }
 
     // Filters
-    if (selectedIndustry) result = result.filter(m => m.role.employers.industry === selectedIndustry);
-    if (selectedWorkStyle) result = result.filter(m => m.role.work_style === selectedWorkStyle);
-    if (selectedLocation) result = result.filter(m =>
-      (m.role.employers.location || m.role.location) === selectedLocation
-    );
-    if (minScore > 0) result = result.filter(m => m.overallMatchScore >= minScore);
-    if (maxScore < 100) result = result.filter(m => m.overallMatchScore <= maxScore);
+    if (selectedIndustry) result = result.filter(e => e.industry === selectedIndustry);
+    if (selectedLocation) result = result.filter(e => e.location === selectedLocation);
+    if (minScore > 0) result = result.filter(e => e.overallScore >= minScore);
+    if (maxScore < 100) result = result.filter(e => e.overallScore <= maxScore);
 
     // Sort
     switch (sortBy) {
-      case 'culture': result.sort((a, b) => b.cultureMatchScore - a.cultureMatchScore); break;
-      case 'workstyle': result.sort((a, b) => b.breakdown.workStyleFit - a.breakdown.workStyleFit); break;
+      case 'culture': result.sort((a, b) => b.cultureScore - a.cultureScore); break;
+      case 'workstyle': result.sort((a, b) => b.workStyleFit - a.workStyleFit); break;
       case 'score':
-      default: result.sort((a, b) => b.overallMatchScore - a.overallMatchScore);
+      default: result.sort((a, b) => b.overallScore - a.overallScore);
     }
 
     return result;
-  }, [matches, quickFilter, searchQuery, selectedIndustry, selectedWorkStyle, selectedLocation, minScore, maxScore, sortBy]);
+  }, [employers, quickFilter, searchQuery, selectedIndustry, selectedLocation, minScore, maxScore, sortBy]);
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
@@ -121,35 +118,36 @@ export function EmberAgent() {
     setQuickFilter('all');
   }, []);
 
-  // Saved match IDs
+  // Saved match IDs (using employer_id now)
   const savedIds = useMemo(() => {
-    return new Set(matches.filter(m => isSaved('role', m.role.id)).map(m => m.role.id));
-  }, [matches, isSaved]);
+    return new Set(employers.filter(e => isSaved('candidate', e.employerId)).map(e => e.employerId));
+  }, [employers, isSaved]);
 
   // Handlers
-  const handleDeepDive = useCallback((match: MatchResult) => {
-    setSelectedMatch(match);
+  const handleDeepDive = useCallback((emp: EmployerResult) => {
+    setSelectedEmployer(emp);
     setView('deepdive');
   }, []);
 
   const handleBackToGallery = useCallback(() => {
-    setSelectedMatch(null);
+    setSelectedEmployer(null);
     setView('gallery');
   }, []);
 
-  const handleToggleSave = useCallback(async (match: MatchResult) => {
+  const handleToggleSave = useCallback(async (emp: EmployerResult) => {
     try {
-      const existing = getSavedMatch('role', match.role.id);
+      const existing = getSavedMatch('candidate', emp.employerId);
       if (existing) {
         await unsave(existing.id);
         showSuccess('Removed', 'Match removed from saved');
       } else {
         await save({
-          target_type: 'role',
-          role_id: match.role.id,
-          employer_id: match.role.employers.id,
+          target_type: 'candidate', // Reusing this type for employer saves from candidate side
+          role_id: null,
+          employer_id: emp.employerId,
           candidate_id: candidate?.id || null,
-          match_score: match.overallMatchScore,
+          candidate_name: null,
+          match_score: emp.overallScore,
           notes: null,
           status: 'saved',
         });
@@ -160,24 +158,26 @@ export function EmberAgent() {
     }
   }, [candidate, getSavedMatch, save, unsave, showSuccess, showError]);
 
-  const handleBrew = useCallback(async (note: string) => {
+  const handleBrew = useCallback(async (note: string, preferredDates: Date[]) => {
     if (!candidate || !brewTarget) return;
     try {
       await supabase.from('coffee_chats').insert({
         candidate_id: candidate.id,
-        employer_id: brewTarget.role.employers.id,
-        role_id: brewTarget.role.id,
+        employer_id: brewTarget.employerId,
+        role_id: null,
         initiated_by: 'candidate',
         status: 'pending',
-        message: note || `Interested in ${brewTarget.role.title}`,
-        role_title: brewTarget.role.title,
-        match_score: brewTarget.overallMatchScore,
+        message: note || `Interested in learning about ${brewTarget.companyName}`,
+        role_title: null,
+        match_score: brewTarget.overallScore,
+        company_name: brewTarget.companyName,
+        preferred_dates: preferredDates.length > 0 ? preferredDates.map(d => d.toISOString()) : null,
       });
       showSuccess('Sent!', 'Coffee chat request sent — view it in your Chats');
       setPendingChats(prev => prev + 1);
 
       // Also update saved match status to pending if saved
-      const existing = getSavedMatch('role', brewTarget.role.id);
+      const existing = getSavedMatch('candidate', brewTarget.employerId);
       if (existing) {
         await supabase.from('saved_matches').update({ status: 'pending' }).eq('id', existing.id);
       }
@@ -189,16 +189,15 @@ export function EmberAgent() {
 
   // Deep dive dimension data
   const deepDiveDimensions = useMemo(() => {
-    if (!selectedMatch || !candidate) return [];
-    const emp = selectedMatch.role.employers;
+    if (!selectedEmployer || !candidate) return [];
     return [
-      { name: 'Openness', candidateScore: candidate.openness_score, employerPreference: emp.openness_preference || 50, fitScore: selectedMatch.breakdown.opennessFit },
-      { name: 'Conscientiousness', candidateScore: candidate.conscientiousness_score, employerPreference: emp.conscientiousness_preference || 50, fitScore: selectedMatch.breakdown.conscientiousnessFit },
-      { name: 'Extraversion', candidateScore: candidate.extraversion_score, employerPreference: emp.extraversion_preference || 50, fitScore: selectedMatch.breakdown.extraversionFit },
-      { name: 'Agreeableness', candidateScore: candidate.agreeableness_score, employerPreference: emp.agreeableness_preference || 50, fitScore: selectedMatch.breakdown.agreeablenessFit },
-      { name: 'Stability', candidateScore: 100 - candidate.neuroticism_score, employerPreference: 100 - (emp.neuroticism_preference || 50), fitScore: selectedMatch.breakdown.neuroticismFit },
+      { name: 'Openness', candidateScore: candidate.openness_score, employerPreference: selectedEmployer.employerOcean.openness, fitScore: selectedEmployer.breakdown.opennessFit },
+      { name: 'Conscientiousness', candidateScore: candidate.conscientiousness_score, employerPreference: selectedEmployer.employerOcean.conscientiousness, fitScore: selectedEmployer.breakdown.conscientiousnessFit },
+      { name: 'Extraversion', candidateScore: candidate.extraversion_score, employerPreference: selectedEmployer.employerOcean.extraversion, fitScore: selectedEmployer.breakdown.extraversionFit },
+      { name: 'Agreeableness', candidateScore: candidate.agreeableness_score, employerPreference: selectedEmployer.employerOcean.agreeableness, fitScore: selectedEmployer.breakdown.agreeablenessFit },
+      { name: 'Stability', candidateScore: 100 - candidate.neuroticism_score, employerPreference: 100 - selectedEmployer.employerOcean.neuroticism, fitScore: selectedEmployer.breakdown.neuroticismFit },
     ];
-  }, [selectedMatch, candidate]);
+  }, [selectedEmployer, candidate]);
 
   // Loading
   if (isLoading) {
@@ -269,7 +268,7 @@ export function EmberAgent() {
             <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Ember Matches</h1>
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
-              {matches.length > 0 && ` · ${matches.length} matches`}
+              {employers.length > 0 && ` · ${employers.length} companies`}
             </p>
           </div>
         </div>
@@ -286,7 +285,7 @@ export function EmberAgent() {
             >
               <GalleryFilterBar
                 mode="candidate"
-                matchCount={filteredMatches.length}
+                matchCount={filteredEmployers.length}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 sortBy={sortBy}
@@ -313,41 +312,34 @@ export function EmberAgent() {
 
               <PlayerCardGrid
                 mode="candidate"
-                matches={filteredMatches}
+                employers={filteredEmployers}
                 savedIds={savedIds}
                 onDeepDive={handleDeepDive}
-                onBrew={(match) => setBrewTarget(match)}
+                onBrew={(emp) => setBrewTarget(emp)}
                 onToggleSave={handleToggleSave}
               />
             </motion.div>
-          ) : view === 'deepdive' && selectedMatch ? (
+          ) : view === 'deepdive' && selectedEmployer ? (
             <DeepDive
               key="deepdive"
               mode="candidate"
-              name={selectedMatch.role.employers.company_name}
-              subtitle={selectedMatch.role.title}
-              archetype={selectedMatch.employerArchetype}
-              overallScore={selectedMatch.overallMatchScore}
-              traitScore={selectedMatch.traitMatchScore}
-              cultureScore={selectedMatch.cultureMatchScore}
-              workStyleScore={selectedMatch.breakdown.workStyleFit}
-              communicationScore={Math.round((selectedMatch.breakdown.extraversionFit + selectedMatch.breakdown.agreeablenessFit) / 2)}
+              name={selectedEmployer.companyName}
+              subtitle={selectedEmployer.industry}
+              archetype={selectedEmployer.archetype}
+              overallScore={selectedEmployer.overallScore}
+              traitScore={selectedEmployer.traitScore}
+              cultureScore={selectedEmployer.cultureScore}
+              workStyleScore={selectedEmployer.workStyleFit}
+              communicationScore={Math.round((selectedEmployer.breakdown.extraversionFit + selectedEmployer.breakdown.agreeablenessFit) / 2)}
               dimensions={deepDiveDimensions}
               candidateOcean={candidateOcean}
-              employerOcean={{
-                openness: selectedMatch.role.employers.openness_preference || 50,
-                conscientiousness: selectedMatch.role.employers.conscientiousness_preference || 50,
-                extraversion: selectedMatch.role.employers.extraversion_preference || 50,
-                agreeableness: selectedMatch.role.employers.agreeableness_preference || 50,
-                neuroticism: selectedMatch.role.employers.neuroticism_preference || 50,
-              }}
+              employerOcean={selectedEmployer.employerOcean}
               candidateId={candidate.id}
-              employerId={selectedMatch.role.employers.id}
-              roleId={selectedMatch.role.id}
-              isSaved={savedIds.has(selectedMatch.role.id)}
+              employerId={selectedEmployer.employerId}
+              isSaved={savedIds.has(selectedEmployer.employerId)}
               onBack={handleBackToGallery}
-              onBrew={() => setBrewTarget(selectedMatch)}
-              onToggleSave={() => handleToggleSave(selectedMatch)}
+              onBrew={() => setBrewTarget(selectedEmployer)}
+              onToggleSave={() => handleToggleSave(selectedEmployer)}
             />
           ) : null}
         </AnimatePresence>
@@ -358,10 +350,10 @@ export function EmberAgent() {
         <CoffeeBrewModal
           isOpen={!!brewTarget}
           onClose={() => setBrewTarget(null)}
-          name={brewTarget.role.employers.company_name}
-          subtitle={brewTarget.role.title}
-          archetype={brewTarget.employerArchetype}
-          overallScore={brewTarget.overallMatchScore}
+          name={brewTarget.companyName}
+          subtitle={brewTarget.industry}
+          archetype={brewTarget.archetype}
+          overallScore={brewTarget.overallScore}
           onBrew={handleBrew}
         />
       )}

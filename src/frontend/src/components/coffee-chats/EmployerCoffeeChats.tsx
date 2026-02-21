@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useMessaging } from '../../contexts/MessagingContext';
 import { supabase } from '../../lib/supabase';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { CoffeeChatCard, CoffeeChatData, ChatStatus } from './CoffeeChatCard';
@@ -9,6 +10,7 @@ import { CoffeeChatPrep } from './CoffeeChatPrep';
 import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
+import { CoffeeChatDetailModal } from './CoffeeChatDetailModal';
 
 type TabValue = 'pending' | 'upcoming' | 'completed';
 
@@ -36,6 +38,7 @@ const emptyStates: Record<TabValue, { mood: 'happy' | 'neutral' | 'thinking'; me
 export function EmployerCoffeeChats() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
+  const { openChat } = useMessaging();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [chats, setChats] = useState<CoffeeChatData[]>([]);
@@ -44,8 +47,28 @@ export function EmployerCoffeeChats() {
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [activeChatPartner, setActiveChatPartner] = useState('');
+  const [activeChat, setActiveChat] = useState<CoffeeChatData | null>(null);
+
+  // Handle opening message panel
+  const handleMessage = useCallback((chatId: string, partnerName: string) => {
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) return;
+    openChat(chatId, {
+      id: chat.candidate_id,
+      name: partnerName,
+      avatarUrl: null,
+      coffeeChatId: chatId,
+    });
+  }, [chats, openChat]);
+
+  // Handle viewing partner details
+  const handleViewDetails = useCallback((chat: CoffeeChatData) => {
+    setActiveChat(chat);
+    setDetailModalOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -70,9 +93,10 @@ export function EmployerCoffeeChats() {
 
       setEmployerId(employer.id);
 
+      // Query without JOINs - use stored candidate_name to avoid RLS issues
       const { data: chatData } = await supabase
         .from('coffee_chats')
-        .select('*, candidates!inner(*, profiles!inner(full_name, email))')
+        .select('*')
         .eq('employer_id', employer.id)
         .order('created_at', { ascending: false });
 
@@ -90,10 +114,10 @@ export function EmployerCoffeeChats() {
           rating: c.rating,
           feedback: c.feedback,
           created_at: c.created_at,
-          partner_name: c.candidates?.profiles?.full_name || 'Unknown',
-          partner_location: c.candidates?.location,
+          partner_name: c.candidate_name || 'Unknown',
           match_score: c.match_score,
           role_title: c.role_title,
+          preferred_dates: c.preferred_dates,
         }));
         setChats(mapped);
       }
@@ -266,6 +290,8 @@ export function EmployerCoffeeChats() {
                     navigate('/app/employer/ember');
                   }
                 }}
+                onMessage={handleMessage}
+                onViewDetails={handleViewDetails}
               />
               {(chat.status === 'accepted' || chat.status === 'scheduled') && (
                 <CoffeeChatPrep chatId={chat.id} />
@@ -290,6 +316,25 @@ export function EmployerCoffeeChats() {
         onSubmit={handleFeedback}
         partnerName={activeChatPartner}
       />
+
+      {activeChat && (
+        <CoffeeChatDetailModal
+          isOpen={detailModalOpen}
+          onClose={() => {
+            setDetailModalOpen(false);
+            setActiveChat(null);
+          }}
+          coffeeChatId={activeChat.id}
+          viewerRole="employer"
+          partnerId={activeChat.candidate_id}
+          partnerName={activeChat.partner_name}
+          matchScore={activeChat.match_score}
+          onMessage={() => {
+            setDetailModalOpen(false);
+            handleMessage(activeChat.id, activeChat.partner_name);
+          }}
+        />
+      )}
     </div>
   );
 }

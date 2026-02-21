@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Coffee, Sparkles } from 'lucide-react';
+import { Coffee, Sparkles, Calendar } from 'lucide-react';
 import { Modal, ModalFooter } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
 import { ScoreRing } from '../../ui/ScoreRing';
+import { DatePicker } from '../../ui/DatePicker';
 import { avatarGradient } from '../../../utils/matchHelpers';
 
 interface CoffeeBrewModalProps {
@@ -13,7 +14,7 @@ interface CoffeeBrewModalProps {
   archetype?: { name: string; key: string };
   overallScore: number;
   avatarUrl?: string | null;
-  onBrew: (note: string) => Promise<void>;
+  onBrew: (note: string, preferredDates: Date[]) => Promise<void>;
 }
 
 export function CoffeeBrewModal({
@@ -27,14 +28,21 @@ export function CoffeeBrewModal({
   onBrew,
 }: CoffeeBrewModalProps) {
   const [note, setNote] = useState('');
+  const [preferredDates, setPreferredDates] = useState<Date[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const initial = name.charAt(0).toUpperCase();
+
+  // Minimum date is tomorrow
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 1);
+  minDate.setHours(0, 0, 0, 0);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await onBrew(note);
+      await onBrew(note, preferredDates);
       setNote('');
+      setPreferredDates([]);
       onClose();
     } catch {
       // Error handled by parent via toast
@@ -77,12 +85,15 @@ export function CoffeeBrewModal({
         </div>
 
         {/* Note field */}
-        <div className="mb-4">
+        <div className="mb-4 text-left">
+          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-textSecondary)' }}>
+            Message (optional)
+          </label>
           <textarea
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="I'd love to learn about your team culture!"
-            rows={3}
+            rows={2}
             maxLength={500}
             className="w-full px-3 py-2 rounded-xl text-sm resize-none"
             style={{
@@ -94,6 +105,25 @@ export function CoffeeBrewModal({
           <p className="text-right text-[10px] mt-1" style={{ color: 'var(--color-textMuted)' }}>
             {note.length}/500
           </p>
+        </div>
+
+        {/* Preferred dates picker */}
+        <div className="text-left">
+          <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: 'var(--color-textSecondary)' }}>
+            <Calendar className="w-3.5 h-3.5" />
+            Preferred Dates (optional)
+          </label>
+          <div
+            className="p-3 rounded-xl"
+            style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}
+          >
+            <DatePicker
+              selectedDates={preferredDates}
+              onChange={setPreferredDates}
+              minDate={minDate}
+              maxSelections={5}
+            />
+          </div>
         </div>
       </div>
 

@@ -138,6 +138,30 @@ export interface CandidateResult {
   candidateOcean: OCEANScores;
 }
 
+export interface EmployerResult {
+  employerId: string;
+  companyName: string;
+  description: string;
+  industry: string;
+  location: string;
+  companySize: string;
+  logoUrl: string | null;
+  archetype: { name: string; key: string; description?: string; strengths: string[] };
+  overallScore: number;
+  traitScore: number;
+  cultureScore: number;
+  workStyleFit: number;
+  breakdown: {
+    opennessFit: number;
+    conscientiousnessFit: number;
+    extraversionFit: number;
+    agreeablenessFit: number;
+    neuroticismFit: number;
+  };
+  employerOcean: OCEANScores;
+  cultureValues: string[];
+}
+
 export interface EmberInsights {
   ember_message?: string;
   strengths?: string[];
@@ -185,6 +209,7 @@ export interface SavedMatch {
   role_id: string | null;
   employer_id: string | null;
   candidate_id: string | null;
+  candidate_name: string | null;
   match_score: number | null;
   notes: string | null;
   status: PipelineTab;
