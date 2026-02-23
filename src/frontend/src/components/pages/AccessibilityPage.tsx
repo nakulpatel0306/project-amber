@@ -8,6 +8,8 @@ import {
   MessageSquare,
   Palette,
   Mail,
+  Heart,
+  Wrench,
 } from "lucide-react";
 
 interface CommitmentItem {
@@ -19,14 +21,25 @@ interface CommitmentItem {
 
 const COMMITMENTS: CommitmentItem[] = [
   {
+    icon: Heart,
+    color: "#EF4444",
+    title: "Our Commitment",
+    content: [
+      "We are committed to making The Amber Project accessible to everyone, regardless of ability.",
+      "Everyone deserves equal access to personality-driven job matching and the opportunities it creates.",
+      "We are working toward WCAG 2.1 Level AA compliance across the entire platform.",
+      "Accessibility is not an afterthought. It is a core part of how we build.",
+    ],
+  },
+  {
     icon: Monitor,
     color: "#8B5CF6",
     title: "Screen Reader Support",
     content: [
-      "All interactive elements have descriptive ARIA labels so screen readers can convey their purpose.",
-      "Page structure uses semantic HTML — headings, landmarks, and regions are properly nested for easy navigation.",
-      "Dynamic content updates (like match scores loading or toast notifications) are announced to assistive technology.",
-      "Images and icons include appropriate alt text or are marked as decorative when they don't convey meaning.",
+      "The platform is built with semantic HTML and ARIA labels to work with popular screen readers like NVDA, JAWS, and VoiceOver.",
+      "Assessment questions and results are structured for clear screen reader navigation.",
+      "Dynamic content updates, such as match scores loading or notifications, are announced to assistive technology.",
+      "Images and icons include appropriate alt text or are marked as decorative when they do not convey meaning.",
     ],
   },
   {
@@ -34,9 +47,9 @@ const COMMITMENTS: CommitmentItem[] = [
     color: "#10B981",
     title: "Keyboard Navigation",
     content: [
-      "Every feature on Amber can be accessed using a keyboard alone — no mouse required.",
+      "All core features are accessible via keyboard. You can complete assessments, browse matches, and manage coffee chats without a mouse.",
+      "Tab navigation follows a logical, predictable sequence throughout every page.",
       "Focus indicators are clearly visible on all interactive elements so you always know where you are.",
-      "Tab order follows a logical, predictable sequence throughout every page.",
       "Modal dialogs trap focus appropriately and can be dismissed with the Escape key.",
     ],
   },
@@ -45,31 +58,43 @@ const COMMITMENTS: CommitmentItem[] = [
     color: "#F59E0B",
     title: "Visual Design",
     content: [
-      "Text meets WCAG AA contrast ratios across all themes (light, dark, and custom).",
-      "The interface works at up to 200% browser zoom without loss of content or functionality.",
-      "We avoid conveying information through color alone — status indicators always include text labels or icons.",
-      "Animations respect the prefers-reduced-motion setting and can be minimized for users who are sensitive to motion.",
+      "High contrast ratios for text readability across all themes.",
+      "Scalable fonts that respect browser zoom settings, working up to 200% without loss of content or functionality.",
+      "Color is never the sole indicator of meaning. Status indicators always include text labels or icons.",
+      "Clear visual hierarchy and consistent layout patterns throughout the platform.",
     ],
   },
   {
     icon: Palette,
     color: "#EC4899",
-    title: "Themes & Customization",
+    title: "Theme Support",
     content: [
-      "Multiple theme options (including dark mode) let you choose the visual presentation that works best for you.",
+      "Light and dark themes are available, and your preference is saved and persisted across sessions.",
+      "Both themes are designed with accessibility contrast ratios in mind.",
       "Font sizes scale with your browser's text size settings.",
-      "High-contrast elements ensure readability regardless of ambient lighting or display quality.",
+      "Animations respect the prefers-reduced-motion setting for users who are sensitive to motion.",
     ],
   },
   {
     icon: MessageSquare,
     color: "#06B6D4",
-    title: "Assessments & Interactive Content",
+    title: "Accessible Assessments",
     content: [
-      "Personality assessment sliders are fully keyboard-accessible and announce their current value to screen readers.",
-      "There are no time limits on assessments — take as long as you need.",
-      "Progress is clearly communicated throughout multi-step flows so you always know how far along you are.",
-      "Error messages are descriptive and associated with the relevant form fields.",
+      "Personality assessment questions are designed to be clear and straightforward.",
+      "There are no time limits on assessments. Take as long as you need.",
+      "Questions can be navigated with keyboard or screen reader.",
+      "Results are presented in both visual and text formats so everyone can understand their personality profile.",
+      "Progress is clearly communicated throughout multi-step flows.",
+    ],
+  },
+  {
+    icon: Wrench,
+    color: "#6366F1",
+    title: "Ongoing Improvements",
+    content: [
+      "We are actively working to improve accessibility across the platform.",
+      "We regularly review our design and code for accessibility issues.",
+      "If you encounter any barriers or have suggestions, please let us know. We take every report seriously.",
     ],
   },
 ];
@@ -113,9 +138,9 @@ export function AccessibilityPage() {
           className="text-base sm:text-lg max-w-2xl"
           style={{ color: "var(--color-textSecondary)" }}
         >
-          Amber is for everyone. We're committed to making our platform usable
-          by people of all abilities and continuously improving our
-          accessibility standards.
+          The Amber Project is for everyone. We are committed to making our
+          platform usable by people of all abilities and continuously improving
+          our accessibility standards.
         </p>
         <p
           className="text-xs mt-3"
@@ -202,25 +227,24 @@ export function AccessibilityPage() {
             className="text-lg font-semibold mb-2"
             style={{ color: "var(--color-text)" }}
           >
-            Found a barrier?
+            Found A Barrier?
           </h3>
           <p
             className="text-sm mb-5 max-w-md mx-auto"
             style={{ color: "var(--color-textSecondary)" }}
           >
             If you encounter any accessibility issues or have suggestions for
-            improvement, please let us know. We take every report seriously and
-            respond within 48 hours.
+            improvement, please let us know. We take every report seriously.
           </p>
           <a
-            href="mailto:accessibility@tryamber.com?subject=Accessibility Feedback"
+            href="mailto:amberfounders@gmail.com?subject=Accessibility Feedback"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
             style={{
               background: "var(--color-accent)",
               color: "var(--color-accentText)",
             }}
           >
-            accessibility@tryamber.com
+            amberfounders@gmail.com
           </a>
         </div>
       </div>

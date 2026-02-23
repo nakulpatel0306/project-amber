@@ -34,7 +34,7 @@ const OPEN_ROLES: JobListing[] = [
     icon: GraduationCap,
     color: "#8B5CF6",
     description:
-      "Represent Amber on your campus and help us reach the next generation of job seekers. You'll run events, create social content, and be the face of culture-first hiring at your university.",
+      "Help spread the word on campus, social media, and within student communities. Ideal for someone who is social, energetic, and believes in what we are building.",
     responsibilities: [
       "Host campus events, workshops, and info sessions about personality-based hiring",
       "Create authentic social media content showcasing student career journeys",
@@ -50,7 +50,7 @@ const OPEN_ROLES: JobListing[] = [
     icon: Megaphone,
     color: "#EC4899",
     description:
-      "Own our go-to-market strategy and build the engine that connects Amber with candidates and employers. You'll blend storytelling with data to grow a brand people love.",
+      "Own our growth strategy from content to community. Help us reach the students and startups who need Amber most.",
     responsibilities: [
       "Develop and execute content strategy across blog, social, and email channels",
       "Run growth experiments — SEO, paid acquisition, partnerships, and referrals",
@@ -66,7 +66,7 @@ const OPEN_ROLES: JobListing[] = [
     icon: Code,
     color: "#10B981",
     description:
-      "Help us build the platform that's redefining how people find jobs. You'll work across our React frontend and Python backend, shipping features that directly impact matching quality and user experience.",
+      "Help build and scale the platform. React, TypeScript, Python, Supabase. You will work on everything from the matching engine to the user experience.",
     responsibilities: [
       "Build and maintain features across our React/TypeScript frontend and FastAPI backend",
       "Improve our matching algorithm and compatibility scoring engine",
@@ -87,30 +87,30 @@ const PERKS: PerkData[] = [
   {
     icon: Heart,
     color: "#EC4899",
-    title: "Culture We Actually Believe In",
+    title: "Culture First",
     description:
-      "We build culture-matching software — so of course we practice what we preach. You'll work with people who genuinely care.",
+      "We practice what we preach. You will work with people who genuinely care about building something meaningful.",
   },
   {
     icon: Zap,
     color: "#F59E0B",
-    title: "Real Impact, Early Stage",
+    title: "Real Impact",
     description:
-      "Every line of code, every campaign, every idea shapes the product. You're not a cog — you're a co-builder.",
+      "Every line of code, every campaign, every idea shapes the product. Your work directly impacts what we ship.",
   },
   {
     icon: Sparkles,
     color: "#8B5CF6",
-    title: "Learn Relentlessly",
+    title: "Always Learning",
     description:
-      "We're a small team that moves fast. You'll wear multiple hats, pick up new skills weekly, and grow faster than at any big company.",
+      "We are students building for students. You will wear multiple hats, pick up new skills weekly, and grow faster than at any big company.",
   },
   {
     icon: Coffee,
     color: "#06B6D4",
-    title: "Flexible & Remote-Friendly",
+    title: "Flexible",
     description:
-      "Work from wherever you do your best thinking. We care about output, not hours logged in a specific chair.",
+      "Work around your schedule. We care about output, not hours logged in a specific chair.",
   },
 ];
 
@@ -147,14 +147,15 @@ export function CareersPage() {
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
           style={{ color: "var(--color-text)" }}
         >
-          Careers at Amber
+          Careers At The Amber Project
         </h1>
         <p
           className="text-base sm:text-lg max-w-2xl"
           style={{ color: "var(--color-textSecondary)" }}
         >
-          We're building the future of hiring — and we need curious, driven
-          people who believe work should feel like belonging.
+          We are building a platform that puts personality and culture first.
+          We need curious, driven people who believe work should feel like
+          belonging.
         </p>
       </div>
 
@@ -177,7 +178,7 @@ export function CareersPage() {
             className="text-2xl font-bold mt-2"
             style={{ color: "var(--color-text)" }}
           >
-            What it's like here
+            What It Is Like Here
           </h2>
         </div>
 
@@ -241,7 +242,7 @@ export function CareersPage() {
             className="text-2xl font-bold mt-2"
             style={{ color: "var(--color-text)" }}
           >
-            Find your role
+            Find Your Role
           </h2>
         </div>
 
@@ -339,7 +340,7 @@ export function CareersPage() {
 
                 {/* Apply */}
                 <a
-                  href={`mailto:careers@tryamber.com?subject=Application: ${role.title}`}
+                  href={`mailto:amberfounders@gmail.com?subject=Application: ${role.title}`}
                   className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
                   style={{
                     background: `${role.color}15`,
@@ -374,17 +375,17 @@ export function CareersPage() {
             className="text-lg font-semibold mb-2"
             style={{ color: "var(--color-text)" }}
           >
-            Don't see the right role?
+            Do Not See The Right Role?
           </h3>
           <p
             className="text-sm mb-5 max-w-md mx-auto"
             style={{ color: "var(--color-textSecondary)" }}
           >
-            We're always looking for exceptional people. Send us a note and tell
-            us what you'd bring to Amber.
+            We are always looking for exceptional people. Send us a note and
+            tell us what you would bring to The Amber Project.
           </p>
           <a
-            href="mailto:careers@tryamber.com?subject=General Interest"
+            href="mailto:amberfounders@gmail.com?subject=General Interest"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
             style={{
               background: "var(--color-accent)",

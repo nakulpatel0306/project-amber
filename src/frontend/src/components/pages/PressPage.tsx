@@ -28,14 +28,14 @@ const KEY_FACTS: KeyFact[] = [
     color: "#8B5CF6",
     title: "Big Five Personality Model",
     description:
-      "Amber is built on the most scientifically validated personality framework in modern psychology — over 40 years of peer-reviewed research.",
+      "Amber is built on the most scientifically validated personality framework in modern psychology, backed by over 40 years of peer-reviewed research.",
   },
   {
     icon: Target,
     color: "#10B981",
     title: "Culture-First Matching",
     description:
-      "We match candidates to companies based on personality compatibility and culture fit — not just keywords on a resume.",
+      "We match candidates to companies based on personality compatibility and culture fit, not just keywords on a resume. Matching starts with who you are, not what is on your resume.",
   },
   {
     icon: Users,
@@ -92,25 +92,25 @@ const TALKING_POINTS: TalkingPoint[] = [
     icon: Lightbulb,
     color: "#F59E0B",
     title: "The Problem We Solve",
-    text: "Traditional hiring optimizes for skills and experience but ignores personality and culture — the #1 predictor of long-term job satisfaction and retention. Amber fixes that.",
+    text: "Traditional hiring optimizes for skills and experience but ignores personality and culture, the strongest predictor of long-term job satisfaction and retention. Studies suggest 70 to 85 percent of jobs are filled through relationships, not applications. Amber makes that process accessible to everyone.",
   },
   {
     icon: BarChart3,
     color: "#10B981",
     title: "Our Approach",
-    text: "We combine the Big Five (OCEAN) personality assessment with AI-powered compatibility scoring to calculate multi-dimensional culture fit between candidates and companies.",
+    text: "A 10-question core assessment maps to the Big Five (OCEAN) model. The Ember matching engine produces trait match, culture match, and overall composite scores. Eight personality archetypes make results human and intuitive.",
   },
   {
     icon: Coffee,
     color: "#EC4899",
     title: "Beyond the Algorithm",
-    text: "High compatibility scores unlock coffee chats — casual, 15-minute conversations between candidates and team members. No formal interviews, just real human connection.",
+    text: "Both candidates and employers can initiate coffee chats. No formal interviews, just real human connection. After each chat, both sides leave ratings and feedback to keep the community honest.",
   },
   {
     icon: TrendingUp,
     color: "#8B5CF6",
-    title: "Where We're Going",
-    text: "Amber is building toward a world where every job search starts with self-understanding. We're expanding our assessment suite, adding team dynamic analysis, and growing across Canada.",
+    title: "Where We Are Going",
+    text: "The Amber Project is building toward a world where every job search starts with self-understanding. Built specifically for university students and startups, with plans for a public job board, in-app messaging, and employer analytics.",
   },
 ];
 
@@ -153,8 +153,8 @@ export function PressPage() {
           className="text-base sm:text-lg max-w-2xl"
           style={{ color: "var(--color-textSecondary)" }}
         >
-          Everything journalists, bloggers, and partners need to tell the Amber
-          story.
+          Everything journalists, bloggers, and partners need to tell The
+          Amber Project story.
         </p>
       </div>
 
@@ -201,11 +201,12 @@ export function PressPage() {
                 className="text-sm leading-relaxed italic"
                 style={{ color: "var(--color-textSecondary)" }}
               >
-                Amber is a culture-first job matching platform that uses the Big
-                Five personality model and AI to connect people with workplaces
-                where they genuinely belong. Founded in Toronto in 2025, Amber
-                replaces resume-driven hiring with science-backed personality
-                compatibility — so every hire feels like the right one.
+                The Amber Project is a culture-first job matching platform that
+                uses the Big Five personality model and AI to connect people
+                with workplaces where they genuinely belong. Founded in Toronto
+                in 2025 by university students Nakul Patel, Arsh Patel, and
+                Neel Patel, Amber replaces resume-driven hiring with
+                science-backed personality compatibility. Free for candidates.
               </p>
             </div>
           </div>
@@ -214,8 +215,8 @@ export function PressPage() {
             {[
               { label: "Founded", value: "2025" },
               { label: "HQ", value: "Toronto, ON" },
-              { label: "Focus", value: "HR Tech / AI" },
-              { label: "Stage", value: "Early Stage" },
+              { label: "Focus", value: "Culture-First Hiring" },
+              { label: "Team", value: "3 Co-Founders" },
             ].map((item) => (
               <div key={item.label} className="text-center">
                 <p
@@ -446,10 +447,10 @@ export function PressPage() {
             style={{ color: "var(--color-textSecondary)" }}
           >
             Writing a story about personality-based hiring, culture tech, or
-            the future of recruiting? We'd love to chat.
+            the future of recruiting? We would love to chat.
           </p>
           <a
-            href="mailto:press@tryamber.com?subject=Media Inquiry"
+            href="mailto:amberfounders@gmail.com?subject=Media Inquiry"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
             style={{
               background: "var(--color-accent)",

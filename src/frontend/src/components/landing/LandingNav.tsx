@@ -36,7 +36,7 @@ export function LandingNav() {
               className="text-lg font-semibold tracking-tight"
               style={{ color: 'var(--color-text)' }}
             >
-              {APP_NAME}
+              Amber Project
             </span>
           </Link>
 
@@ -50,6 +50,7 @@ export function LandingNav() {
                     backgroundColor: 'var(--color-accent)',
                     color: 'var(--color-accentText)',
                   }}
+                  strength={0.08}
                 >
                   Dashboard
                   <ArrowRight className="w-4 h-4" />
@@ -67,6 +68,7 @@ export function LandingNav() {
                       backgroundColor: 'var(--color-accent)',
                       color: 'var(--color-accentText)',
                     }}
+                    strength={0.08}
                   >
                     Get Started
                   </MagneticButton>

@@ -6,9 +6,13 @@ import {
   Eye,
   Database,
   UserCheck,
-  Trash2,
+  Clock,
   Globe,
   Mail,
+  Brain,
+  Users,
+  Baby,
+  RefreshCw,
 } from "lucide-react";
 
 interface PolicySection {
@@ -20,68 +24,132 @@ interface PolicySection {
 
 const SECTIONS: PolicySection[] = [
   {
-    icon: Database,
+    icon: Shield,
     color: "#8B5CF6",
-    title: "What We Collect",
+    title: "Who Is Responsible For Your Data",
     content: [
-      "Account information — your name, email address, and role (candidate or employer) when you sign up.",
-      "Personality assessment responses — your answers to the Big Five questionnaire and any additional assessments you choose to take.",
-      "Profile data — work preferences, location, and any information you add to your profile.",
-      "Usage data — pages visited, features used, and session duration to improve our platform. We do not track you across other websites.",
+      "The Amber Project, operated by its founding team in Ontario, Canada, is the data controller responsible for your personal information.",
+      "We determine how and why your personal data is processed, and we take that responsibility seriously.",
     ],
   },
   {
-    icon: Lock,
+    icon: Database,
     color: "#10B981",
-    title: "How We Protect Your Data",
+    title: "What Information We Collect",
     content: [
-      "All data is encrypted in transit (TLS 1.3) and at rest using industry-standard encryption.",
-      "Authentication is handled through Supabase with secure JWT tokens — we never store your password in plain text.",
-      "Our infrastructure runs on secure, SOC 2-compliant cloud providers.",
-      "We conduct regular security reviews and follow OWASP best practices in our codebase.",
+      "Account information: your name, email address, password, and role (job seeker or employer).",
+      "Profile information: headline, bio, location, years of experience, work preferences, salary expectations, and social links such as LinkedIn, GitHub, and portfolio URLs.",
+      "Employer information: company name, description, size, industry, and culture quiz responses.",
+      "Personality assessment responses: your answers to the Big Five (OCEAN) assessment questions and any supplementary assessments you choose to complete.",
+      "Coffee chat activity: messages, scheduling preferences, ratings, and written feedback.",
+      "Payment information: processed through Stripe. We do not store your full card details.",
+      "Usage data collected automatically: pages you visit, features you use, device and browser information, IP address, authentication data, and cookie data.",
     ],
   },
   {
     icon: Eye,
     color: "#F59E0B",
-    title: "Who Can See Your Information",
+    title: "How We Use Your Information",
     content: [
-      "Your raw personality trait scores are visible only to you. Employers never see your Big Five scores directly.",
-      "Employers see compatibility percentages and high-level fit summaries — not the underlying data.",
-      "You control your profile visibility. You can hide your profile from employer searches at any time in Settings.",
-      "We never sell, rent, or share your personal data with third-party advertisers.",
+      "Create and manage your account and provide access to the platform.",
+      "Calculate and display personality match scores between job seekers and employers.",
+      "Operate the Ember AI matching agent and generate compatibility insights.",
+      "Facilitate coffee chat scheduling and communication between matched users.",
+      "Send you notifications about matches, coffee chats, and platform updates.",
+      "Process payments and manage subscriptions.",
+      "Improve the platform, including refining our matching algorithms using anonymized data.",
+      "We do not use your personality assessment data for any purpose outside of operating the platform without your explicit consent. We do not sell your individual profile data to advertisers or third-party marketers.",
+    ],
+  },
+  {
+    icon: Brain,
+    color: "#EC4899",
+    title: "Personality And Sensitive Data",
+    content: [
+      "We recognize that personality assessment data is sensitive. Your OCEAN scores, archetype classification, and assessment responses are used solely to generate match scores and insights within the platform.",
+      "Stored securely in our database with access controls limiting who can read it.",
+      "Shared with employers only in the form of aggregated match scores and compatibility summaries, not as raw assessment responses.",
+      "Never sold to third parties.",
+      "Retained only for as long as your account is active or as required by law.",
+      "If you are an employer, you agree that you will not use personality data provided through the platform as the sole or determinative basis for any hiring decision.",
+    ],
+  },
+  {
+    icon: Users,
+    color: "#06B6D4",
+    title: "How We Share Your Information",
+    content: [
+      "With other users: job seeker profiles, including personality scores and compatibility summaries, are visible to matched employers. Employers' culture profiles and role details are visible to matched job seekers.",
+      "With service providers: Supabase (database hosting and authentication), Stripe (payment processing), and OpenAI (AI-powered matching insights, processed under their data processing terms).",
+      "For legal reasons: we may disclose your information if required by law, court order, or government authority.",
+      "In a business transfer: if The Amber Project is acquired or merged, your information may be transferred. We will notify you before your data becomes subject to a different privacy policy.",
+    ],
+  },
+  {
+    icon: Clock,
+    color: "#EF4444",
+    title: "Data Retention And Deletion",
+    content: [
+      "We retain your personal information for as long as your account is active.",
+      "If you close your account, we will delete or anonymize your data within 90 days, except where we are required by law to retain it longer.",
+      "Anonymized and aggregated data may be retained indefinitely for the purpose of improving our matching algorithms. This data cannot be used to identify you individually.",
+      "You can delete your account and all associated data at any time from Settings > Account.",
     ],
   },
   {
     icon: UserCheck,
-    color: "#EC4899",
-    title: "Your Rights & Choices",
+    color: "#8B5CF6",
+    title: "Your Rights",
     content: [
-      "Access — you can view all data we hold about you from your Settings page at any time.",
-      "Correction — you can update your profile information and retake assessments whenever you choose.",
-      "Portability — you can request an export of your data in a standard format.",
-      "Objection — you can opt out of non-essential communications and marketing emails.",
+      "Access: the right to request a copy of the personal data we hold about you.",
+      "Correction: the right to ask us to correct inaccurate or incomplete data.",
+      "Deletion: the right to ask us to delete your personal data, subject to certain legal exceptions.",
+      "Portability: the right to receive your data in a structured, machine-readable format.",
+      "Objection: the right to object to certain types of processing, including processing for direct marketing.",
+      "Withdrawal of consent: where we rely on your consent to process data, you have the right to withdraw that consent at any time.",
+      "To exercise any of these rights, contact us at amberfounders@gmail.com. We will respond within 30 days.",
     ],
   },
   {
-    icon: Trash2,
-    color: "#EF4444",
-    title: "Data Deletion",
+    icon: Lock,
+    color: "#10B981",
+    title: "Data Security",
     content: [
-      "You can delete your account and all associated data at any time from Settings > Account > Delete Account.",
-      "When you delete your account, we permanently remove your personality data, assessment responses, and profile information.",
-      "Some anonymized, aggregated data (e.g., platform-wide trait distributions) may be retained for research purposes but can never be linked back to you.",
-      "Deletion requests are processed within 30 days in compliance with applicable privacy regulations.",
+      "Encrypted data transmission over HTTPS.",
+      "Access controls limiting which team members can access personal data.",
+      "Row Level Security policies enforced at the database level through Supabase.",
+      "Regular review of our security practices.",
+      "No method of transmission over the internet is completely secure. We cannot guarantee absolute security, but we are committed to protecting your data and will notify you promptly in the event of a breach.",
+    ],
+  },
+  {
+    icon: Baby,
+    color: "#F59E0B",
+    title: "Children's Privacy",
+    content: [
+      "The platform is not intended for use by anyone under the age of 16.",
+      "We do not knowingly collect personal information from children under 16.",
+      "If we become aware that we have collected data from a child under 16 without parental consent, we will delete that information promptly.",
     ],
   },
   {
     icon: Globe,
     color: "#06B6D4",
-    title: "Cookies & Analytics",
+    title: "International Users",
     content: [
-      "We use essential cookies for authentication and session management — these are required for the platform to function.",
-      "We use privacy-friendly analytics to understand how the platform is used. We do not use invasive tracking pixels or third-party ad trackers.",
-      "You can manage cookie preferences in your browser settings at any time.",
+      "The Amber Project is based in Ontario, Canada.",
+      "If you are accessing the platform from outside Canada, your information will be transferred to and processed in Canada.",
+      "By using the platform, you consent to that transfer. We take appropriate steps to ensure your data is handled securely regardless of where it is processed.",
+    ],
+  },
+  {
+    icon: RefreshCw,
+    color: "#EC4899",
+    title: "Changes To This Policy",
+    content: [
+      "We may update this Privacy Policy from time to time.",
+      "When we make significant changes, we will notify you by email or through a notice on the platform and update the date at the top of this document.",
+      "Your continued use of the platform after any update constitutes acceptance of the revised policy.",
     ],
   },
 ];
@@ -125,14 +193,15 @@ export function PrivacyPolicyPage() {
           className="text-base sm:text-lg max-w-2xl"
           style={{ color: "var(--color-textSecondary)" }}
         >
-          Your personality data is deeply personal. Here's exactly how we
-          handle it — no legal jargon, just plain language.
+          Your privacy matters to us. This Privacy Policy explains what
+          information we collect, how we use it, who we share it with, and what
+          rights you have over your data.
         </p>
         <p
           className="text-xs mt-3"
           style={{ color: "var(--color-textMuted)" }}
         >
-          Last updated: February 14, 2026
+          Last updated: January 2026
         </p>
       </div>
 
@@ -213,24 +282,24 @@ export function PrivacyPolicyPage() {
             className="text-lg font-semibold mb-2"
             style={{ color: "var(--color-text)" }}
           >
-            Questions about your data?
+            Questions About Your Data?
           </h3>
           <p
             className="text-sm mb-5 max-w-md mx-auto"
             style={{ color: "var(--color-textSecondary)" }}
           >
             We take privacy seriously. If you have any questions, concerns, or
-            data requests, reach out and we'll respond within 48 hours.
+            data requests, reach out and we will respond within 30 days.
           </p>
           <a
-            href="mailto:privacy@tryamber.com?subject=Privacy Inquiry"
+            href="mailto:amberfounders@gmail.com?subject=Privacy Inquiry"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
             style={{
               background: "var(--color-accent)",
               color: "var(--color-accentText)",
             }}
           >
-            privacy@tryamber.com
+            amberfounders@gmail.com
           </a>
         </div>
       </div>
