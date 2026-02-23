@@ -20,7 +20,9 @@ interface TermsSection {
   icon: React.ElementType;
   color: string;
   title: string;
-  content: string[];
+  paragraphs?: string[];
+  bullets?: string[];
+  closingParagraphs?: string[];
 }
 
 const SECTIONS: TermsSection[] = [
@@ -28,9 +30,8 @@ const SECTIONS: TermsSection[] = [
     icon: Handshake,
     color: "#8B5CF6",
     title: "Who We Are",
-    content: [
-      "The Amber Project is a culture-first job matching platform that connects job seekers and employers based on personality compatibility and cultural alignment.",
-      "The platform is operated by The Amber Project, currently based in Ontario, Canada.",
+    paragraphs: [
+      "The Amber Project is a culture-first job matching platform that connects job seekers and employers based on personality compatibility and cultural alignment. The platform is operated by The Amber Project, currently based in Ontario, Canada.",
       "By using the platform, you agree that these Terms form a legally binding agreement between you and The Amber Project.",
     ],
   },
@@ -38,111 +39,104 @@ const SECTIONS: TermsSection[] = [
     icon: UserCheck,
     color: "#10B981",
     title: "Eligibility And Your Account",
-    content: [
-      "You must be at least 16 years of age to use the platform.",
-      "You agree to provide accurate information during registration and to keep your account information up to date.",
-      "You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account.",
-      "The platform offers two types of accounts: Job Seeker and Employer. You may not use a Job Seeker account for employer purposes or vice versa.",
-      "You agree to notify us immediately if you become aware of any unauthorized use of your account.",
+    paragraphs: [
+      "You must be at least 16 years of age to use the platform. You agree to provide accurate information during registration and to keep your account information up to date.",
+      "The platform offers two types of accounts: Job Seeker and Employer. You may not use a Job Seeker account for employer purposes or vice versa. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. You agree to notify us immediately if you become aware of any unauthorized use of your account.",
     ],
   },
   {
     icon: Ban,
     color: "#EF4444",
     title: "Permitted And Prohibited Conduct",
-    content: [
+    paragraphs: [
       "You may use the platform for its intended purpose: connecting with potential employers or candidates based on personality and culture fit, completing personality assessments, scheduling and attending coffee chats, and managing your profile.",
-      "You agree not to provide false, misleading, or inaccurate information in your profile, assessment responses, or any communications.",
-      "You may not impersonate any person or entity or misrepresent your affiliation.",
-      "You may not use the platform to harass, threaten, or harm any other user.",
-      "You may not scrape, copy, or otherwise extract data from the platform without our written permission.",
-      "You may not use automated tools, bots, or scripts to interact with the platform without our prior written consent.",
+      "You agree not to:",
+    ],
+    bullets: [
+      "Provide false, misleading, or inaccurate information in your profile, assessment responses, or any communications.",
+      "Impersonate any person or entity or misrepresent your affiliation.",
+      "Use the platform to harass, threaten, or harm any other user.",
+      "Scrape, copy, or otherwise extract data from the platform without our written permission.",
+      "Use automated tools, bots, or scripts to interact with the platform without our prior written consent.",
     ],
   },
   {
     icon: Brain,
     color: "#EC4899",
     title: "Personality Assessments",
-    content: [
-      "The platform includes personality assessments based on the Big Five (OCEAN) model. These are provided for the purpose of facilitating compatibility matching, not clinical psychological evaluations.",
-      "No assessment result should be taken as a definitive or complete description of your personality.",
-      "Amber does not guarantee any particular outcome from using the platform, including employment or hiring success.",
-      "Employers agree not to use personality data as the sole basis for any hiring decision and acknowledge that assessments are one input among many.",
+    paragraphs: [
+      "The platform includes personality assessments based on the Big Five (OCEAN) model. These are provided for the purpose of facilitating compatibility matching, not clinical psychological evaluations. No assessment result should be taken as a definitive or complete description of your personality.",
+      "Amber does not guarantee any particular outcome from using the platform, including employment or hiring success. Employers agree not to use personality data as the sole basis for any hiring decision and acknowledge that assessments are one input among many.",
     ],
   },
   {
     icon: Coffee,
     color: "#F59E0B",
     title: "Coffee Chats",
-    content: [
-      "The platform facilitates informal introductory conversations between job seekers and employers, referred to as coffee chats. These are voluntary and informal.",
-      "Amber is not a party to any coffee chat and is not responsible for what is said or agreed upon during them.",
-      "You agree to treat other users with respect during coffee chats.",
-      "You may report any coffee chat that involved harassment, discrimination, or other inappropriate conduct using the feedback mechanism on the platform.",
+    paragraphs: [
+      "The platform facilitates informal introductory conversations between job seekers and employers, referred to as coffee chats. These are voluntary and informal. Amber is not a party to any coffee chat and is not responsible for what is said or agreed upon during them.",
+      "You agree to treat other users with respect during coffee chats. You may report any coffee chat that involved harassment, discrimination, or other inappropriate conduct using the feedback mechanism on the platform.",
     ],
   },
   {
     icon: Scale,
     color: "#8B5CF6",
     title: "Content And Intellectual Property",
-    content: [
+    paragraphs: [
       "By submitting content to the platform, including profile information, assessment responses, messages, and feedback, you grant The Amber Project a non-exclusive, worldwide, royalty-free licence to use, store, display, and process that content for the purpose of operating and improving the platform.",
-      "You retain ownership of your content. We will not sell your individual profile content to third parties.",
-      "All content on the platform that is not submitted by users, including the design, code, text, graphics, logos, and assessment frameworks, is owned by or licenced to The Amber Project and is protected by applicable intellectual property laws.",
+      "You retain ownership of your content. We will not sell your individual profile content to third parties. All content on the platform that is not submitted by users, including the design, code, text, graphics, logos, and assessment frameworks, is owned by or licenced to The Amber Project and is protected by applicable intellectual property laws.",
     ],
   },
   {
     icon: Shield,
     color: "#06B6D4",
     title: "Third-Party Services",
-    content: [
-      "The platform uses third-party services including Supabase for database and authentication, Stripe for payment processing, and OpenAI for certain AI-powered features.",
-      "Your use of these features is also subject to those providers' terms of service and privacy policies.",
-      "We are not responsible for the practices or content of third-party services.",
+    paragraphs: [
+      "The platform uses third-party services to operate:",
+    ],
+    bullets: [
+      "Supabase for database hosting and authentication.",
+      "Stripe for payment processing.",
+      "OpenAI for certain AI-powered features.",
+    ],
+    closingParagraphs: [
+      "Your use of these features is also subject to those providers' terms of service and privacy policies. We are not responsible for the practices or content of third-party services.",
     ],
   },
   {
     icon: CreditCard,
     color: "#10B981",
     title: "Payments And Subscriptions",
-    content: [
-      "Certain features of the platform may require a paid subscription. All payments are processed securely through Stripe.",
-      "By subscribing, you authorize Amber to charge your payment method on the billing cycle you select.",
-      "Subscriptions automatically renew unless you cancel before the renewal date.",
-      "Refunds are handled on a case-by-case basis at Amber's discretion. We reserve the right to change pricing with reasonable advance notice.",
+    paragraphs: [
+      "Certain features of the platform may require a paid subscription. All payments are processed securely through Stripe. By subscribing, you authorize Amber to charge your payment method on the billing cycle you select.",
+      "Subscriptions automatically renew unless you cancel before the renewal date. Refunds are handled on a case-by-case basis at Amber's discretion. We reserve the right to change pricing with reasonable advance notice.",
     ],
   },
   {
     icon: AlertTriangle,
     color: "#EF4444",
     title: "Disclaimers And Limitation Of Liability",
-    content: [
-      "The platform is provided on an as-is and as-available basis without warranties of any kind, either express or implied.",
-      "We do not warrant that the platform will be error-free, uninterrupted, or free of viruses or other harmful components.",
+    paragraphs: [
+      "The platform is provided on an as-is and as-available basis without warranties of any kind, either express or implied. We do not warrant that the platform will be error-free, uninterrupted, or free of viruses or other harmful components.",
       "We make no guarantees regarding the accuracy of personality match scores, the quality of any coffee chat, or any employment outcome resulting from use of the platform.",
-      "To the fullest extent permitted by law, The Amber Project shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the platform.",
-      "Our total liability for any claim shall not exceed the amount you paid to us in the twelve months preceding the claim, or one hundred Canadian dollars, whichever is greater.",
+      "To the fullest extent permitted by law, The Amber Project shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the platform. Our total liability for any claim shall not exceed the amount you paid to us in the twelve months preceding the claim, or one hundred Canadian dollars, whichever is greater.",
     ],
   },
   {
     icon: RefreshCw,
     color: "#F59E0B",
     title: "Termination And Changes",
-    content: [
-      "You may close your account at any time through your account settings.",
-      "We reserve the right to suspend or terminate your account at any time if we believe you have violated these Terms or if your continued use is harmful to other users or to the platform.",
-      "We may update these Terms from time to time. When we do, we will update the date at the top and notify you by email or through a notice on the platform.",
-      "Your continued use of the platform after any update constitutes your acceptance of the revised Terms.",
+    paragraphs: [
+      "You may close your account at any time through your account settings. We reserve the right to suspend or terminate your account at any time if we believe you have violated these Terms or if your continued use is harmful to other users or to the platform.",
+      "We may update these Terms from time to time. When we do, we will update the date at the top and notify you by email or through a notice on the platform. Your continued use of the platform after any update constitutes your acceptance of the revised Terms.",
     ],
   },
   {
     icon: Gavel,
     color: "#8B5CF6",
     title: "Governing Law",
-    content: [
-      "These Terms are governed by the laws of the Province of Ontario, Canada.",
-      "Any dispute arising out of or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts of Ontario.",
-      "We encourage you to contact us first to resolve any dispute informally before initiating legal proceedings.",
+    paragraphs: [
+      "These Terms are governed by the laws of the Province of Ontario, Canada. Any dispute arising out of or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts of Ontario. We encourage you to contact us first to resolve any dispute informally before initiating legal proceedings.",
     ],
   },
 ];
@@ -158,7 +152,7 @@ export function TermsOfServicePage() {
           style={{ color: "var(--color-textMuted)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Back To Home
         </Link>
 
         <div className="flex items-center gap-3 mb-4">
@@ -235,22 +229,48 @@ export function TermsOfServicePage() {
                   </h2>
                 </div>
 
-                <ul className="space-y-2.5">
-                  {section.content.map((item, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2.5 text-sm leading-relaxed"
+                <div className="space-y-3">
+                  {section.paragraphs?.map((paragraph, idx) => (
+                    <p
+                      key={`p-${idx}`}
+                      className="text-sm leading-relaxed"
+                      style={{ color: "var(--color-textSecondary)" }}
                     >
-                      <span
-                        className="w-1 h-1 rounded-full mt-2 flex-shrink-0"
-                        style={{ background: section.color }}
-                      />
-                      <span style={{ color: "var(--color-textSecondary)" }}>
-                        {item}
-                      </span>
-                    </li>
+                      {paragraph}
+                    </p>
                   ))}
-                </ul>
+
+                  {section.bullets && (
+                    <ul className="space-y-2 pl-1">
+                      {section.bullets.map((item, idx) => (
+                        <li
+                          key={`b-${idx}`}
+                          className="flex items-start gap-2.5 text-sm leading-relaxed"
+                        >
+                          <span
+                            className="w-1 h-1 rounded-full mt-2 flex-shrink-0"
+                            style={{ background: section.color }}
+                          />
+                          <span
+                            style={{ color: "var(--color-textSecondary)" }}
+                          >
+                            {item}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {section.closingParagraphs?.map((paragraph, idx) => (
+                    <p
+                      key={`cp-${idx}`}
+                      className="text-sm leading-relaxed"
+                      style={{ color: "var(--color-textSecondary)" }}
+                    >
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
               </div>
             );
           })}

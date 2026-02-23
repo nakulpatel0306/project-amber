@@ -1456,11 +1456,11 @@ export function WelcomeScreen() {
               >
                 Reach out to us at{' '}
                 <a
-                  href="mailto:hello@amberproject.co"
+                  href="mailto:amberfounders@gmail.com"
                   className="font-medium underline underline-offset-2 transition-colors hover:opacity-80"
                   style={{ color: 'var(--color-accent)' }}
                 >
-                  hello@amberproject.co
+                  amberfounders@gmail.com
                 </a>
               </p>
             </div>

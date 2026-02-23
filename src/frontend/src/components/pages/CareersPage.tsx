@@ -125,7 +125,7 @@ export function CareersPage() {
           style={{ color: "var(--color-textMuted)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Back To Home
         </Link>
 
         <div className="flex items-center gap-3 mb-4">

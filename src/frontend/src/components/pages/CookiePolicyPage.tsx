@@ -31,9 +31,9 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
     description:
       "These cookies are essential for the platform to function. Without them, you would not be able to log in, navigate between pages, or use core features. These cookies do not collect personal information that could be used for marketing and cannot be switched off.",
     examples: [
-      "Session cookies that maintain your logged-in state as you move through the platform",
-      "Security cookies that help protect your account from unauthorized access and support authentication through Supabase",
-      "CSRF tokens that protect against cross-site request forgery attacks",
+      "Session cookies that maintain your logged-in state as you move through the platform.",
+      "Security cookies that help protect your account from unauthorized access and support authentication through Supabase.",
+      "CSRF tokens that protect against cross-site request forgery attacks.",
     ],
   },
   {
@@ -44,8 +44,8 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
     description:
       "These cookies allow the platform to remember choices you have made and provide enhanced, personalized features. They may be set by us or by third-party providers whose services we use.",
     examples: [
-      "Theme preference: remembers whether you have selected the Amber Light or Amber Dark theme",
-      "Onboarding state: remembers where you are in the onboarding process if you navigate away and return",
+      "Theme preference: remembers whether you have selected the Amber Light or Amber Dark theme.",
+      "Onboarding state: remembers where you are in the onboarding process if you navigate away and return.",
     ],
   },
   {
@@ -56,9 +56,9 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
     description:
       "We may use anonymized analytics to understand how users interact with the platform, which features are most used, and where people encounter problems. Currently, The Amber Project uses basic server-side logging rather than third-party analytics scripts. If we introduce third-party analytics tools in the future, we will update this policy and obtain your consent where required.",
     examples: [
-      "Page views and feature usage patterns (anonymized)",
-      "Performance metrics like page load times and error rates",
-      "No third-party advertising cookies are used",
+      "Page views and feature usage patterns (anonymized).",
+      "Performance metrics like page load times and error rates.",
+      "No third-party advertising cookies are used.",
     ],
   },
   {
@@ -69,15 +69,18 @@ const COOKIE_CATEGORIES: CookieCategory[] = [
     description:
       "Some features of the platform involve third-party services that may set their own cookies. We do not use third-party advertising cookies and do not allow any third party to use cookies on our platform for the purpose of targeting you with advertisements.",
     examples: [
-      "Stripe: if you make a payment, Stripe may set cookies to support the checkout process and prevent fraud",
-      "Supabase: our authentication provider may set cookies related to your login session",
+      "Stripe: if you make a payment, Stripe may set cookies to support the checkout process and prevent fraud.",
+      "Supabase: our authentication provider may set cookies related to your login session.",
     ],
   },
 ];
 
 const COOKIE_DURATIONS = [
   { type: "Session cookies", duration: "Expire when you close your browser" },
-  { type: "Authentication tokens", duration: "Up to 7 days, or until you log out" },
+  {
+    type: "Authentication tokens",
+    duration: "Up to 7 days, or until you log out",
+  },
   { type: "Theme and preference cookies", duration: "Up to 12 months" },
   { type: "Onboarding state cookies", duration: "Up to 30 days" },
 ];
@@ -93,7 +96,7 @@ export function CookiePolicyPage() {
           style={{ color: "var(--color-textMuted)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Back To Home
         </Link>
 
         <div className="flex items-center gap-3 mb-4">
@@ -162,22 +165,29 @@ export function CookiePolicyPage() {
               What Are Cookies
             </h2>
           </div>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: "var(--color-textSecondary)" }}
-          >
-            Cookies are small text files that are stored on your device when you
-            visit a website or web application. They are widely used to make
-            websites work more efficiently, to remember your preferences, and to
-            provide information to the owners of the site about how their
-            platform is being used. Cookies can be session cookies, which are
-            deleted when you close your browser, or persistent cookies, which
-            remain on your device for a set period of time. The Amber Project
-            uses cookies and similar technologies to keep the platform running,
-            remember your preferences, keep your session secure, and understand
-            how people use the platform. We do not use cookies to serve
-            advertising.
-          </p>
+          <div className="space-y-3">
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "var(--color-textSecondary)" }}
+            >
+              Cookies are small text files that are stored on your device when
+              you visit a website or web application. They are widely used to
+              make websites work more efficiently, to remember your preferences,
+              and to provide information to the owners of the site about how
+              their platform is being used.
+            </p>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "var(--color-textSecondary)" }}
+            >
+              Cookies can be session cookies, which are deleted when you close
+              your browser, or persistent cookies, which remain on your device
+              for a set period of time. The Amber Project uses cookies and
+              similar technologies to keep the platform running, remember your
+              preferences, keep your session secure, and understand how people
+              use the platform. We do not use cookies to serve advertising.
+            </p>
+          </div>
         </div>
 
         {/* Cookie Categories */}
@@ -289,6 +299,13 @@ export function CookiePolicyPage() {
               Cookie Duration
             </h2>
           </div>
+          <p
+            className="text-sm leading-relaxed mb-3"
+            style={{ color: "var(--color-textSecondary)" }}
+          >
+            Different cookies remain on your device for different lengths of
+            time depending on their purpose.
+          </p>
           <ul className="space-y-2.5">
             {COOKIE_DURATIONS.map((item, idx) => (
               <li
@@ -300,7 +317,9 @@ export function CookiePolicyPage() {
                   style={{ background: "#6366F1" }}
                 />
                 <span style={{ color: "var(--color-textSecondary)" }}>
-                  <strong style={{ color: "var(--color-text)" }}>{item.type}:</strong>{" "}
+                  <strong style={{ color: "var(--color-text)" }}>
+                    {item.type}:
+                  </strong>{" "}
                   {item.duration}
                 </span>
               </li>
@@ -336,8 +355,8 @@ export function CookiePolicyPage() {
           >
             Most browsers allow you to control cookies through their settings.
             You can usually find these in the Privacy or Security section.
-            Please note that blocking strictly necessary cookies will prevent you
-            from logging in and using the core features of the platform.
+            Please note that blocking strictly necessary cookies will prevent
+            you from logging in and using the core features of the platform.
           </p>
           <ul className="space-y-2.5">
             {[
@@ -388,11 +407,11 @@ export function CookiePolicyPage() {
             className="text-sm leading-relaxed"
             style={{ color: "var(--color-textSecondary)" }}
           >
-            Some browsers include a Do Not Track feature that signals to websites
-            that you do not want your online activities tracked. The platform
-            currently does not respond to Do Not Track signals because there is
-            no consistent industry standard for how these signals should be
-            interpreted. We will revisit this as standards develop.
+            Some browsers include a Do Not Track feature that signals to
+            websites that you do not want your online activities tracked. The
+            platform currently does not respond to Do Not Track signals because
+            there is no consistent industry standard for how these signals
+            should be interpreted. We will revisit this as standards develop.
           </p>
         </div>
 
@@ -423,11 +442,11 @@ export function CookiePolicyPage() {
             style={{ color: "var(--color-textSecondary)" }}
           >
             We may update this Cookie Policy from time to time, particularly as
-            we add new features or third-party integrations to the platform. When
-            we make significant changes, we will update the date at the top of
-            this document and notify you through the platform or by email. Your
-            continued use of the platform following any update constitutes
-            acceptance of the revised policy.
+            we add new features or third-party integrations to the platform.
+            When we make significant changes, we will update the date at the
+            top of this document and notify you through the platform or by
+            email. Your continued use of the platform following any update
+            constitutes acceptance of the revised policy.
           </p>
         </div>
 

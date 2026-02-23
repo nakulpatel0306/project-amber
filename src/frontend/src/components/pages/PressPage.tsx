@@ -125,7 +125,7 @@ export function PressPage() {
           style={{ color: "var(--color-textMuted)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Back To Home
         </Link>
 
         <div className="flex items-center gap-3 mb-4">
@@ -154,7 +154,8 @@ export function PressPage() {
           style={{ color: "var(--color-textSecondary)" }}
         >
           Everything journalists, bloggers, and partners need to tell The
-          Amber Project story.
+          Amber Project story. Key facts, industry data, and talking points
+          all in one place.
         </p>
       </div>
 
@@ -204,7 +205,7 @@ export function PressPage() {
                 The Amber Project is a culture-first job matching platform that
                 uses the Big Five personality model and AI to connect people
                 with workplaces where they genuinely belong. Founded in Toronto
-                in 2025 by university students Nakul Patel, Arsh Patel, and
+                in 2026 by university students Nakul Patel, Arsh Patel, and
                 Neel Patel, Amber replaces resume-driven hiring with
                 science-backed personality compatibility. Free for candidates.
               </p>
@@ -213,7 +214,7 @@ export function PressPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: "Founded", value: "2025" },
+              { label: "Founded", value: "2026" },
               { label: "HQ", value: "Toronto, ON" },
               { label: "Focus", value: "Culture-First Hiring" },
               { label: "Team", value: "3 Co-Founders" },
