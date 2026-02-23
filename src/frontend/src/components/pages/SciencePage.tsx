@@ -33,12 +33,12 @@ const sections: SectionData[] = [
     color: '#8B5CF6',
     title: 'The Big Five (OCEAN) Model',
     description:
-      'Amber is built on the Big Five personality model — the most validated and widely accepted personality framework in modern psychology.',
+      'Amber is built on the Big Five personality model, the most validated and widely accepted personality framework in modern psychology. It has been consistently replicated across cultures, demographics, and industries for over 40 years.',
     bullets: [
-      'The most validated personality framework in psychology, backed by 40+ years of peer-reviewed research',
-      'Five core dimensions: Openness, Conscientiousness, Extraversion, Agreeableness, and Neuroticism (Stability)',
+      'The most empirically validated personality framework in psychology, backed by 40+ years of peer-reviewed research',
+      'Five core dimensions measured on continuous scales: Openness, Conscientiousness, Extraversion, Agreeableness, and Neuroticism (Stability)',
       'Predicts job performance, team dynamics, and cultural fit more accurately than any other personality model',
-      'Used by leading organizations and research institutions worldwide',
+      'Unlike tools such as MBTI, the Big Five has strong peer-reviewed support and produces nuanced, continuous scores rather than binary types',
     ],
   },
   {
@@ -46,13 +46,13 @@ const sections: SectionData[] = [
     color: '#10B981',
     title: 'How We Measure',
     description:
-      'Our assessment captures your personality with precision and nuance using slider-based responses that reveal the full spectrum of your traits.',
+      'Our core assessment is designed to be quick and meaningful. 10 carefully crafted questions with four response options each, grouped into work style, communication, and values.',
     bullets: [
-      '48 carefully crafted questions spanning all five personality dimensions',
-      'Slider-based responses capture nuance that binary yes/no questions miss',
-      'Takes approximately 15 minutes to complete',
-      'High internal consistency (Cronbach\'s alpha > 0.80) across all trait scales',
-      'Strong test-retest consistency ensures stable and meaningful results',
+      '10 core questions mapping to specific trait weightings across all five OCEAN dimensions',
+      'Four response options per question capture meaningful differentiation between personality profiles',
+      'Questions grouped into three categories: work style, communication, and values',
+      'Completion time under 15 minutes, designed to minimize abandonment while producing accurate results',
+      'Supplementary assessments available for deeper insight: work values, visual perception, situational judgment, and cognitive patterns',
     ],
   },
   {
@@ -60,26 +60,27 @@ const sections: SectionData[] = [
     color: '#F59E0B',
     title: 'Culture Matching Algorithm',
     description:
-      'Your personality profile is only half the equation. Our matching algorithm combines individual traits with organizational culture data.',
+      'Your personality profile is matched bidirectionally with employer culture data. The Ember matching engine produces three distinct scores, giving both sides a clear picture of compatibility.',
     bullets: [
-      'Personality-to-culture fit scoring that goes beyond surface-level keyword matching',
-      'Team dynamic analysis evaluates how your traits complement existing team members',
-      'Values alignment weighting ensures shared principles between you and the organization',
-      'Compatibility percentage reflects multi-dimensional fit across personality, values, and work style',
+      'Trait match score based on proximity of OCEAN values between candidate and employer ideal ranges',
+      'Culture match score based on alignment between stated values and working style preferences',
+      'Overall weighted composite score normalized to a 0 to 100 scale',
+      'Ember AI agent generates natural language explanations of each match: what works, what to watch for, and how to show up well',
+      'All scores are deterministic and fully traceable back to specific inputs. No black box.',
     ],
   },
   {
     icon: BookOpen,
     color: '#EC4899',
-    title: 'Research & Validation',
+    title: 'Research And Validation',
     description:
-      'Every aspect of Amber is grounded in peer-reviewed organizational psychology. We build on established research and continuously validate our methods.',
+      'Every aspect of Amber is grounded in peer-reviewed organizational psychology. The science comes first, and the AI helps people understand and apply it.',
     bullets: [
-      'Grounded in peer-reviewed organizational psychology and psychometric theory',
-      'Builds on person-environment (P-E) fit theory',
-      'Incorporates concepts from Holland\'s theory of vocational personalities',
-      'Assessment design follows APA best practices',
-      'Continuously validated through ongoing research and real-world outcomes',
+      'Meta-analysis by Kristof-Brown, Zimmerman, and Johnson (2005) confirms person-organization fit predicts job satisfaction, commitment, and retention',
+      'Personality fit with a role and organization predicts outcomes better than skills or credentials alone',
+      'Culture misalignment is one of the most frequently cited reasons for early employee turnover, especially in small teams',
+      'Studies suggest 70 to 85 percent of jobs are filled through relationships, not formal applications',
+      'Amber combines validated personality science with structured culture matching and human-first connection, a combination no other consumer product offers',
     ],
   },
 ];
@@ -248,13 +249,20 @@ export function SciencePage() {
             Your Data, Your Control
           </h3>
           <p
-            className="text-sm max-w-lg mx-auto leading-relaxed"
+            className="text-sm max-w-lg mx-auto leading-relaxed mb-3"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            All assessment data is encrypted and stored securely. You control
-            who sees your personality profile, and you can delete your data at
-            any time.
+            All personality data is stored securely with Row Level Security enforced at the database level.
+            Employers see compatibility scores and summaries, never your raw assessment responses.
+            You can delete your data at any time.
           </p>
+          <a
+            href="mailto:amberfounders@gmail.com"
+            className="text-xs font-medium transition-opacity hover:opacity-70"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            amberfounders@gmail.com
+          </a>
         </div>
       </div>
     </div>

@@ -33,9 +33,10 @@ const categories: Category[] = [
     icon: BookOpen,
     color: "#8B5CF6",
     faqs: [
-      { question: "How do I create an account?", answer: "Sign up with your email or Google account. It takes less than a minute to get started." },
-      { question: "What happens after I sign up?", answer: "You'll be guided through a brief onboarding to set up your profile, then you can take the personality assessment." },
-      { question: "Is Amber free to use?", answer: "Yes! Job seekers can use Amber for free. Premium features are available for power users and employers." },
+      { question: "How do I create an account?", answer: "Sign up with your email, Google, or GitHub account. It takes less than a minute to get started." },
+      { question: "What happens after I sign up?", answer: "You will be guided through a brief onboarding to set up your profile, then you can take the personality assessment to start seeing your matches." },
+      { question: "Is Amber free to use?", answer: "Yes. Candidates can use Amber completely free. Employers may have paid features available in the future." },
+      { question: "Is there a mobile app?", answer: "Not yet. Amber is a web application that works on any device with a browser. We built it this way so you can access it from anywhere without downloading anything." },
     ],
   },
   {
@@ -43,20 +44,20 @@ const categories: Category[] = [
     icon: ClipboardCheck,
     color: "#10B981",
     faqs: [
-      { question: "How long does the assessment take?", answer: "The core Big Five assessment takes about 15 minutes. Additional assessments are 5-10 minutes each." },
+      { question: "How long does the assessment take?", answer: "The core personality assessment is 10 questions and takes under 15 minutes. Supplementary assessments covering work values, visual perception, situational judgment, and cognitive patterns are available if you want to go deeper." },
       { question: "Can I retake the assessment?", answer: "Yes, you can retake it anytime. We recommend waiting at least 30 days between attempts for the most accurate results." },
-      { question: "Are there right or wrong answers?", answer: "No! The assessment measures your natural preferences and tendencies. Be honest for the best matches." },
-      { question: "What is the Big Five model?", answer: "The Big Five (OCEAN) is the most scientifically validated personality framework, measuring Openness, Conscientiousness, Extraversion, Agreeableness, and Neuroticism." },
+      { question: "Are there right or wrong answers?", answer: "No. The assessment measures your natural preferences and tendencies using the Big Five (OCEAN) personality model. Be honest for the best matches." },
+      { question: "What is an archetype?", answer: "Based on your OCEAN scores, you are mapped to one of eight personality archetypes: The Innovator, The Architect, The Connector, The Catalyst, The Craftsperson, The Harmonizer, The Explorer, or The Strategist. Archetypes make your results more intuitive and easier to understand." },
     ],
   },
   {
-    title: "Matching & Jobs",
+    title: "Matching And Jobs",
     icon: Users,
     color: "#F59E0B",
     faqs: [
-      { question: "How does matching work?", answer: "Our AI compares your personality profile with company culture data to calculate compatibility scores across multiple dimensions." },
-      { question: "What does the match percentage mean?", answer: "It represents how well your personality traits align with a company's culture profile. Higher scores indicate stronger culture fit." },
-      { question: "Can I see who viewed my profile?", answer: "Premium users can see which companies have viewed their profile and shown interest." },
+      { question: "How does matching work?", answer: "Our matching engine, called Ember, compares your personality profile with employer culture data. It produces three scores: a trait match score, a culture match score, and an overall weighted composite score, all on a 0 to 100 scale." },
+      { question: "What does the match percentage mean?", answer: "It represents how well your personality traits align with a company's culture profile. Higher scores indicate stronger culture fit. Ember also provides a plain-English explanation of each match, including what works and what to watch for." },
+      { question: "Can employers see my raw assessment data?", answer: "No. Employers see compatibility scores and summaries, never your raw personality responses. Your data is protected by Row Level Security at the database level." },
     ],
   },
   {
@@ -64,29 +65,29 @@ const categories: Category[] = [
     icon: Coffee,
     color: "#EC4899",
     faqs: [
-      { question: "What is a coffee chat?", answer: "A casual 15-30 minute conversation with a team member. No formal interview questions \u2014 just genuine conversation to explore mutual interest." },
-      { question: "How do I schedule one?", answer: "Once you match with a company, either side can request a coffee chat. You'll pick a time that works for both." },
-      { question: "What should I expect?", answer: "Think of it as meeting a potential colleague for coffee. Ask about team culture, daily work, and what they enjoy about their role." },
+      { question: "What is a coffee chat?", answer: "A casual introductory conversation with someone from a company you matched with. No formal interview questions, just genuine conversation to explore mutual interest." },
+      { question: "Who can start a coffee chat?", answer: "Both candidates and employers can initiate coffee chats. Candidates can request a chat with any company in their match list, and employers can invite any candidate who has completed their assessment." },
+      { question: "What happens after a coffee chat?", answer: "Both sides leave a rating and written feedback. This helps both parties reflect on the conversation and helps us understand which matches are converting into genuine connections." },
     ],
   },
   {
-    title: "Account & Billing",
+    title: "Account And Settings",
     icon: Settings,
     color: "#06B6D4",
     faqs: [
-      { question: "How do I upgrade to Premium?", answer: "Go to Settings \u2192 Subscription and choose the plan that works for you. You can start with a free trial." },
-      { question: "Can I cancel anytime?", answer: "Yes, you can cancel your subscription at any time. You'll retain access until the end of your billing period." },
-      { question: "How do I update my profile?", answer: "Navigate to Settings \u2192 Profile to update your information, preferences, and visibility settings." },
+      { question: "How do I update my profile?", answer: "Navigate to Settings to update your information, preferences, and visibility settings." },
+      { question: "Can I switch between light and dark mode?", answer: "Yes. Amber supports both light and dark themes. Your preference is saved and persisted across sessions." },
+      { question: "How do I delete my account?", answer: "You can delete your account and all associated data from Settings > Account. Your data will be removed within 90 days of account closure." },
     ],
   },
   {
-    title: "Privacy & Data",
+    title: "Privacy And Data",
     icon: Shield,
     color: "#6366F1",
     faqs: [
-      { question: "Who can see my personality data?", answer: "Only you. Employers see compatibility scores but never your raw personality data unless you explicitly share it." },
-      { question: "Can I delete my account?", answer: "Yes, you can delete your account and all associated data from Settings \u2192 Account \u2192 Delete Account." },
-      { question: "How is my data protected?", answer: "We use industry-standard encryption, secure servers, and never sell your personal information to third parties." },
+      { question: "Who can see my personality data?", answer: "Only you can see your raw personality data. Employers see compatibility scores and summaries, never your raw assessment responses." },
+      { question: "How is my data protected?", answer: "We use Row Level Security enforced at the database level through Supabase, encrypted data transmission over HTTPS, and strict access controls. We never sell your personal information to third parties." },
+      { question: "Can I export my data?", answer: "Yes. You have the right to request a copy of your personal data in a structured, machine-readable format. Contact us at amberfounders@gmail.com." },
     ],
   },
 ];
@@ -286,16 +287,16 @@ export function HelpCenterPage() {
             className="text-lg font-semibold mb-1"
             style={{ color: "var(--color-text)" }}
           >
-            Still need help?
+            Still Need Help?
           </h3>
           <p
             className="text-sm mb-5 max-w-sm"
             style={{ color: "var(--color-textSecondary)" }}
           >
-            Our support team is here for you. We'll get back to you within 24 hours.
+            We are here for you. Reach out and we will get back to you as soon as we can.
           </p>
           <a
-            href="mailto:support@tryamber.com"
+            href="mailto:amberfounders@gmail.com"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-opacity hover:opacity-90"
             style={{
               background: "var(--color-accent)",
@@ -303,7 +304,7 @@ export function HelpCenterPage() {
             }}
           >
             <MessageCircle className="w-4 h-4" />
-            Contact Support
+            amberfounders@gmail.com
           </a>
         </div>
       </div>

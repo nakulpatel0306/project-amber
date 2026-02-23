@@ -2,9 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   Mail,
   MapPin,
-  Twitter,
   Linkedin,
-  Github,
   Instagram,
 } from 'lucide-react';
 import { AmberLogo } from '../ui/AmberLogo';
@@ -14,7 +12,6 @@ const RESOURCE_LINKS: { label: string; href: string }[] = [
   { label: 'Blog', href: '/blog' },
   { label: 'The Science', href: '/science' },
   { label: 'Help Center', href: '/help' },
-  { label: 'Changelog', href: '/changelog' },
   { label: 'Privacy Policy', href: '/privacy' },
 ];
 
@@ -45,16 +42,15 @@ export function LandingFooter() {
               className="text-sm leading-relaxed mb-4"
               style={{ color: 'var(--color-textSecondary)' }}
             >
-              Culture-first job matching powered by personality science and AI.
-              Who you are matters more than what's on your resume.
+              Where personality meets opportunity. We use the science of who you
+              are to connect you with companies where you will genuinely thrive.
             </p>
             {/* Social links */}
             <div className="flex items-center gap-2">
               {[
-                { icon: Twitter, label: 'Twitter' },
-                { icon: Linkedin, label: 'LinkedIn' },
                 { icon: Instagram, label: 'Instagram' },
-                { icon: Github, label: 'GitHub' },
+                { icon: Linkedin, label: 'LinkedIn' },
+                { icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>, label: 'X' },
               ].map(social => (
                 <button
                   key={social.label}
@@ -183,7 +179,7 @@ export function LandingFooter() {
               <li>
                 <span className="text-sm flex items-center gap-2" style={{ color: 'var(--color-textSecondary)' }}>
                   <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                  hello@tryamber.com
+                  amberfounders@gmail.com
                 </span>
               </li>
             </ul>

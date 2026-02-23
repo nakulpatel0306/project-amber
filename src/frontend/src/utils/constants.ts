@@ -1,6 +1,6 @@
 // Amber Platform Constants
 
-export const APP_NAME = 'Amber';
+export const APP_NAME = 'Amber Project';
 export const APP_DESCRIPTION = 'Culture-first job matching platform';
 
 // API endpoints

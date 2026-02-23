@@ -30,63 +30,63 @@ interface BlogPost {
 const BLOG_POSTS: BlogPost[] = [
   {
     id: 1,
-    title: "Why Personality Matters More Than Your Resume",
+    title: "Why Your Personality Matters More Than Your Resume",
     category: "Personality Science",
-    date: "October 12, 2025",
+    date: "February 18, 2026",
     readTime: "5 min read",
     excerpt:
-      "Traditional resumes only tell part of your story. Discover how personality-driven hiring is reshaping the way companies find their best cultural fits.",
+      "Some of the most impressive people we know are not the ones with the highest grades. They are the ones who showed up, let their personality lead, and built real relationships. Here is why that matters for hiring.",
     slug: "personality-matters-more-than-resume",
   },
   {
     id: 2,
-    title: "5 Signs You're in the Wrong Company Culture",
+    title: "The Science Behind Culture Fit",
     category: "Culture & Hiring",
-    date: "September 28, 2025",
+    date: "February 10, 2026",
     readTime: "4 min read",
     excerpt:
-      "Feeling drained despite loving your role? The issue might not be the work itself. Here are five red flags that your company culture is silently holding you back.",
-    slug: "signs-wrong-company-culture",
+      "Culture fit is not about hiring people who look and think like you. It is about aligning values, working styles, and interpersonal tendencies. Research shows it predicts job satisfaction better than skills alone.",
+    slug: "science-behind-culture-fit",
   },
   {
     id: 3,
-    title: "How the Big Five Model Predicts Job Satisfaction",
+    title: "What The Big Five Actually Tells You About Work",
     category: "Personality Science",
-    date: "September 15, 2025",
+    date: "January 28, 2026",
     readTime: "7 min read",
     excerpt:
-      "The Big Five personality traits have decades of research backing their predictive power. Learn how openness, conscientiousness, and more map to workplace happiness.",
-    slug: "big-five-job-satisfaction",
+      "The Big Five personality model has been replicated across cultures for over 40 years. It measures five dimensions that genuinely predict how you work, communicate, and collaborate with a team.",
+    slug: "big-five-tells-you-about-work",
   },
   {
     id: 4,
-    title: "The Rise of Coffee Chat Interviews",
+    title: "Coffee Chats: A Better Way To Start",
     category: "Career Tips",
-    date: "August 30, 2025",
+    date: "January 20, 2026",
     readTime: "3 min read",
     excerpt:
-      "Formal interviews are giving way to relaxed, human-first conversations. We explore why coffee chats are becoming the preferred way to evaluate mutual fit.",
-    slug: "rise-of-coffee-chat-interviews",
+      "The best hiring conversations happen before anyone has decided anything. Before the formal process, before the pressure. Just two people figuring out if this could be something real.",
+    slug: "coffee-chats-better-way-to-start",
   },
   {
     id: 5,
-    title: "Introducing Amber's Culture Matching 2.0",
-    category: "Product Updates",
-    date: "August 18, 2025",
+    title: "Why Startups Need Culture-First Hiring",
+    category: "Culture & Hiring",
+    date: "January 12, 2026",
     readTime: "4 min read",
     excerpt:
-      "Our latest update brings a completely redesigned matching algorithm and richer culture profiles. Here is what changed and why it matters for your job search.",
-    slug: "culture-matching-2-0",
+      "In a team of 10 or 15 people, one hire who does not fit can genuinely damage the whole team. Startups live or die by culture fit, and they need better tools than a resume screener.",
+    slug: "startups-need-culture-first-hiring",
   },
   {
     id: 6,
-    title: "Navigating Career Transitions with Self-Awareness",
+    title: "Networking Without The Network",
     category: "Career Tips",
-    date: "August 5, 2025",
+    date: "January 5, 2026",
     readTime: "6 min read",
     excerpt:
-      "Switching careers can feel overwhelming without a compass. Learn how understanding your own personality traits can guide you toward roles where you will thrive.",
-    slug: "career-transitions-self-awareness",
+      "Studies suggest 70 to 80 percent of roles are filled through relationships, not applications. But not everyone has the right connections. Here is how personality-driven introductions can level the playing field.",
+    slug: "networking-without-the-network",
   },
 ];
 
@@ -138,7 +138,7 @@ export function BlogPage() {
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
           style={{ color: "var(--color-text)" }}
         >
-          Insights & Updates
+          Insights and Updates
         </h1>
         <p
           className="text-base sm:text-lg max-w-xl"
