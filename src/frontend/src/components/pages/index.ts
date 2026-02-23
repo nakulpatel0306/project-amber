@@ -1,4 +1,5 @@
 export { BlogPage } from './BlogPage';
+export { BlogArticlePage } from './BlogArticlePage';
 export { SciencePage } from './SciencePage';
 export { HelpCenterPage } from './HelpCenterPage';
 export { ChangelogPage } from './ChangelogPage';
