@@ -571,7 +571,7 @@ export function PersonalityInsights() {
                           </div>
                         </div>
                       </button>
-                      <GradientProgressBar value={scores[key]} showValue={false} size="sm" color={info.progressColor} />
+                      <GradientProgressBar value={scores[key]} showValue={false} size="sm" color={info.color} />
                       <AnimatePresence>
                         {expandedDimension === key && (
                           <motion.div
@@ -795,7 +795,7 @@ export function PersonalityInsights() {
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{info.fullLabel}</span>
                     <span className="text-xs font-semibold ml-auto" style={{ color: info.color }}>{value}/100</span>
                   </div>
-                  <GradientProgressBar value={value} showValue={false} size="sm" color={info.progressColor} />
+                  <GradientProgressBar value={value} showValue={false} size="sm" color={info.color} />
                   <p className="text-xs mt-2" style={{ color: 'var(--color-textMuted)' }}>
                     {growthTips[key]}
                   </p>
@@ -995,7 +995,7 @@ function DimensionDetail({
         </button>
       </div>
 
-      <GradientProgressBar value={score} color={info.progressColor} showValue={false} size="md" />
+      <GradientProgressBar value={score} color={info.color} showValue={false} size="md" />
 
       <p className="text-sm mt-3 mb-3" style={{ color: 'var(--color-textSecondary)' }}>{info.description}</p>
 

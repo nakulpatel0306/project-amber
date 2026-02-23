@@ -39,7 +39,7 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 
 // Pages
 import { WelcomeScreen } from './components/landing';
-import { BlogPage, SciencePage, HelpCenterPage, ChangelogPage, StatusPage, AboutPage, CareersPage, PressPage, PrivacyPolicyPage, TermsOfServicePage, CookiePolicyPage, AccessibilityPage } from './components/pages';
+import { BlogPage, BlogArticlePage, SciencePage, HelpCenterPage, ChangelogPage, StatusPage, AboutPage, CareersPage, PressPage, PrivacyPolicyPage, TermsOfServicePage, CookiePolicyPage, AccessibilityPage } from './components/pages';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
 import { AssessmentFlow, Assessment, AssessmentResults, MatchingAgent, PersonalityInsights, Leaderboard } from './components/candidate';
 import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResults, CreateRole, ManageRoles, BrowseCandidates, TopCandidates, EmployerLeaderboard } from './components/employer';
@@ -64,6 +64,7 @@ function App() {
                 <Route path="/" element={<WelcomeScreen />} />
                 <Route element={<PublicLayout />}>
                   <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/blog/:slug" element={<BlogArticlePage />} />
                   <Route path="/science" element={<SciencePage />} />
                   <Route path="/help" element={<HelpCenterPage />} />
                   <Route path="/changelog" element={<ChangelogPage />} />

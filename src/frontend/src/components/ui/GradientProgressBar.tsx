@@ -58,11 +58,11 @@ export function GradientProgressBar({
         <motion.div
           className="h-full rounded-full"
           style={{
-            background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+            backgroundColor: color,
           }}
           initial={animated ? { width: 0 } : { width: `${clampedValue}%` }}
           animate={{ width: `${clampedValue}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: animated ? 0.2 : 0 }}
         />
       </div>
     </div>
