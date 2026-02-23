@@ -94,7 +94,7 @@ export function AboutPage() {
           style={{ color: "var(--color-textMuted)" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Back To Home
         </Link>
 
         <div className="flex items-center gap-3 mb-4">
@@ -395,7 +395,7 @@ export function AboutPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-12">
           {[
             { stat: "Toronto, ON", label: "Headquarters" },
-            { stat: "2025", label: "Founded" },
+            { stat: "2026", label: "Founded" },
             { stat: "Big Five (OCEAN)", label: "Powered By" },
             { stat: "Free", label: "For Candidates" },
           ].map((item) => (

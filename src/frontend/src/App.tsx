@@ -75,6 +75,7 @@ function App() {
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/cookies" element={<CookiePolicyPage />} />
                   <Route path="/accessibility" element={<AccessibilityPage />} />
+                  <Route path="/pricing" element={<PricingPage />} />
                 </Route>
 
                 {/* Auth routes (guest only) */}

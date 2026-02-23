@@ -76,10 +76,10 @@ export function LandingFooter() {
             </h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'Personality Assessment', href: '/auth/signup' },
-                { label: 'Culture Matching', href: '/auth/signup' },
+                { label: 'Personality Assessment', href: '/science' },
+                { label: 'Culture Matching', href: '/science' },
                 { label: 'Coffee Chats', href: '/auth/signup' },
-                { label: 'Meet Ember', href: '/auth/signup' },
+                { label: 'Pricing', href: '/pricing' },
               ].map(item => (
                 <li key={item.label}>
                   <Link
@@ -106,9 +106,8 @@ export function LandingFooter() {
               {[
                 { label: 'Post a Role', href: '/auth/signup?role=employer' },
                 { label: 'Browse Candidates', href: '/auth/signup?role=employer' },
-                { label: 'Best Matches', href: '/auth/signup?role=employer' },
-                { label: 'Pricing', href: '/app/pricing' },
-                { label: 'Enterprise', href: '/auth/signup?role=employer' },
+                { label: 'Culture Matching', href: '/auth/signup?role=employer' },
+                { label: 'Culture Assessment', href: '/auth/signup?role=employer' },
               ].map(item => (
                 <li key={item.label}>
                   <Link
@@ -177,10 +176,14 @@ export function LandingFooter() {
                 </span>
               </li>
               <li>
-                <span className="text-sm flex items-center gap-2" style={{ color: 'var(--color-textSecondary)' }}>
+                <a
+                  href="mailto:amberfounders@gmail.com"
+                  className="text-sm flex items-center gap-2 transition-colors hover:underline"
+                  style={{ color: 'var(--color-textSecondary)' }}
+                >
                   <Mail className="w-3.5 h-3.5 flex-shrink-0" />
                   amberfounders@gmail.com
-                </span>
+                </a>
               </li>
             </ul>
           </div>

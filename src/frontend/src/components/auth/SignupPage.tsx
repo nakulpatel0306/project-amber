@@ -139,7 +139,7 @@ export function SignupPage() {
           style={{ color: 'var(--color-textSecondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to home
+          Back To Home
         </Link>
       </header>
 
