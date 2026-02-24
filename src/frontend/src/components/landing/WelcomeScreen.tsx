@@ -15,6 +15,7 @@ import {
   Users,
   Zap
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -93,7 +94,7 @@ const valueProps = [
   {
     icon: Heart,
     title: 'People Over Paper',
-    description: 'Your resume is not who you are. The most important things about you as a teammate don\'t show up in a document. We think those things should come first.',
+    description: 'Your resume is not who you are. The most important things about you as a teammate don\'t show up on paper. We think those should come first.',
     color: '#EC4899',
   },
 ];
@@ -512,7 +513,7 @@ const valuePropDetails = [
     stat: '40+',
     statLabel: 'Years Of Research',
     bullets: [
-      'Grounded in the Big Five (OCEAN) model, the gold standard in organizational psychology',
+      'Built on the Big Five (OCEAN) model, the gold standard in personality science',
       'Maps you to a unique archetype like The Innovator or The Connector',
       'Tailored for career matching, not a repurposed personality quiz',
     ],
@@ -539,7 +540,7 @@ const valuePropDetails = [
     stat: '80%',
     statLabel: 'Jobs Filled Via People',
     bullets: [
-      'Most jobs are filled through people, not applications. Amber makes that accessible to everyone',
+      'Most jobs are filled through people, not applications. Amber levels the field',
       'No cover letters or keyword stuffing. Your personality speaks for itself',
       'Built by students who saw great people get overlooked by a broken system',
     ],
@@ -616,26 +617,38 @@ function ValuePropTabs() {
         >
           {/* Left: Visual showcase */}
           <div
-            className="flex-shrink-0 md:w-[280px] p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r"
+            className="flex-shrink-0 md:w-[320px] p-10 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r relative overflow-hidden"
             style={{ borderColor: 'var(--color-border)' }}
           >
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-all duration-500"
-              style={{
-                backgroundColor: `${prop.color}15`,
-                boxShadow: `0 8px 30px ${prop.color}20`,
-              }}
-            >
-              <Icon className="w-8 h-8" style={{ color: prop.color }} />
+            {/* Amber glow pulse behind icon */}
+            <div className="relative mb-6">
+              <motion.div
+                className="absolute rounded-2xl"
+                style={{
+                  inset: -8,
+                  background: `radial-gradient(circle, ${prop.color}30, transparent 70%)`,
+                  filter: 'blur(12px)',
+                }}
+                animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.05, 0.95] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <div
+                className="relative w-20 h-20 rounded-2xl flex items-center justify-center"
+                style={{
+                  backgroundColor: `${prop.color}15`,
+                }}
+              >
+                <Icon className="w-10 h-10" style={{ color: prop.color }} />
+              </div>
             </div>
             <div
-              className="text-5xl font-black mb-1 tracking-tight"
+              className="text-6xl font-black tracking-tight"
               style={{ color: prop.color }}
             >
               {details.stat}
             </div>
             <div
-              className="text-xs font-semibold uppercase tracking-widest"
+              className="text-xs font-semibold uppercase tracking-widest mt-1.5"
               style={{ color: 'var(--color-textMuted)' }}
             >
               {details.statLabel}
@@ -643,22 +656,22 @@ function ValuePropTabs() {
           </div>
 
           {/* Right: Text content */}
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-10">
             <h3
-              className="text-xl sm:text-2xl font-bold mb-3"
+              className="text-2xl sm:text-3xl font-bold mb-4"
               style={{ color: 'var(--color-text)' }}
             >
               {prop.title}
             </h3>
             <p
-              className="text-sm leading-relaxed mb-5"
+              className="text-lg leading-relaxed mb-6"
               style={{ color: 'var(--color-textSecondary)' }}
             >
               {prop.description}
             </p>
 
             {/* Bullet points */}
-            <ul className="space-y-3">
+            <ul className="space-y-3.5">
               {details.bullets.map((bullet, i) => (
                 <li key={i} className="flex items-start gap-3">
                   <div
@@ -671,7 +684,7 @@ function ValuePropTabs() {
                     />
                   </div>
                   <span
-                    className="text-sm leading-relaxed"
+                    className="text-base leading-relaxed"
                     style={{ color: 'var(--color-textSecondary)' }}
                   >
                     {bullet}
@@ -946,7 +959,7 @@ export function WelcomeScreen() {
       {/* Why Amber - Value Props */}
       <ScrollSection>
         <section className="py-24 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
@@ -1463,6 +1476,156 @@ export function WelcomeScreen() {
                   amberfounders@gmail.com
                 </a>
               </p>
+            </div>
+          </div>
+        </section>
+      </ScrollSection>
+
+      {/* Final CTA with Grid */}
+      <ScrollSection>
+        <section className="relative pt-6 pb-40 px-4 sm:px-6 lg:px-8 overflow-hidden">
+          {/* Pulsing grid background */}
+          <div className="absolute inset-0 pointer-events-none">
+            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="cta-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+                  <path d="M 60 0 L 0 0 0 60" fill="none" stroke="var(--color-border)" strokeWidth="0.5" />
+                </pattern>
+                <radialGradient id="grid-fade" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="white" stopOpacity="1" />
+                  <stop offset="70%" stopColor="white" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="white" stopOpacity="0" />
+                </radialGradient>
+                <mask id="grid-mask">
+                  <rect width="100%" height="100%" fill="url(#grid-fade)" />
+                </mask>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#cta-grid)" mask="url(#grid-mask)" />
+            </svg>
+            {/* Pulse overlay on the grid */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                background: 'radial-gradient(ellipse at 50% 50%, var(--color-accent), transparent 70%)',
+                mixBlendMode: 'overlay',
+              }}
+              animate={{ opacity: [0.02, 0.08, 0.02] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </div>
+
+          {/* Content */}
+          <div className="relative max-w-2xl mx-auto text-center">
+            <motion.div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6"
+              style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <motion.div
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Sparkles className="w-7 h-7" style={{ color: 'var(--color-accent)' }} />
+              </motion.div>
+            </motion.div>
+
+            <h2
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-5"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Your Personality Is Your{' '}
+              <span className="animate-gradient-text">Superpower</span>
+            </h2>
+
+            <p
+              className="text-base sm:text-lg leading-relaxed mb-4 max-w-xl mx-auto"
+              style={{ color: 'var(--color-textSecondary)' }}
+            >
+              Take a 15-minute assessment. Discover your work personality. Get matched with companies that actually fit who you are.
+            </p>
+            <p
+              className="text-sm mb-10"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              Try it free. No resume required.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/auth/signup">
+                <MagneticButton
+                  className="px-8 py-4 rounded-2xl text-base font-semibold flex items-center gap-3 animate-glow-pulse"
+                  style={{
+                    backgroundColor: 'var(--color-accent)',
+                    color: 'var(--color-accentText)',
+                  }}
+                  strength={0.08}
+                >
+                  Get Started Free
+                  <motion.div
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.div>
+                </MagneticButton>
+              </Link>
+              <Link to="/auth/signup?role=employer">
+                <MagneticButton
+                  className="px-8 py-4 rounded-2xl text-base font-semibold flex items-center gap-3 border-2"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text)',
+                    backgroundColor: 'var(--color-surface)',
+                  }}
+                  strength={0.08}
+                >
+                  <Briefcase className="w-5 h-5" />
+                  I'm Hiring
+                </MagneticButton>
+              </Link>
+            </div>
+
+            {/* Trust line */}
+            <div
+              className="flex items-center justify-center gap-5 mt-10 text-xs"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              <span className="flex items-center gap-1.5">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0 }}
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                </motion.div>
+                Science-Backed
+              </span>
+              <span
+                className="w-1 h-1 rounded-full"
+                style={{ backgroundColor: 'var(--color-border)' }}
+              />
+              <span className="flex items-center gap-1.5">
+                <motion.div
+                  animate={{ y: [0, -2, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                >
+                  <Coffee className="w-3.5 h-3.5" />
+                </motion.div>
+                Coffee Chats
+              </span>
+              <span
+                className="w-1 h-1 rounded-full"
+                style={{ backgroundColor: 'var(--color-border)' }}
+              />
+              <span className="flex items-center gap-1.5">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                </motion.div>
+                Culture First
+              </span>
             </div>
           </div>
         </section>
