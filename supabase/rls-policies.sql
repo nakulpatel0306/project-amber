@@ -252,6 +252,16 @@ CREATE POLICY "Employers can insert coffee chats"
     )
   );
 
+DROP POLICY IF EXISTS "Candidates can insert coffee chats" ON public.coffee_chats;
+CREATE POLICY "Candidates can insert coffee chats"
+  ON public.coffee_chats FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.candidates
+      WHERE candidates.id = candidate_id AND candidates.user_id = auth.uid()
+    )
+  );
+
 DROP POLICY IF EXISTS "Participants can update coffee chats" ON public.coffee_chats;
 CREATE POLICY "Participants can update coffee chats"
   ON public.coffee_chats FOR UPDATE
