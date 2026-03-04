@@ -117,7 +117,7 @@ app.add_middleware(
 app.add_middleware(
     AuthMiddleware,
     exclude_paths=["/", "/health", "/docs", "/redoc", "/openapi.json"],
-    exclude_prefixes=["/api/assessment/", "/api/auth/", "/api/logo"],  # Assessment, auth, and logo proxy endpoints are public
+    exclude_prefixes=["/api/assessment/", "/api/auth/", "/api/logo", "/api/stripe/webhook"],  # Assessment, auth, logo, and Stripe webhook endpoints are public
 )
 
 
@@ -1302,73 +1302,314 @@ async def submit_coffee_chat_feedback(
 # ============ Stripe Endpoints ============
 # Payment integration for subscription plans. When STRIPE_SECRET_KEY is not set,
 # these endpoints return a demo-mode response instead of failing.
+#
+# Price-ID → plan mapping (must stay in sync with the frontend plans.ts):
+import logging
+logger = logging.getLogger("amber.stripe")
+
+STRIPE_PRICE_TO_PLAN: dict[str, dict[str, str]] = {
+    "price_1T2oVzHXKhBQCJWjU2CJciW7": {"plan": "smooth_talker", "interval": "monthly"},
+    "price_1T2oWYHXKhBQCJWjxFrbIaLX": {"plan": "smooth_talker", "interval": "yearly"},
+    "price_1T2oXMHXKhBQCJWjDm9jLe3r": {"plan": "connector",     "interval": "monthly"},
+    "price_1T2oY1HXKhBQCJWjXUAzGSYX": {"plan": "connector",     "interval": "yearly"},
+}
+
+
+def _get_stripe():
+    """Return a configured stripe module, or None."""
+    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
+    if not stripe_key:
+        return None
+    import stripe
+    stripe.api_key = stripe_key
+    return stripe
+
+
+def _resolve_plan_from_price(price_id: str) -> dict[str, str]:
+    """Map a Stripe price ID to plan + interval, with a safe fallback."""
+    return STRIPE_PRICE_TO_PLAN.get(price_id, {"plan": "smooth_talker", "interval": "monthly"})
+
+
+def _update_profile_subscription(user_id: str, updates: dict):
+    """Update subscription fields on the profiles table via Supabase."""
+    from db.supabase_client import get_supabase
+    client = get_supabase()
+    if not client:
+        logger.warning("Supabase not configured — cannot update profile for %s", user_id)
+        return
+    try:
+        client.table("profiles").update(updates).eq("id", user_id).execute()
+        logger.info("Updated profile %s: %s", user_id, updates)
+    except Exception as e:
+        logger.error("Failed to update profile %s: %s", user_id, e)
+
 
 class CreateCheckoutRequest(BaseModel):
     priceId: str
-    userId: str
+    userId: Optional[str] = None  # Fallback when auth is not configured
 
 
 class CreatePortalRequest(BaseModel):
-    userId: str
+    userId: Optional[str] = None  # Fallback when auth is not configured
+
+
+def _resolve_user_id(user: Optional[AuthUser], fallback_id: Optional[str]) -> str:
+    """Get user ID from JWT auth or fallback body field."""
+    if user:
+        return user.id
+    if fallback_id:
+        return fallback_id
+    raise HTTPException(status_code=401, detail="User identity required. Log in or provide userId.")
 
 
 @app.post("/api/stripe/create-checkout-session")
-async def create_checkout_session(request: CreateCheckoutRequest):
+async def create_checkout_session(
+    request: CreateCheckoutRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency),
+):
     """
     Create a Stripe Checkout session for subscription.
-    Requires STRIPE_SECRET_KEY to be set in environment.
+    Uses JWT auth when configured, falls back to userId in body.
+    Returns { url } for frontend redirect.
     """
-    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
-    if not stripe_key:
-        # Demo mode
-        return {"sessionId": None, "message": "Stripe not configured. Set STRIPE_SECRET_KEY."}
+    user_id = _resolve_user_id(user, request.userId)
 
+    stripe = _get_stripe()
+    if not stripe:
+        return {"url": None, "message": "Stripe not configured. Set STRIPE_SECRET_KEY."}
+
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
     try:
-        import stripe
-        stripe.api_key = stripe_key
-
         session = stripe.checkout.Session.create(
             mode="subscription",
             line_items=[{"price": request.priceId, "quantity": 1}],
-            success_url=os.environ.get("FRONTEND_URL", "http://localhost:5173") + "/app/settings?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=os.environ.get("FRONTEND_URL", "http://localhost:5173") + "/app/pricing",
-            client_reference_id=request.userId,
-            metadata={"user_id": request.userId},
+            success_url=frontend_url + "/billing/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=frontend_url + "/billing/cancel",
+            client_reference_id=user_id,
+            metadata={"user_id": user_id},
         )
-        return {"sessionId": session.id}
+        return {"url": session.url}
     except Exception as e:
+        logger.error("Checkout session creation failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/stripe/create-portal-session")
-async def create_portal_session(request: CreatePortalRequest):
+async def create_portal_session(
+    request: CreatePortalRequest = CreatePortalRequest(),
+    user: Optional[AuthUser] = Depends(get_current_user_dependency),
+):
     """
     Create a Stripe Customer Portal session for managing subscriptions.
+    Looks up stripe_customer_id from the profiles table.
     """
-    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
-    if not stripe_key:
+    user_id = _resolve_user_id(user, request.userId)
+
+    stripe = _get_stripe()
+    if not stripe:
         return {"url": None, "message": "Stripe not configured."}
 
+    # Look up stripe_customer_id from DB first
+    from db.supabase_client import get_supabase
+    client = get_supabase()
+    customer_id = None
+    if client:
+        try:
+            result = client.table("profiles").select("stripe_customer_id").eq("id", user_id).single().execute()
+            customer_id = result.data.get("stripe_customer_id") if result.data else None
+        except Exception:
+            pass
+
+    # Fallback: search Stripe by metadata
+    if not customer_id:
+        try:
+            customers = stripe.Customer.search(
+                query=f"metadata['user_id']:'{user_id}'"
+            )
+            if not customers.data:
+                raise HTTPException(status_code=404, detail="No Stripe customer found. Subscribe to a plan first.")
+            customer_id = customers.data[0].id
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error("Stripe customer search failed: %s", e)
+            raise HTTPException(status_code=500, detail=str(e))
+
     try:
-        import stripe
-        stripe.api_key = stripe_key
-
-        # Look up customer by user_id metadata
-        customers = stripe.Customer.search(
-            query=f"metadata['user_id']:'{request.userId}'"
-        )
-        if not customers.data:
-            raise HTTPException(status_code=404, detail="No subscription found")
-
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
         session = stripe.billing_portal.Session.create(
-            customer=customers.data[0].id,
-            return_url=os.environ.get("FRONTEND_URL", "http://localhost:5173") + "/app/settings",
+            customer=customer_id,
+            return_url=frontend_url + "/app/settings/subscription",
         )
         return {"url": session.url}
-    except HTTPException:
-        raise
     except Exception as e:
+        logger.error("Portal session creation failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/stripe/subscription")
+async def get_subscription_status(
+    request: Request,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency),
+):
+    """Return the current user's subscription info from the profiles table."""
+    # Get user_id from auth or query param
+    user_id = user.id if user else request.query_params.get("userId")
+    if not user_id:
+        return {"plan": "free", "status": "inactive", "interval": None, "has_stripe_customer": False}
+
+    from db.supabase_client import get_supabase
+    client = get_supabase()
+    if not client:
+        return {"plan": "free", "status": "inactive", "interval": None, "has_stripe_customer": False}
+    try:
+        result = client.table("profiles").select(
+            "subscription_plan, subscription_status, subscription_interval, stripe_customer_id"
+        ).eq("id", user_id).single().execute()
+        data = result.data or {}
+        return {
+            "plan": data.get("subscription_plan") or "free",
+            "status": data.get("subscription_status") or "inactive",
+            "interval": data.get("subscription_interval"),
+            "has_stripe_customer": bool(data.get("stripe_customer_id")),
+        }
+    except Exception as e:
+        logger.error("Failed to fetch subscription for %s: %s", user_id, e)
+        return {"plan": "free", "status": "inactive", "interval": None, "has_stripe_customer": False}
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Stripe webhook endpoint. Verifies signature using raw body, then
+    processes subscription lifecycle events.
+    """
+    stripe = _get_stripe()
+    if not stripe:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    if not webhook_secret:
+        raise HTTPException(status_code=500, detail="STRIPE_WEBHOOK_SECRET not configured")
+
+    # Read raw body for signature verification
+    raw_body = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
+
+    try:
+        event = stripe.Webhook.construct_event(raw_body, sig_header, webhook_secret)
+    except stripe.error.SignatureVerificationError as e:
+        logger.warning("Webhook signature verification failed: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        logger.error("Webhook construction error: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+    event_type = event["type"]
+    data_object = event["data"]["object"]
+    logger.info("Stripe webhook received: %s (id=%s)", event_type, event.get("id"))
+
+    # ------ checkout.session.completed ------
+    if event_type == "checkout.session.completed":
+        user_id = data_object.get("client_reference_id") or data_object.get("metadata", {}).get("user_id")
+        if not user_id:
+            logger.warning("checkout.session.completed without user_id")
+            return {"status": "ok"}
+
+        customer_id = data_object.get("customer")
+        subscription_id = data_object.get("subscription")
+
+        # Determine plan from line items
+        plan_info = {"plan": "smooth_talker", "interval": "monthly"}
+        if subscription_id:
+            try:
+                sub = stripe.Subscription.retrieve(subscription_id)
+                if sub["items"]["data"]:
+                    price_id = sub["items"]["data"][0]["price"]["id"]
+                    plan_info = _resolve_plan_from_price(price_id)
+            except Exception as e:
+                logger.error("Failed to retrieve subscription %s: %s", subscription_id, e)
+
+        _update_profile_subscription(user_id, {
+            "stripe_customer_id": customer_id,
+            "stripe_subscription_id": subscription_id,
+            "subscription_plan": plan_info["plan"],
+            "subscription_interval": plan_info["interval"],
+            "subscription_status": "active",
+        })
+
+    # ------ invoice.paid ------
+    elif event_type == "invoice.paid":
+        customer_id = data_object.get("customer")
+        subscription_id = data_object.get("subscription")
+        if not customer_id:
+            return {"status": "ok"}
+
+        # Find user by stripe_customer_id in DB
+        from db.supabase_client import get_supabase
+        client = get_supabase()
+        if client:
+            try:
+                result = client.table("profiles").select("id").eq("stripe_customer_id", customer_id).single().execute()
+                if result.data:
+                    updates: dict = {"subscription_status": "active"}
+                    # Update plan info from subscription items
+                    if subscription_id:
+                        try:
+                            sub = stripe.Subscription.retrieve(subscription_id)
+                            if sub["items"]["data"]:
+                                price_id = sub["items"]["data"][0]["price"]["id"]
+                                plan_info = _resolve_plan_from_price(price_id)
+                                updates["subscription_plan"] = plan_info["plan"]
+                                updates["subscription_interval"] = plan_info["interval"]
+                        except Exception:
+                            pass
+                    _update_profile_subscription(result.data["id"], updates)
+            except Exception as e:
+                logger.error("invoice.paid: failed to update profile for customer %s: %s", customer_id, e)
+
+    # ------ invoice.payment_failed ------
+    elif event_type == "invoice.payment_failed":
+        customer_id = data_object.get("customer")
+        if not customer_id:
+            return {"status": "ok"}
+
+        from db.supabase_client import get_supabase
+        client = get_supabase()
+        if client:
+            try:
+                result = client.table("profiles").select("id").eq("stripe_customer_id", customer_id).single().execute()
+                if result.data:
+                    _update_profile_subscription(result.data["id"], {
+                        "subscription_status": "past_due",
+                    })
+            except Exception as e:
+                logger.error("invoice.payment_failed: failed to update profile for customer %s: %s", customer_id, e)
+
+    # ------ customer.subscription.deleted ------
+    elif event_type == "customer.subscription.deleted":
+        customer_id = data_object.get("customer")
+        if not customer_id:
+            return {"status": "ok"}
+
+        from db.supabase_client import get_supabase
+        client = get_supabase()
+        if client:
+            try:
+                result = client.table("profiles").select("id").eq("stripe_customer_id", customer_id).single().execute()
+                if result.data:
+                    _update_profile_subscription(result.data["id"], {
+                        "subscription_plan": "free",
+                        "subscription_interval": None,
+                        "subscription_status": "canceled",
+                        "stripe_subscription_id": None,
+                    })
+            except Exception as e:
+                logger.error("subscription.deleted: failed to update profile for customer %s: %s", customer_id, e)
+
+    return {"status": "ok"}
 
 
 

@@ -9,6 +9,7 @@ import {
   ArrowRight,
   ArrowLeft,
   CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,7 +31,7 @@ const tierAccent: Record<string, string> = {
 
 export function PricingPage() {
   const { user, isEmployer } = useAuth();
-  const { success: showSuccess } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isWelcome = searchParams.get('welcome') === 'true';
@@ -38,6 +39,7 @@ export function PricingPage() {
   const [activeTab, setActiveTab] = useState<'candidate' | 'employer'>(
     user ? (isEmployer ? 'employer' : 'candidate') : 'candidate'
   );
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const isPublic = !user;
   const plans = activeTab === 'employer' ? EMPLOYER_PLANS : CANDIDATE_PLANS;
@@ -56,13 +58,22 @@ export function PricingPage() {
     }
 
     const priceId = billing === 'yearly' ? plan.stripeYearlyPriceId : plan.stripePriceId;
-    if (!priceId || priceId.startsWith('price_')) {
+    if (!priceId) {
       showSuccess('Coming Soon!', `${plan.name} plan will be available at launch`);
-      navigate(dashboardPath);
       return;
     }
 
-    await redirectToCheckout(priceId, user.id);
+    setLoadingPlanId(plan.id);
+    try {
+      const error = await redirectToCheckout(priceId);
+      if (error) {
+        showError('Checkout Error', error);
+      }
+    } catch {
+      showError('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setLoadingPlanId(null);
+    }
   };
 
   const handleSkip = () => {
@@ -215,6 +226,7 @@ export function PricingPage() {
             const Icon = tierIcons[plan.tier];
             const accent = tierAccent[plan.tier];
             const price = billing === 'yearly' ? plan.yearlyPrice : plan.price;
+            const isLoading = loadingPlanId === plan.id;
 
             return (
               <div
@@ -281,8 +293,16 @@ export function PricingPage() {
                   size="sm"
                   variant={plan.popular ? 'primary' : 'outline'}
                   onClick={() => handleSubscribe(plan)}
+                  disabled={isLoading}
                 >
-                  {plan.cta}
+                  {isLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Redirecting...
+                    </span>
+                  ) : (
+                    plan.cta
+                  )}
                 </Button>
 
                 {/* Features */}
