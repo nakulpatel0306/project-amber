@@ -99,25 +99,17 @@ export function CoffeeChatDetailModal({
     setIsLoading(true);
     try {
       if (viewerRole === 'candidate') {
-        // Load employer details and their roles
-        const { data: employer } = await supabase
-          .from('employers')
-          .select('*')
-          .eq('id', partnerId)
-          .single();
+        // Load employer details and their roles via RPC (bypasses RLS safely)
+        const { data, error } = await supabase
+          .rpc('get_employer_with_roles', { employer_uuid: partnerId });
 
-        if (employer) {
-          setEmployerDetails(employer);
-
-          // Load employer's active roles
-          const { data: rolesData } = await supabase
-            .from('roles')
-            .select('id, title, description, location, work_style, employment_type, salary_min, salary_max')
-            .eq('employer_id', partnerId)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false });
-
-          setRoles(rolesData || []);
+        if (!error && data) {
+          if (data.employer) {
+            setEmployerDetails(data.employer);
+          }
+          if (data.roles) {
+            setRoles(data.roles);
+          }
         }
       } else {
         // Load candidate details
@@ -170,7 +162,7 @@ export function CoffeeChatDetailModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" showCloseButton={false}>
       <div className="relative">
         {/* Header */}
         <div
