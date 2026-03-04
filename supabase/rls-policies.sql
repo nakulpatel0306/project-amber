@@ -103,8 +103,8 @@ CREATE POLICY "Employers can view own data"
   ON public.employers FOR SELECT
   USING (auth.uid() = user_id);
 
--- NOTE: Cross-visibility for matching (candidates viewing employers) is handled via backend API
--- with service role to avoid RLS infinite recursion issues
+-- NOTE: Cross-visibility for matching (candidates viewing employers) is handled via RPC functions
+-- with SECURITY DEFINER to avoid RLS infinite recursion issues
 
 DROP POLICY IF EXISTS "Employers can update own data" ON public.employers;
 CREATE POLICY "Employers can update own data"
