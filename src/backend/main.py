@@ -21,6 +21,10 @@ import time
 import pathlib
 import collections
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -1320,7 +1324,11 @@ def _get_stripe():
     stripe_key = os.environ.get("STRIPE_SECRET_KEY")
     if not stripe_key:
         return None
-    import stripe
+    try:
+        import stripe
+    except ImportError:
+        logger.error("stripe package not installed. Run: pip install stripe")
+        return None
     stripe.api_key = stripe_key
     return stripe
 
@@ -1370,6 +1378,8 @@ async def create_checkout_session(
     """
     Create a Stripe Checkout session for subscription.
     Uses JWT auth when configured, falls back to userId in body.
+    If the user already has an active subscription, returns a portal
+    URL instead so they can upgrade/downgrade without duplicating subs.
     Returns { url } for frontend redirect.
     """
     user_id = _resolve_user_id(user, request.userId)
@@ -1379,15 +1389,51 @@ async def create_checkout_session(
         return {"url": None, "message": "Stripe not configured. Set STRIPE_SECRET_KEY."}
 
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+
+    # Check if user already has an active Stripe subscription
+    from db.supabase_client import get_supabase
+    client = get_supabase()
+    existing_customer_id = None
+    has_active_sub = False
+    if client:
+        try:
+            result = client.table("profiles").select(
+                "stripe_customer_id, stripe_subscription_id, subscription_status"
+            ).eq("id", user_id).single().execute()
+            data = result.data or {}
+            existing_customer_id = data.get("stripe_customer_id")
+            has_active_sub = (
+                bool(data.get("stripe_subscription_id"))
+                and data.get("subscription_status") in ("active", "past_due")
+            )
+        except Exception:
+            pass
+
+    # If user already has an active subscription, redirect to portal for upgrade
+    if has_active_sub and existing_customer_id:
+        try:
+            portal_session = stripe.billing_portal.Session.create(
+                customer=existing_customer_id,
+                return_url=frontend_url + "/app/settings/subscription",
+            )
+            return {"url": portal_session.url}
+        except Exception as e:
+            logger.error("Portal session creation for upgrade failed: %s", e)
+            raise HTTPException(status_code=500, detail=str(e))
+
     try:
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            line_items=[{"price": request.priceId, "quantity": 1}],
-            success_url=frontend_url + "/billing/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=frontend_url + "/billing/cancel",
-            client_reference_id=user_id,
-            metadata={"user_id": user_id},
-        )
+        checkout_params = {
+            "mode": "subscription",
+            "line_items": [{"price": request.priceId, "quantity": 1}],
+            "success_url": frontend_url + "/billing/success?session_id={CHECKOUT_SESSION_ID}",
+            "cancel_url": frontend_url + "/billing/cancel",
+            "client_reference_id": user_id,
+            "metadata": {"user_id": user_id},
+        }
+        # Attach existing customer if known so Stripe doesn't create a duplicate
+        if existing_customer_id:
+            checkout_params["customer"] = existing_customer_id
+        session = stripe.checkout.Session.create(**checkout_params)
         return {"url": session.url}
     except Exception as e:
         logger.error("Checkout session creation failed: %s", e)
