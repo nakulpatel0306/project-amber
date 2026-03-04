@@ -47,17 +47,22 @@ async function stripeFetch(
  * Returns the checkout URL on success, or throws on error.
  */
 export async function createCheckoutSession(priceId: string): Promise<string> {
-  const response = await stripeFetch('/api/stripe/create-checkout-session', { priceId });
+  let response: Response;
+  try {
+    response = await stripeFetch('/api/stripe/create-checkout-session', { priceId });
+  } catch {
+    throw new Error('Unable to reach the server. Please check your connection and try again.');
+  }
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(err.detail || `HTTP ${response.status}`);
+    throw new Error(err.detail || `Checkout failed (HTTP ${response.status})`);
   }
 
   const data = await response.json();
 
   if (!data.url) {
-    throw new Error(data.message || 'No checkout URL returned');
+    throw new Error(data.message || 'No checkout URL returned. Payment service may not be configured.');
   }
 
   return data.url;

@@ -24,10 +24,16 @@ export interface PricingPlan {
  * test-mode fallbacks so local development works out of the box.
  */
 export const PRICE_IDS = {
+  // Candidate plans
   smooth_talker_monthly: import.meta.env.VITE_STRIPE_PRICE_SMOOTH_MONTHLY || 'price_1T2oVzHXKhBQCJWjU2CJciW7',
   smooth_talker_yearly:  import.meta.env.VITE_STRIPE_PRICE_SMOOTH_YEARLY  || 'price_1T2oWYHXKhBQCJWjxFrbIaLX',
   connector_monthly:     import.meta.env.VITE_STRIPE_PRICE_CONNECTOR_MONTHLY || 'price_1T2oXMHXKhBQCJWjDm9jLe3r',
   connector_yearly:      import.meta.env.VITE_STRIPE_PRICE_CONNECTOR_YEARLY  || 'price_1T2oY1HXKhBQCJWjXUAzGSYX',
+  // Employer plans (reuse same price IDs — both roles map to the same Stripe products)
+  barista_monthly:       import.meta.env.VITE_STRIPE_PRICE_BARISTA_MONTHLY    || 'price_1T2oVzHXKhBQCJWjU2CJciW7',
+  barista_yearly:        import.meta.env.VITE_STRIPE_PRICE_BARISTA_YEARLY     || 'price_1T2oWYHXKhBQCJWjxFrbIaLX',
+  roastmaster_monthly:   import.meta.env.VITE_STRIPE_PRICE_ROASTMASTER_MONTHLY || 'price_1T2oXMHXKhBQCJWjDm9jLe3r',
+  roastmaster_yearly:    import.meta.env.VITE_STRIPE_PRICE_ROASTMASTER_YEARLY  || 'price_1T2oY1HXKhBQCJWjXUAzGSYX',
 } as const;
 
 /**
@@ -147,6 +153,8 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
     ],
     cta: 'brew better hires',
     popular: true,
+    stripePriceId: PRICE_IDS.barista_monthly,
+    stripeYearlyPriceId: PRICE_IDS.barista_yearly,
   },
   {
     id: 'employer_premium',
@@ -166,6 +174,8 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
       'ATS integrations',
     ],
     cta: 'scale your hiring',
+    stripePriceId: PRICE_IDS.roastmaster_monthly,
+    stripeYearlyPriceId: PRICE_IDS.roastmaster_yearly,
   },
 ];
 
