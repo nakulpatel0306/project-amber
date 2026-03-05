@@ -206,9 +206,32 @@ export function EmberAgent() {
     ];
   }, [selectedEmployer, candidate]);
 
+  // Dashboard stats
+  const dashboardStats = useMemo(() => {
+    if (employers.length === 0) return null;
+    const scores = employers.map(e => e.overallScore);
+    const sortedScores = [...scores].sort((a, b) => b - a);
+    const topScores = sortedScores.slice(0, 3);
+    const strongMatches = employers.filter(e => e.overallScore >= 80).length;
+    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const buckets = [0, 0, 0, 0, 0];
+    scores.forEach(s => {
+      const idx = Math.min(Math.floor(s / 20), 4);
+      buckets[idx]++;
+    });
+    const maxBucket = Math.max(...buckets, 1);
+    return { totalMatches: employers.length, topScores, strongMatches, avgScore, buckets, maxBucket };
+  }, [employers]);
+
+  // Featured match (top employer)
+  const featuredMatch = useMemo(() => {
+    if (employers.length === 0) return null;
+    return [...employers].sort((a, b) => b.overallScore - a.overallScore)[0];
+  }, [employers]);
+
   // Loading
   if (showLoader) {
-    return <CoffeeBrewLoader />;
+    return <CoffeeBrewLoader variant="fullscreen" />;
   }
 
   // Error state
@@ -254,29 +277,6 @@ export function EmberAgent() {
     agreeableness: candidate.agreeableness_score,
     neuroticism: candidate.neuroticism_score,
   };
-
-  // Dashboard stats
-  const dashboardStats = useMemo(() => {
-    if (employers.length === 0) return null;
-    const scores = employers.map(e => e.overallScore);
-    const topScore = Math.max(...scores);
-    const strongMatches = employers.filter(e => e.overallScore >= 80).length;
-    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    // Score distribution for mini bar chart (5 buckets: 0-20, 20-40, 40-60, 60-80, 80-100)
-    const buckets = [0, 0, 0, 0, 0];
-    scores.forEach(s => {
-      const idx = Math.min(Math.floor(s / 20), 4);
-      buckets[idx]++;
-    });
-    const maxBucket = Math.max(...buckets, 1);
-    return { totalMatches: employers.length, topScore, strongMatches, avgScore, buckets, maxBucket };
-  }, [employers]);
-
-  // Featured match (top employer)
-  const featuredMatch = useMemo(() => {
-    if (employers.length === 0) return null;
-    return [...employers].sort((a, b) => b.overallScore - a.overallScore)[0];
-  }, [employers]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -327,17 +327,35 @@ export function EmberAgent() {
               </div>
             </motion.div>
 
-            {/* Top Score */}
+            {/* Top Scores */}
             <motion.div variants={counterReveal} className="glass-stat p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Award className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Top Score</span>
+                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Top Scores</span>
               </div>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.topScore) }}>
-                  {dashboardStats.topScore}
-                </span>
-                <span className="rank-medal rank-medal-gold text-[10px] mb-1">1st</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="rank-medal rank-medal-gold text-[10px]">1st</span>
+                  <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.topScores[0]) }}>
+                    {dashboardStats.topScores[0]}
+                  </span>
+                </div>
+                {dashboardStats.topScores[1] && (
+                  <div className="flex items-center gap-2">
+                    <span className="rank-medal rank-medal-silver text-[8px]">2nd</span>
+                    <span className="text-sm font-semibold" style={{ color: getMatchColor(dashboardStats.topScores[1]) }}>
+                      {dashboardStats.topScores[1]}
+                    </span>
+                  </div>
+                )}
+                {dashboardStats.topScores[2] && (
+                  <div className="flex items-center gap-2">
+                    <span className="rank-medal rank-medal-bronze text-[8px]">3rd</span>
+                    <span className="text-sm font-semibold" style={{ color: getMatchColor(dashboardStats.topScores[2]) }}>
+                      {dashboardStats.topScores[2]}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
 

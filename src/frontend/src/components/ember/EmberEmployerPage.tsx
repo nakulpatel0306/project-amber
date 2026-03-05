@@ -224,7 +224,7 @@ export function EmberEmployerPage() {
 
   // Loading
   if (showLoader) {
-    return <CoffeeBrewLoader />;
+    return <CoffeeBrewLoader variant="fullscreen" />;
   }
 
   // No employer setup
