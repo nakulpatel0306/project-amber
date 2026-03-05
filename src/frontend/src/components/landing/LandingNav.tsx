@@ -14,7 +14,7 @@ export function LandingNav() {
     <nav
       className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-6 pb-6 pointer-events-none"
       style={{
-        background: 'linear-gradient(to bottom, var(--color-background) 40%, transparent)',
+        backgroundColor: 'transparent',
       }}
     >
       <div

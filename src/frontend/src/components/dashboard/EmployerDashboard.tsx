@@ -286,7 +286,7 @@ export function EmployerDashboard() {
         <div
           className="p-5 rounded-2xl mb-6 border"
           style={{
-            background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.05))',
+            backgroundColor: 'rgba(217, 119, 6, 0.08)',
             borderColor: 'var(--color-accent)',
           }}
         >
@@ -622,7 +622,7 @@ export function EmployerDashboard() {
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center"
                       style={{
-                        background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                        backgroundColor: 'var(--color-accent)',
                       }}
                     >
                       <span className="text-sm font-medium text-white">

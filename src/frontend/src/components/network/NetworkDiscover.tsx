@@ -245,7 +245,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
             <div className="flex items-center gap-3 flex-shrink-0">
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
-                style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
+                style={{ backgroundColor: 'var(--color-accent)' }}
               >
                 {myArchetype.emoji}
               </div>
@@ -398,7 +398,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
           {/* Practice CTA Card */}
           <div
             className="p-6 rounded-2xl text-center"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
+            style={{ backgroundColor: 'var(--color-accent)' }}
           >
             <div className="w-11 h-11 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
               <Mic className="w-5 h-5 text-white" />

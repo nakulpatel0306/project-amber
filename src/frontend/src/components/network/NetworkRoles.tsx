@@ -289,7 +289,7 @@ export function NetworkRoles({ isCandidate }: Props) {
         >
           <div className="flex items-center justify-center py-16">
             <div className="text-center max-w-sm">
-              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}>
+              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent)' }}>
                 <Target className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--color-text)' }}>Complete Your Assessment</h2>

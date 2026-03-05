@@ -85,11 +85,11 @@ export function ProfileSection() {
   // Render avatar based on type
   const renderAvatar = () => {
     if (avatarData.type === 'emoji' && avatarData.avatarId && avatarData.colorId) {
-      const { emoji, gradient } = getAvatarDisplay(avatarData.avatarId, avatarData.colorId);
+      const { emoji, backgroundColor } = getAvatarDisplay(avatarData.avatarId, avatarData.colorId);
       return (
         <div
           className="w-full h-full flex items-center justify-center text-4xl"
-          style={{ background: gradient }}
+          style={{ backgroundColor }}
         >
           {emoji}
         </div>
@@ -111,7 +111,7 @@ export function ProfileSection() {
       <div
         className="w-full h-full flex items-center justify-center text-2xl font-medium"
         style={{
-          background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+          backgroundColor: 'var(--color-accent)',
           color: 'white',
         }}
       >

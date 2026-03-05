@@ -112,7 +112,7 @@ export function PasswordResetPage() {
               <div
                 className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
                 style={{
-                  background: 'linear-gradient(135deg, var(--color-success), #16a34a)',
+                  backgroundColor: 'var(--color-success)',
                 }}
               >
                 <CheckCircle2 className="w-6 h-6 text-white" />

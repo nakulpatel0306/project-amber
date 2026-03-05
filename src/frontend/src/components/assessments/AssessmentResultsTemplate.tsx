@@ -77,7 +77,7 @@ export function AssessmentResultsTemplate({
         >
           <motion.div
             className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${accentColor}, #8B5CF6)` }}
+            style={{ backgroundColor: accentColor }}
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: 0.1, duration: 0.6, type: 'spring' }}

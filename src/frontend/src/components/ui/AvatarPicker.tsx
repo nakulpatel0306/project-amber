@@ -35,16 +35,16 @@ const AVATAR_OPTIONS = [
   { id: 'scientist', emoji: '🧑‍🔬', label: 'Curious Mind' },
 ];
 
-// Background gradient colors for avatars
+// Background colors for avatars
 const AVATAR_COLORS = [
-  { id: 'sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  { id: 'ocean', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  { id: 'forest', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
-  { id: 'fire', gradient: 'linear-gradient(135deg, #f5af19 0%, #f12711 100%)' },
-  { id: 'purple', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { id: 'midnight', gradient: 'linear-gradient(135deg, #0c3483 0%, #a2b6df 100%)' },
-  { id: 'coffee', gradient: 'linear-gradient(135deg, #D97706 0%, #92400E 100%)' },
-  { id: 'candy', gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' },
+  { id: 'sunset', color: '#f5576c' },
+  { id: 'ocean', color: '#4facfe' },
+  { id: 'forest', color: '#11998e' },
+  { id: 'fire', color: '#f5af19' },
+  { id: 'purple', color: '#667eea' },
+  { id: 'midnight', color: '#0c3483' },
+  { id: 'coffee', color: '#D97706' },
+  { id: 'candy', color: '#ff9a9e' },
 ];
 
 interface AvatarPickerProps {
@@ -63,7 +63,7 @@ export function AvatarPicker({ selectedAvatar, selectedColor, onSelect, onClose 
     onClose?.();
   };
 
-  const currentGradient = AVATAR_COLORS.find(c => c.id === tempColor)?.gradient || AVATAR_COLORS[0].gradient;
+  const currentColor = AVATAR_COLORS.find(c => c.id === tempColor)?.color || AVATAR_COLORS[0].color;
   const currentEmoji = AVATAR_OPTIONS.find(a => a.id === tempAvatar)?.emoji || '😊';
 
   return (
@@ -72,7 +72,7 @@ export function AvatarPicker({ selectedAvatar, selectedColor, onSelect, onClose 
       <div className="flex justify-center">
         <div
           className="w-24 h-24 rounded-full flex items-center justify-center text-5xl shadow-lg"
-          style={{ background: currentGradient }}
+          style={{ backgroundColor: currentColor }}
         >
           {currentEmoji}
         </div>
@@ -92,7 +92,7 @@ export function AvatarPicker({ selectedAvatar, selectedColor, onSelect, onClose 
                 'w-10 h-10 rounded-full transition-transform hover:scale-110 flex items-center justify-center',
                 tempColor === color.id && 'ring-2 ring-offset-2 ring-[var(--color-accent)]'
               )}
-              style={{ background: color.gradient }}
+              style={{ backgroundColor: color.color }}
             >
               {tempColor === color.id && <Check className="w-5 h-5 text-white drop-shadow-md" />}
             </button>
@@ -157,7 +157,7 @@ export function AvatarPicker({ selectedAvatar, selectedColor, onSelect, onClose 
 export function getAvatarDisplay(avatarId: string | null, colorId: string | null) {
   const avatar = AVATAR_OPTIONS.find(a => a.id === avatarId) || AVATAR_OPTIONS[0];
   const color = AVATAR_COLORS.find(c => c.id === colorId) || AVATAR_COLORS[6];
-  return { emoji: avatar.emoji, gradient: color.gradient, label: avatar.label };
+  return { emoji: avatar.emoji, backgroundColor: color.color, label: avatar.label };
 }
 
 export { AVATAR_OPTIONS, AVATAR_COLORS };

@@ -129,19 +129,19 @@ function scoreColor(score: number): string {
   return 'var(--color-textMuted)';
 }
 
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #6366f1, #8b5cf6)',
-  'linear-gradient(135deg, #f43f5e, #ec4899)',
-  'linear-gradient(135deg, #14b8a6, #06b6d4)',
-  'linear-gradient(135deg, #f59e0b, #ef4444)',
-  'linear-gradient(135deg, #8b5cf6, #d946ef)',
-  'linear-gradient(135deg, #10b981, #3b82f6)',
+const AVATAR_COLORS = [
+  '#6366f1',
+  '#f43f5e',
+  '#14b8a6',
+  '#f59e0b',
+  '#8b5cf6',
+  '#10b981',
 ];
 
-function avatarGradient(name: string): string {
+function avatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 /* ------------------------------------------------------------------ */
@@ -841,7 +841,7 @@ export function TopCandidates() {
                       {/* Candidate initial avatar */}
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: avatarGradient(c.name) }}
+                        style={{ backgroundColor: avatarColor(c.name) }}
                       >
                         <span className="text-lg font-semibold text-white">
                           {c.name.charAt(0).toUpperCase()}

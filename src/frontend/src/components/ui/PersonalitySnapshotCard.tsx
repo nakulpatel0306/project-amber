@@ -36,10 +36,10 @@ export function PersonalitySnapshotCard({
         borderColor: 'var(--color-border)',
       }}
     >
-      {/* Decorative gradient */}
+      {/* Top accent bar */}
       <div
         className="absolute top-0 left-0 right-0 h-1"
-        style={{ background: 'linear-gradient(90deg, #8B5CF6, #F59E0B, #10B981)' }}
+        style={{ backgroundColor: 'var(--color-accent)' }}
       />
 
       <div className="flex items-start justify-between mb-4">

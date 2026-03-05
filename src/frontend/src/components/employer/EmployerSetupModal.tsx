@@ -266,7 +266,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
             className="h-1 transition-all duration-300"
             style={{
               width: `${((currentStep + 1) / STEPS.length) * 100}%`,
-              background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
+              backgroundColor: 'var(--color-accent)',
             }}
           />
 
@@ -315,7 +315,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                 <div
                   className="w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center"
                   style={{
-                    background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                    backgroundColor: 'var(--color-accent)',
                   }}
                 >
                   <Building2 className="w-10 h-10 text-white" />

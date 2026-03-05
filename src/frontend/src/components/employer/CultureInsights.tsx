@@ -585,7 +585,7 @@ export function CultureInsights() {
           <div className="flex items-center gap-4">
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--color-accent), #8B5CF6)' }}
+              style={{ backgroundColor: 'var(--color-accent)' }}
             >
               <Building2 className="w-8 h-8 text-white" />
             </div>

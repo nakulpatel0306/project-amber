@@ -55,7 +55,7 @@
     font-size: 14px;
     line-height: 1.5;
     letter-spacing: -0.01em;
-    background-image: linear-gradient(160deg, var(--color-background) 0%, var(--color-background) 60%, color-mix(in srgb, var(--color-accent) 3%, var(--color-background)) 100%);
+    background-color: var(--color-background);
     min-height: 100vh;
   }
 
@@ -102,14 +102,14 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--color-accent), var(--color-accentHover));
+    background: var(--color-accent);
     border-radius: 10px;
     border: 2px solid var(--color-surface);
     transition: all 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, var(--color-warning), var(--color-accent));
+    background: var(--color-accentHover);
     border: 2px solid var(--color-background);
   }
 
@@ -318,12 +318,9 @@
     }
   }
 
-  /* Amber gradient text */
+  /* Amber text */
   .text-gradient-amber {
-    background: linear-gradient(135deg, #D97706, #F59E0B);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #D97706;
   }
 
   /* Amber glow */
@@ -349,11 +346,7 @@
 
   /* ── Featured hero match card ── */
   .hero-featured-card {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-accent) 6%, var(--color-surface)),
-      var(--color-surface)
-    );
+    background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
     border: 1px solid color-mix(in srgb, var(--color-accent) 18%, var(--color-border));
     border-radius: 1.25rem;
     box-shadow: var(--shadow-md), 0 0 32px color-mix(in srgb, var(--color-accent) 8%, transparent);
@@ -363,31 +356,6 @@
   .card-shimmer-hover {
     position: relative;
     overflow: hidden;
-  }
-
-  .card-shimmer-hover::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      105deg,
-      transparent 40%,
-      color-mix(in srgb, var(--color-accent) 8%, transparent) 50%,
-      transparent 60%
-    );
-    transform: translateX(-100%);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .card-shimmer-hover:hover::after {
-    animation: shimmerSweep 0.75s ease-out forwards;
-  }
-
-  @keyframes shimmerSweep {
-    to {
-      transform: translateX(100%);
-    }
   }
 
   /* ── Stat badge (small inline metric) ── */
@@ -419,19 +387,19 @@
   }
 
   .rank-medal-gold {
-    background: linear-gradient(135deg, #F59E0B, #D97706);
+    background: #F59E0B;
     color: #fff;
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
   }
 
   .rank-medal-silver {
-    background: linear-gradient(135deg, #94A3B8, #64748B);
+    background: #94A3B8;
     color: #fff;
     box-shadow: 0 0 8px rgba(148, 163, 184, 0.35);
   }
 
   .rank-medal-bronze {
-    background: linear-gradient(135deg, #CD7F32, #A0522D);
+    background: #CD7F32;
     color: #fff;
     box-shadow: 0 0 8px rgba(205, 127, 50, 0.35);
   }
@@ -460,7 +428,7 @@
     position: absolute;
     inset: -4px;
     border-radius: 50%;
-    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 70%);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
@@ -812,7 +780,7 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
   bottom: 0;
   width: 8px;
   height: 30px;
-  background: linear-gradient(to top, var(--color-accent), transparent);
+  background: var(--color-accent);
   border-radius: 50%;
   opacity: 0.6;
   animation: steam 2s ease-out infinite;
@@ -916,12 +884,7 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 }
 
 .animate-gradient-text {
-  background: linear-gradient(90deg, var(--color-accent), var(--color-warning), var(--color-accent));
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradientShift 3s ease-in-out infinite;
+  color: var(--color-accent);
 }
 
 /* Pulse ring animation */
@@ -955,14 +918,7 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 }
 
 .animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--color-surface) 0%,
-    var(--color-surfaceHover) 50%,
-    var(--color-surface) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  background: var(--color-surface);
 }
 
 /* Bounce subtle */
@@ -1213,19 +1169,15 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 }
 
 .animated-border-card {
-  border: 2px solid transparent;
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    conic-gradient(from var(--border-angle), transparent 25%, var(--color-accent) 50%, transparent 75%) border-box;
-  animation: rotate-border 4s linear infinite;
+  border: 2px solid var(--color-accent);
+  background: var(--color-surface);
 }
 
 /* Glow behind animated border card */
 .animated-border-glow {
-  background: conic-gradient(from var(--border-angle), transparent 25%, var(--color-accent) 50%, transparent 75%);
+  background: var(--color-accent);
   filter: blur(16px);
   opacity: 0.3;
-  animation: rotate-border 4s linear infinite;
 }
 
 /* Slow ambient drift for background blobs */

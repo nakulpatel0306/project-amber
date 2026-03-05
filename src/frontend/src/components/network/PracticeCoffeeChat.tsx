@@ -154,7 +154,7 @@ export function PracticeCoffeeChat() {
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : ''}`}>
                 {msg.role === 'ai' && (
                   <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-                    style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}>
+                    style={{ backgroundColor: 'var(--color-accent)' }}>
                     <Sparkles className="w-3.5 h-3.5 text-white" />
                   </div>
                 )}
@@ -176,7 +176,7 @@ export function PracticeCoffeeChat() {
             {isTyping && (
               <div className="flex">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-                  style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}>
+                  style={{ backgroundColor: 'var(--color-accent)' }}>
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="px-4 py-3 rounded-2xl" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>

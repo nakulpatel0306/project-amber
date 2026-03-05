@@ -30,7 +30,7 @@ export function CoffeeLogo({ size = 'md', className }: CoffeeLogoProps) {
         className
       )}
       style={{
-        background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+        backgroundColor: 'var(--color-accent)',
       }}
     >
       <svg

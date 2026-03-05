@@ -53,7 +53,7 @@ export function DashboardGreeting({
         transition={{ duration: 0.4 }}
         className="p-5 rounded-2xl border"
         style={{
-          background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(245, 158, 11, 0.03))',
+          backgroundColor: 'rgba(217, 119, 6, 0.06)',
           borderColor: 'var(--color-border)',
         }}
       >
@@ -83,7 +83,7 @@ export function DashboardGreeting({
       transition={{ duration: 0.4 }}
       className="p-5 rounded-2xl border"
       style={{
-        background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(245, 158, 11, 0.03))',
+        backgroundColor: 'rgba(217, 119, 6, 0.06)',
         borderColor: 'var(--color-border)',
       }}
     >

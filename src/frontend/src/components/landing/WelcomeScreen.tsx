@@ -431,7 +431,7 @@ function TestimonialCarousel() {
                   {/* Subtle top glow */}
                   <div
                     className="absolute top-0 left-0 right-0 h-1 opacity-40"
-                    style={{ background: `linear-gradient(90deg, transparent, ${s.color}, transparent)` }}
+                    style={{ backgroundColor: s.color }}
                   />
 
                   {/* Quote */}
@@ -697,7 +697,7 @@ function ValuePropTabs() {
         <div
           className="h-1 transition-all duration-500"
           style={{
-            background: `linear-gradient(90deg, transparent, ${prop.color}, transparent)`,
+            backgroundColor: prop.color,
           }}
         />
       </div>

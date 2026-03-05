@@ -444,7 +444,7 @@ export function CultureAssessment() {
           animate={{ width: `${progress}%` }}
           transition={{ type: 'spring', stiffness: 100, damping: 20 }}
           style={{
-            background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
+            backgroundColor: 'var(--color-accent)',
           }}
         />
       </div>

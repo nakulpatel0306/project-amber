@@ -52,7 +52,7 @@ export function NetworkHub() {
           <div className="flex items-center gap-4">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, var(--color-accent), #8B5CF6)' }}
+              style={{ backgroundColor: 'var(--color-accent)' }}
             >
               <Globe className="w-7 h-7 text-white" />
             </div>

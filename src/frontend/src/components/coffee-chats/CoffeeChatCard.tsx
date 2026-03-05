@@ -92,7 +92,7 @@ export function CoffeeChatCard({
           onClick={() => onViewDetails?.(chat)}
           className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform hover:scale-105"
           style={{
-            background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+            backgroundColor: 'var(--color-accent)',
           }}
         >
           <Coffee className="w-6 h-6 text-white" />
