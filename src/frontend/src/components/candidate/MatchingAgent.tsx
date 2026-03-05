@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 // ScoreRing is defined locally below
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -491,14 +492,7 @@ export function MatchingAgent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse" style={{ backgroundColor: 'var(--color-accent)' }}>
-            <Search className="w-8 h-8 text-white" />
-          </div>
-          <p style={{ color: 'var(--color-textMuted)' }}>Loading roles...</p>
-        </div>
-      </div>
+      <CoffeeBrewLoader message="Loading roles..." />
     );
   }
 

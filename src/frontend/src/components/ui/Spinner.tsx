@@ -1,5 +1,6 @@
 import { cn } from '../../utils/cn';
 import { Loader2 } from 'lucide-react';
+import { CoffeeBrewLoader } from './CoffeeBrewLoader';
 
 export interface SpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -23,30 +24,12 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
   );
 }
 
-// Full page loading spinner
+// Full page loading — delegates to CoffeeBrewLoader
 export function PageLoader() {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[var(--color-background)]">
-      <div className="flex flex-col items-center gap-4">
-        <Spinner size="xl" />
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          loading...
-        </p>
-      </div>
-    </div>
-  );
+  return <CoffeeBrewLoader variant="fullscreen" showRotatingMessages />;
 }
 
-// Inline loading spinner with optional text
+// Inline loading — delegates to CoffeeBrewLoader
 export function InlineLoader({ text }: { text?: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <Spinner size="sm" />
-      {text && (
-        <span className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          {text}
-        </span>
-      )}
-    </div>
-  );
+  return <CoffeeBrewLoader variant="inline" size="sm" message={text} />;
 }

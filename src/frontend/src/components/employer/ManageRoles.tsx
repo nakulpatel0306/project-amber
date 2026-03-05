@@ -12,9 +12,9 @@ import {
   MapPin,
   Clock,
   TrendingUp,
-  Loader2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -184,9 +184,7 @@ export function ManageRoles() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--color-accent)' }} />
-      </div>
+      <CoffeeBrewLoader size="sm" />
     );
   }
 

@@ -9,6 +9,7 @@ import { Button } from '../../ui/Button';
 import { ScoreRing } from '../../ui/ScoreRing';
 import { OceanMindMap } from '../../ui/OceanMindMap';
 import { EmberFirefly } from '../EmberFirefly';
+import { CoffeeBrewLoader } from '../../ui/CoffeeBrewLoader';
 import { avatarGradient, getMatchColor } from '../../../utils/matchHelpers';
 import type { OCEANScores } from '../../../lib/compatibilityScoring';
 
@@ -418,10 +419,7 @@ export function DeepDive({
         </div>
 
         {narrativeLoading ? (
-          <div className="text-center py-8">
-            <EmberFirefly size="md" mood="thinking" animated />
-            <p className="mt-3 text-sm" style={{ color: 'var(--color-textMuted)' }}>Ember is analyzing this match...</p>
-          </div>
+          <CoffeeBrewLoader variant="inline" size="sm" message="Ember is analyzing this match..." />
         ) : narrative ? (
           <div className="space-y-4">
             {/* Summary */}

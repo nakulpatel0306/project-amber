@@ -29,7 +29,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const baseStyles = cn(
       'inline-flex items-center justify-center gap-2',
-      'font-medium rounded-xl transition-all duration-150',
+      'font-semibold rounded-xl transition-all duration-150',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
       'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
       'active:scale-[0.98]',
@@ -39,9 +39,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary: cn(
         'bg-[var(--color-accent)] text-[var(--color-accentText)]',
-        'hover:bg-[var(--color-accentHover)]',
+        'hover:bg-[var(--color-accentHover)] hover:-translate-y-px',
         'focus-visible:ring-[var(--color-accent)]',
-        'shadow-sm hover:shadow-md'
+        '[box-shadow:var(--shadow-sm)] hover:[box-shadow:var(--shadow-glow)]'
       ),
       secondary: cn(
         'bg-[var(--color-surface)] text-[var(--color-text)]',
@@ -62,7 +62,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ),
       danger: cn(
         'bg-[var(--color-error)] text-white',
-        'hover:opacity-90',
+        'hover:brightness-110',
         'focus-visible:ring-[var(--color-error)]'
       ),
       link: cn(

@@ -1,4 +1,4 @@
-import { Eye, Coffee, Bookmark, BookmarkCheck, Brain, Heart, Zap, Sparkles } from 'lucide-react';
+import { Eye, Coffee, Bookmark, BookmarkCheck, Sparkles } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { ScoreRing } from '../../ui/ScoreRing';
 import { avatarGradient, getMatchColor } from '../../../utils/matchHelpers';
@@ -47,7 +47,7 @@ export function PlayerCard({
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer group"
+      className="relative rounded-2xl card-shimmer-hover transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer group"
       style={{
         backgroundColor: 'var(--color-surface)',
         border: isSelected ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
@@ -92,7 +92,7 @@ export function PlayerCard({
         </div>
 
         {/* Name + subtitle */}
-        <h3 className="font-semibold text-sm line-clamp-1 mb-0.5" style={{ color: 'var(--color-text)' }}>
+        <h3 className="font-semibold text-sm line-clamp-1 mb-0.5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
           {name}
         </h3>
         <p className="text-xs line-clamp-1 mb-2" style={{ color: 'var(--color-textSecondary)' }}>
@@ -100,32 +100,29 @@ export function PlayerCard({
         </p>
 
         {/* Archetype badge */}
-        <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mb-3"
-          style={{ backgroundColor: `var(--color-accent)15`, color: 'var(--color-accent)' }}
-        >
+        <span className="stat-badge mb-3">
           <Sparkles className="w-2.5 h-2.5" />
           {archetype.name}
         </span>
 
-        {/* Central score ring */}
-        <div className="mb-3">
+        {/* Central score ring with inner glow */}
+        <div className="inner-glow-ring mb-3">
           <ScoreRing score={overallScore} size={72} strokeWidth={4} fontSize="text-base" />
         </div>
 
-        {/* Quick metrics strip */}
-        <div className="flex items-center justify-center gap-3 mb-3 w-full">
+        {/* Metric progress bars */}
+        <div className="w-full space-y-1.5 mb-3">
           {[
-            { icon: Heart, score: cultureScore, label: 'Culture' },
-            { icon: Zap, score: workStyleScore, label: 'Work Style' },
-            { icon: Brain, score: traitScore, label: 'Traits' },
-          ].map(({ icon: Icon, score, label }) => (
-            <div key={label} className="flex flex-col items-center gap-0.5">
-              <div className="flex items-center gap-0.5">
-                <Icon className="w-2.5 h-2.5" style={{ color: getMatchColor(score) }} />
-                <span className="text-[10px] font-semibold" style={{ color: getMatchColor(score) }}>{score}%</span>
+            { label: 'Culture', score: cultureScore },
+            { label: 'Work Style', score: workStyleScore },
+            { label: 'Traits', score: traitScore },
+          ].map(({ label, score }) => (
+            <div key={label} className="flex items-center gap-2">
+              <span className="text-[9px] w-14 text-right" style={{ color: 'var(--color-textMuted)' }}>{label}</span>
+              <div className="metric-bar flex-1">
+                <div className="metric-bar-fill" style={{ width: `${score}%`, backgroundColor: getMatchColor(score) }} />
               </div>
-              <span className="text-[9px]" style={{ color: 'var(--color-textMuted)' }}>{label}</span>
+              <span className="text-[9px] font-semibold w-7" style={{ color: getMatchColor(score) }}>{score}%</span>
             </div>
           ))}
         </div>

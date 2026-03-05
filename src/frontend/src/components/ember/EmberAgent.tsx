@@ -1,16 +1,22 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Eye, Coffee, TrendingUp, Target, Award, BarChart3 } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { useCandidateMatchData } from '../../hooks/useMatchData';
 import { useSavedMatches } from '../../hooks/useSavedMatches';
+import { useMinLoader } from '../../hooks/useMinLoader';
 import { EmberFirefly } from './EmberFirefly';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { ScoreRing } from '../ui/ScoreRing';
 import { PlayerCardGrid } from './gallery/PlayerCardGrid';
 import { GalleryFilterBar } from './gallery/GalleryFilterBar';
 import { DeepDive } from './gallery/DeepDive';
 import { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
 import { Button } from '../ui/Button';
+import { bentoContainer, bentoItem, counterReveal } from '../../utils/motion';
+import { getMatchColor, avatarGradient } from '../../utils/matchHelpers';
 import type { EmployerResult, PageView, SortOption } from '../../types/matching.types';
 import type { OCEANScores } from '../../lib/compatibilityScoring';
 
@@ -24,6 +30,7 @@ export function EmberAgent() {
     candidate, employers, archetype, isLoading, error: dataError, setPendingChats,
   } = useCandidateMatchData();
   const { isSaved, save, unsave, getSavedMatch } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading, 3500);
 
   // View state
   const deepdiveParam = searchParams.get('deepdive');
@@ -200,17 +207,8 @@ export function EmberAgent() {
   }, [selectedEmployer, candidate]);
 
   // Loading
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="text-center">
-          <EmberFirefly size="lg" mood="thinking" animated />
-          <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Preparing your matches...
-          </p>
-        </div>
-      </div>
-    );
+  if (showLoader) {
+    return <CoffeeBrewLoader />;
   }
 
   // Error state
@@ -257,6 +255,29 @@ export function EmberAgent() {
     neuroticism: candidate.neuroticism_score,
   };
 
+  // Dashboard stats
+  const dashboardStats = useMemo(() => {
+    if (employers.length === 0) return null;
+    const scores = employers.map(e => e.overallScore);
+    const topScore = Math.max(...scores);
+    const strongMatches = employers.filter(e => e.overallScore >= 80).length;
+    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    // Score distribution for mini bar chart (5 buckets: 0-20, 20-40, 40-60, 60-80, 80-100)
+    const buckets = [0, 0, 0, 0, 0];
+    scores.forEach(s => {
+      const idx = Math.min(Math.floor(s / 20), 4);
+      buckets[idx]++;
+    });
+    const maxBucket = Math.max(...buckets, 1);
+    return { totalMatches: employers.length, topScore, strongMatches, avgScore, buckets, maxBucket };
+  }, [employers]);
+
+  // Featured match (top employer)
+  const featuredMatch = useMemo(() => {
+    if (employers.length === 0) return null;
+    return [...employers].sort((a, b) => b.overallScore - a.overallScore)[0];
+  }, [employers]);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
@@ -265,13 +286,182 @@ export function EmberAgent() {
         <div className="flex items-center gap-4">
           <EmberFirefly size="md" mood="happy" />
           <div>
-            <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Ember Matches</h1>
+            <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Ember Matches</h1>
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
               {employers.length > 0 && ` · ${employers.length} companies`}
             </p>
           </div>
         </div>
+
+        {/* ── Dashboard Stats Row ── */}
+        {dashboardStats && view === 'gallery' && (
+          <motion.div
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+            variants={bentoContainer}
+            initial="hidden"
+            animate="show"
+          >
+            {/* Total Matches */}
+            <motion.div variants={counterReveal} className="glass-stat p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Total Matches</span>
+              </div>
+              <div className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+                {dashboardStats.totalMatches}
+              </div>
+              {/* Mini bar chart */}
+              <div className="flex items-end gap-0.5 mt-2 h-6">
+                {dashboardStats.buckets.map((count, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-sm transition-all"
+                    style={{
+                      height: `${Math.max((count / dashboardStats.maxBucket) * 100, 8)}%`,
+                      backgroundColor: i >= 3 ? 'var(--color-accent)' : 'var(--color-border)',
+                      opacity: i >= 3 ? 1 : 0.6,
+                    }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Top Score */}
+            <motion.div variants={counterReveal} className="glass-stat p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Award className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Top Score</span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.topScore) }}>
+                  {dashboardStats.topScore}
+                </span>
+                <span className="rank-medal rank-medal-gold text-[10px] mb-1">1st</span>
+              </div>
+            </motion.div>
+
+            {/* Strong Matches */}
+            <motion.div variants={counterReveal} className="glass-stat p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Strong (80+)</span>
+              </div>
+              <div className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+                {dashboardStats.strongMatches}
+              </div>
+              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                {dashboardStats.totalMatches > 0
+                  ? `${Math.round((dashboardStats.strongMatches / dashboardStats.totalMatches) * 100)}% of total`
+                  : ''}
+              </span>
+            </motion.div>
+
+            {/* Avg Compatibility */}
+            <motion.div variants={counterReveal} className="glass-stat p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Avg Score</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.avgScore) }}>
+                  {dashboardStats.avgScore}
+                </span>
+                <div className="metric-bar flex-1">
+                  <div className="metric-bar-fill" style={{ width: `${dashboardStats.avgScore}%`, backgroundColor: getMatchColor(dashboardStats.avgScore) }} />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ── Featured Match Hero (bento) ── */}
+        {featuredMatch && view === 'gallery' && (
+          <motion.div
+            className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+            variants={bentoContainer}
+            initial="hidden"
+            animate="show"
+          >
+            {/* Left 2/3: Hero card */}
+            <motion.div variants={bentoItem} className="lg:col-span-2 hero-featured-card p-5">
+              <div className="flex items-start gap-5">
+                {/* Avatar */}
+                <div className="relative flex-shrink-0">
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
+                    style={{ background: featuredMatch.logoUrl ? undefined : avatarGradient(featuredMatch.companyName) }}
+                  >
+                    {featuredMatch.logoUrl ? (
+                      <img src={featuredMatch.logoUrl} alt={featuredMatch.companyName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl font-bold text-white">{featuredMatch.companyName.charAt(0)}</span>
+                    )}
+                  </div>
+                  <span className="rank-medal rank-medal-gold absolute -top-1 -right-1 text-[9px]">#1</span>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-bold truncate" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+                      {featuredMatch.companyName}
+                    </h3>
+                    <span className="stat-badge">{featuredMatch.archetype.name}</span>
+                  </div>
+                  <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
+                    {featuredMatch.industry}{featuredMatch.location ? ` · ${featuredMatch.location}` : ''}
+                  </p>
+
+                  {/* Metric bars */}
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Culture', score: featuredMatch.cultureScore },
+                      { label: 'Work Style', score: featuredMatch.workStyleFit },
+                      { label: 'Traits', score: featuredMatch.traitScore },
+                    ].map(({ label, score }) => (
+                      <div key={label} className="flex items-center gap-3">
+                        <span className="text-xs w-16 text-right" style={{ color: 'var(--color-textMuted)' }}>{label}</span>
+                        <div className="metric-bar flex-1">
+                          <div className="metric-bar-fill" style={{ width: `${score}%`, backgroundColor: getMatchColor(score) }} />
+                        </div>
+                        <span className="text-xs font-semibold w-8" style={{ color: getMatchColor(score) }}>{score}%</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-4">
+                    <Button size="sm" variant="ghost" onClick={() => handleDeepDive(featuredMatch)}>
+                      <Eye className="w-3.5 h-3.5 mr-1" /> Deep Dive
+                    </Button>
+                    <Button size="sm" onClick={() => setBrewTarget(featuredMatch)}>
+                      <Coffee className="w-3.5 h-3.5 mr-1" /> Let's Brew
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Score ring */}
+                <div className="hidden sm:flex flex-shrink-0">
+                  <ScoreRing score={featuredMatch.overallScore} size={80} strokeWidth={5} fontSize="text-lg" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right 1/3: Score breakdown */}
+            <motion.div variants={bentoItem} className="lg:col-span-1 glass-stat p-5">
+              <h4 className="text-xs font-medium mb-4" style={{ color: 'var(--color-textMuted)' }}>Score Breakdown</h4>
+              <div className="flex justify-around mb-4">
+                <ScoreRing score={featuredMatch.traitScore} size={56} strokeWidth={3} label="Traits" />
+                <ScoreRing score={featuredMatch.cultureScore} size={56} strokeWidth={3} label="Culture" />
+                <ScoreRing score={featuredMatch.workStyleFit} size={56} strokeWidth={3} label="Work Style" />
+              </div>
+              <div className="text-center">
+                <span className="stat-badge">{featuredMatch.archetype.name}</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           {view === 'gallery' ? (

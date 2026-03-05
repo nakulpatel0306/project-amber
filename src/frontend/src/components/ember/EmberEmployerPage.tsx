@@ -5,7 +5,9 @@ import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { useEmployerMatchData } from '../../hooks/useMatchData';
 import { useSavedMatches } from '../../hooks/useSavedMatches';
+import { useMinLoader } from '../../hooks/useMinLoader';
 import { EmberFirefly } from './EmberFirefly';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { PlayerCardGrid } from './gallery/PlayerCardGrid';
 import { GalleryFilterBar } from './gallery/GalleryFilterBar';
 import { DeepDive } from './gallery/DeepDive';
@@ -28,6 +30,7 @@ export function EmberEmployerPage() {
     selectedRoleId, handleRoleChange, setPendingChats,
   } = useEmployerMatchData();
   const { isSaved, save, unsave, getSavedMatch } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading, 3500);
 
   // View state
   const deepdiveParam = searchParams.get('deepdive');
@@ -220,17 +223,8 @@ export function EmberEmployerPage() {
   }, [candidates, compareIds]);
 
   // Loading
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="text-center">
-          <EmberFirefly size="lg" mood="thinking" animated />
-          <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Preparing your insights...
-          </p>
-        </div>
-      </div>
-    );
+  if (showLoader) {
+    return <CoffeeBrewLoader />;
   }
 
   // No employer setup

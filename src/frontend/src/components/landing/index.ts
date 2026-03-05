@@ -1,7 +1,6 @@
 export { WelcomeScreen } from './WelcomeScreen';
 export { LandingNav } from './LandingNav';
 export { LandingFooter } from './LandingFooter';
-export { FloatingThemeSelector } from './FloatingThemeSelector';
 export { AnimatedCounter } from './AnimatedCounter';
 export { FAQAccordion } from './FAQAccordion';
 export { CursorSpotlight } from './CursorSpotlight';

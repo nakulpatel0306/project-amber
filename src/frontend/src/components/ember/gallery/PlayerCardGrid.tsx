@@ -1,4 +1,6 @@
+import { motion } from 'framer-motion';
 import { PlayerCard } from './PlayerCard';
+import { cardGridContainer, cardItem } from '../../../utils/motion';
 import type { EmployerResult, CandidateResult } from '../../../types/matching.types';
 
 interface CandidateGridProps {
@@ -79,27 +81,33 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <motion.div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        variants={cardGridContainer}
+        initial="hidden"
+        animate="show"
+      >
           {employers.map((employer, i) => (
-            <PlayerCard
-              key={employer.employerId}
-              id={employer.employerId}
-              name={employer.companyName}
-              subtitle={employer.industry}
-              archetype={employer.archetype}
-              overallScore={employer.overallScore}
-              cultureScore={employer.cultureScore}
-              workStyleScore={employer.workStyleFit}
-              traitScore={employer.traitScore}
-              highlightPills={[]}
-              index={i}
-              isSaved={savedIds.has(employer.employerId)}
-              onDeepDive={() => onDeepDive(employer)}
-              onBrew={() => onBrew(employer)}
-              onToggleSave={() => onToggleSave(employer)}
-            />
+            <motion.div key={employer.employerId} variants={cardItem}>
+              <PlayerCard
+                id={employer.employerId}
+                name={employer.companyName}
+                subtitle={employer.industry}
+                archetype={employer.archetype}
+                overallScore={employer.overallScore}
+                cultureScore={employer.cultureScore}
+                workStyleScore={employer.workStyleFit}
+                traitScore={employer.traitScore}
+                highlightPills={[]}
+                index={i}
+                isSaved={savedIds.has(employer.employerId)}
+                onDeepDive={() => onDeepDive(employer)}
+                onBrew={() => onBrew(employer)}
+                onToggleSave={() => onToggleSave(employer)}
+              />
+            </motion.div>
           ))}
-      </div>
+      </motion.div>
     );
   }
 
@@ -117,29 +125,35 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <motion.div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+      variants={cardGridContainer}
+      initial="hidden"
+      animate="show"
+    >
         {candidates.map((candidate, i) => (
-          <PlayerCard
-            key={candidate.candidateId}
-            id={candidate.candidateId}
-            name={candidate.name}
-            subtitle={candidate.headline}
-            archetype={candidate.archetype}
-            overallScore={candidate.overallScore}
-            cultureScore={candidate.cultureScore}
-            workStyleScore={candidate.workStyleFit}
-            traitScore={candidate.traitScore}
-            highlightPills={[]}
-            index={i}
-            isSaved={savedIds.has(candidate.candidateId)}
-            isSelected={selectedIds?.has(candidate.candidateId)}
-            showSelect={showSelect}
-            onDeepDive={() => onDeepDive(candidate)}
-            onBrew={() => onBrew(candidate)}
-            onToggleSave={() => onToggleSave(candidate)}
-            onToggleSelect={() => onToggleSelect?.(candidate)}
-          />
+          <motion.div key={candidate.candidateId} variants={cardItem}>
+            <PlayerCard
+              id={candidate.candidateId}
+              name={candidate.name}
+              subtitle={candidate.headline}
+              archetype={candidate.archetype}
+              overallScore={candidate.overallScore}
+              cultureScore={candidate.cultureScore}
+              workStyleScore={candidate.workStyleFit}
+              traitScore={candidate.traitScore}
+              highlightPills={[]}
+              index={i}
+              isSaved={savedIds.has(candidate.candidateId)}
+              isSelected={selectedIds?.has(candidate.candidateId)}
+              showSelect={showSelect}
+              onDeepDive={() => onDeepDive(candidate)}
+              onBrew={() => onBrew(candidate)}
+              onToggleSave={() => onToggleSave(candidate)}
+              onToggleSelect={() => onToggleSelect?.(candidate)}
+            />
+          </motion.div>
         ))}
-    </div>
+    </motion.div>
   );
 }

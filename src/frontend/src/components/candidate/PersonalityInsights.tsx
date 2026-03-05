@@ -39,7 +39,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { OceanMindMap } from '../ui/OceanMindMap';
 import { GradientProgressBar } from '../ui/GradientProgressBar';
 import { ArchetypeCard } from '../ui/ArchetypeCard';
@@ -294,9 +294,7 @@ export function PersonalityInsights() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Loading personality insights..." />
     );
   }
 

@@ -4,7 +4,7 @@ import { Brain } from 'lucide-react';
 import { AssessmentResultsTemplate } from '../assessments/AssessmentResultsTemplate';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 
 interface AssessmentData {
   openness: number;
@@ -67,9 +67,7 @@ export function AssessmentResults() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Loading your results..." />
     );
   }
 

@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Button } from '../ui/Button';
 import { AmberLogo } from '../ui/AmberLogo';
-import { APP_NAME } from '../../utils/constants';
 import { MagneticButton } from './MagneticButton';
 
 export function LandingNav() {
   const { isAuthenticated } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <nav
@@ -40,8 +41,18 @@ export function LandingNav() {
             </span>
           </Link>
 
-          {/* Auth buttons */}
+          {/* Theme toggle + Auth buttons */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--color-textSecondary)' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-surfaceHover)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              aria-label="Toggle theme"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             {isAuthenticated ? (
               <Link to="/app">
                 <MagneticButton

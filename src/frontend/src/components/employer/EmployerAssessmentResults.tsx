@@ -4,7 +4,7 @@ import { Building2 } from 'lucide-react';
 import { AssessmentResultsTemplate } from '../assessments/AssessmentResultsTemplate';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 
 interface CultureScores {
   openness: number;
@@ -67,9 +67,7 @@ export function EmployerAssessmentResults() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Loading assessment results..." />
     );
   }
 

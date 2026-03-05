@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getUserSettings, updateUserSettings, supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { Input } from '../ui/Input';
 
 interface NotificationSettings {
@@ -132,9 +132,7 @@ export function NotificationSection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Loading notifications..." />
     );
   }
 

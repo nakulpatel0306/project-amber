@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getUserSettings, updateUserSettings } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { Eye, EyeOff, DollarSign } from 'lucide-react';
 
 interface PrivacySettings {
@@ -81,9 +81,7 @@ export function PrivacySection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Loading privacy settings..." />
     );
   }
 

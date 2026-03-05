@@ -41,10 +41,11 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { WelcomeScreen } from './components/landing';
 import { BlogPage, BlogArticlePage, SciencePage, HelpCenterPage, ChangelogPage, StatusPage, AboutPage, CareersPage, PressPage, PrivacyPolicyPage, TermsOfServicePage, CookiePolicyPage, AccessibilityPage } from './components/pages';
 import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
-import { AssessmentFlow, Assessment, AssessmentResults, MatchingAgent, PersonalityInsights, Leaderboard } from './components/candidate';
-import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResults, CreateRole, ManageRoles, BrowseCandidates, TopCandidates, EmployerLeaderboard } from './components/employer';
+import { AssessmentFlow, Assessment, AssessmentResults, PersonalityInsights } from './components/candidate';
+import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResults, CreateRole, ManageRoles, TopCandidates } from './components/employer';
 import { EmberAgent, EmberEmployerPage } from './components/ember';
 import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
+import { NetworkHub, PracticeCoffeeChat } from './components/network';
 import { PricingPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment, TeamDynamicsAssessment, LeadershipStyleAssessment, GrowthPhilosophyAssessment, WorkEnvironmentAssessment } from './components/assessments';
@@ -173,14 +174,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route
-                    path="matches"
-                    element={
-                      <ProtectedRoute allowedRoles={['candidate']}>
-                        <MatchingAgent />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="matches" element={<Navigate to="/app/network?tab=roles" replace />} />
                   <Route
                     path="ember"
                     element={
@@ -222,6 +216,11 @@ function App() {
                     }
                   />
                   <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
+
+                  {/* Network Hub (shared route for both roles) */}
+                  <Route path="network" element={<NetworkHub />} />
+                  <Route path="practice" element={<PracticeCoffeeChat />} />
+
                   <Route
                     path="chats"
                     element={
@@ -230,14 +229,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route
-                    path="leaderboard"
-                    element={
-                      <ProtectedRoute allowedRoles={['candidate']}>
-                        <Leaderboard />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="leaderboard" element={<Navigate to="/app/network?tab=leaderboard" replace />} />
 
                   {/* Employer routes */}
                   <Route
@@ -275,7 +267,7 @@ function App() {
                   />
                   <Route path="employer/roles" element={<ManageRoles />} />
                   <Route path="employer/roles/new" element={<CreateRole />} />
-                  <Route path="employer/candidates" element={<BrowseCandidates />} />
+                  <Route path="employer/candidates" element={<Navigate to="/app/network?tab=roles" replace />} />
                   <Route
                     path="employer/top-candidates"
                     element={
@@ -300,14 +292,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route
-                    path="employer/leaderboard"
-                    element={
-                      <ProtectedRoute allowedRoles={['employer']}>
-                        <EmployerLeaderboard />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="employer/leaderboard" element={<Navigate to="/app/network?tab=leaderboard" replace />} />
                   <Route
                     path="employer/assessments/team-dynamics"
                     element={

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useMessaging } from '../../contexts/MessagingContext';
 import { supabase } from '../../lib/supabase';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { CoffeeChatCard, CoffeeChatData, ChatStatus } from './CoffeeChatCard';
 import { CoffeeChatPrep } from './CoffeeChatPrep';
@@ -200,14 +201,7 @@ export function EmployerCoffeeChats() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <EmberFirefly size="lg" mood="thinking" animated />
-          <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Loading coffee chats...
-          </p>
-        </div>
-      </div>
+      <CoffeeBrewLoader message="Loading coffee chats..." />
     );
   }
 

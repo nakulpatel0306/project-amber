@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 // ScoreRing is defined locally in this component
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -516,14 +517,7 @@ export function TopCandidates() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <EmberFirefly size="lg" mood="thinking" animated />
-          <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Ranking candidates by culture fit...
-          </p>
-        </div>
-      </div>
+      <CoffeeBrewLoader message="Ranking candidates by culture fit..." />
     );
   }
 

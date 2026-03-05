@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -298,9 +298,7 @@ export function BrowseCandidates() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Finding candidates..." />
     );
   }
 

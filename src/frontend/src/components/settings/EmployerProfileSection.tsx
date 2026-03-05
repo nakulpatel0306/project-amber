@@ -12,7 +12,7 @@ import { LocationPicker } from '../ui/LocationPicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
 import { cn } from '../../utils/cn';
 
 interface EmployerData {
@@ -147,9 +147,7 @@ export function EmployerProfileSection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader message="Loading company profile..." />
     );
   }
 
