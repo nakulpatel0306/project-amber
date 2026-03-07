@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { cn } from '../../utils/cn';
 
 const STEPS = [
-  'Grinding fresh beans...',
-  'Heating the water...',
-  'Brewing your perfect cup...',
-  'Almost ready...',
+  'Grinding Fresh Beans...',
+  'Heating The Water...',
+  'Brewing Your Perfect Cup...',
+  'Almost Ready...',
 ] as const;
 
 const STEP_DURATION = 1800;
@@ -48,7 +48,8 @@ export function CoffeeBrewLoader({
   }, [cycling]);
 
   const { dot: dotSize, gap, text: textClass } = sizeConfig[size];
-  const displayLabel = message || STEPS[step];
+  const raw = message || STEPS[step];
+  const displayLabel = raw.replace(/\b\w/g, c => c.toUpperCase());
 
   const dots = (
     <div className={cn('flex items-center', gap)}>
@@ -83,7 +84,7 @@ export function CoffeeBrewLoader({
 
   const wrapperClass = cn(
     'flex items-center justify-center',
-    variant === 'fullscreen' && 'fixed inset-0 z-50',
+    variant === 'fullscreen' && 'fixed inset-0 z-[9998]',
     variant === 'section' && 'py-12 w-full',
     variant === 'content' && 'w-full flex-1 min-h-[400px]',
     variant === 'inline' && 'gap-3',
@@ -91,7 +92,7 @@ export function CoffeeBrewLoader({
   );
   const wrapperStyle =
     variant === 'fullscreen'
-      ? { backgroundColor: 'var(--color-background)', paddingLeft: 'var(--sidebar-width, 0px)' }
+      ? { backgroundColor: 'var(--color-background)' }
       : undefined;
 
   if (variant === 'inline') {

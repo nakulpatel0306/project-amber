@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,12 +8,27 @@ import { MagneticButton } from './MagneticButton';
 
 export function LandingNav() {
   const { isAuthenticated } = useAuth();
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      // Hide when scrolling down past the navbar height, show when scrolling up
+      setHidden(y > 80 && y > lastScrollY.current);
+      lastScrollY.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-6 pb-6 pointer-events-none"
       style={{
         backgroundColor: 'transparent',
+        transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
+        transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       <div
