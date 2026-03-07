@@ -11,9 +11,6 @@ export function LandingNav() {
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-6 pb-6 pointer-events-none"
-      style={{
-        backgroundColor: 'var(--color-background)',
-      }}
     >
       <div
         className="max-w-5xl mx-auto px-6 py-3 rounded-2xl border pointer-events-auto"

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
 
 const STEPS = [
@@ -128,7 +129,7 @@ export function CoffeeBrewLoader({
     );
   }
 
-  return (
+  const content = (
     <div className={wrapperClass} style={wrapperStyle}>
       <div className="flex flex-col items-center gap-3">
         {dots}
@@ -136,4 +137,11 @@ export function CoffeeBrewLoader({
       </div>
     </div>
   );
+
+  // Portal fullscreen loader to document.body so it escapes any stacking context
+  if (variant === 'fullscreen') {
+    return createPortal(content, document.body);
+  }
+
+  return content;
 }
