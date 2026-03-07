@@ -73,6 +73,14 @@ from db.supabase_client import (
     get_coffee_chats_for_employer,
     update_coffee_chat,
     get_coffee_chat_by_id,
+    create_connection,
+    get_connections_for_user,
+    get_connection_by_id,
+    update_connection,
+    get_connection_between,
+    create_meet_invite,
+    update_meet_invite,
+    get_meet_invite_by_connection,
 )
 from engine.questions import get_question, get_all_questions, get_total_questions
 from engine.scoring import calculate_scores, get_score_explanation
@@ -1297,6 +1305,176 @@ async def submit_coffee_chat_feedback(
     if not result:
         raise HTTPException(status_code=500, detail="Failed to submit feedback")
     return result
+
+
+# ============ Connection Request/Response Models ============
+
+class MeetInviteData(BaseModel):
+    proposed_times: List[str] = []  # ISO datetime strings
+    duration_minutes: int = 30
+
+
+class CreateConnectionRequest(BaseModel):
+    receiver_id: str
+    sender_role: str  # 'candidate' or 'employer'
+    message: Optional[str] = None
+    sender_name: Optional[str] = None
+    receiver_name: Optional[str] = None
+    sender_company: Optional[str] = None
+    receiver_company: Optional[str] = None
+    meet_invite: Optional[MeetInviteData] = None
+
+
+class AcceptConnectionRequest(BaseModel):
+    accept_meet_invite: bool = False
+    confirmed_time: Optional[str] = None  # ISO datetime
+
+
+# ============ Connection Endpoints ============
+
+@app.post("/api/connections")
+async def create_connection_endpoint(
+    request: CreateConnectionRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Create a connection request, optionally with a bundled meet invite."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Check for existing connection
+    existing = get_connection_between(user.id, request.receiver_id)
+    if existing:
+        raise HTTPException(status_code=409, detail="Connection already exists")
+
+    conn = create_connection({
+        'sender_id': user.id,
+        'receiver_id': request.receiver_id,
+        'sender_role': request.sender_role,
+        'status': 'pending',
+        'message': request.message,
+        'sender_name': request.sender_name,
+        'receiver_name': request.receiver_name,
+        'sender_company': request.sender_company,
+        'receiver_company': request.receiver_company,
+    })
+    if not conn:
+        raise HTTPException(status_code=500, detail="Failed to create connection")
+
+    # Create bundled meet invite if provided
+    if request.meet_invite and conn.get('id'):
+        create_meet_invite({
+            'connection_id': conn['id'],
+            'proposed_times': request.meet_invite.proposed_times,
+            'duration_minutes': request.meet_invite.duration_minutes,
+            'status': 'pending',
+        })
+
+    return conn
+
+
+@app.patch("/api/connections/{connection_id}/accept")
+async def accept_connection_endpoint(
+    connection_id: str,
+    request: AcceptConnectionRequest,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Accept a connection. Optionally accept the bundled meet invite with a confirmed time."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    conn = get_connection_by_id(connection_id)
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    if conn['receiver_id'] != user.id:
+        raise HTTPException(status_code=403, detail="Only the receiver can accept")
+    if conn['status'] != 'pending':
+        raise HTTPException(status_code=400, detail="Connection is not pending")
+
+    result = update_connection(connection_id, {'status': 'accepted'})
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to accept connection")
+
+    # Handle bundled meet invite acceptance
+    if request.accept_meet_invite:
+        invite = get_meet_invite_by_connection(connection_id)
+        if invite:
+            update_meet_invite(invite['id'], {
+                'status': 'accepted',
+                'confirmed_time': request.confirmed_time,
+            })
+            # Auto-create a coffee chat from the accepted meet invite
+            chat_data = {
+                'candidate_id': conn['sender_id'] if conn['sender_role'] == 'candidate' else conn['receiver_id'],
+                'employer_id': conn['sender_id'] if conn['sender_role'] == 'employer' else conn['receiver_id'],
+                'connection_id': connection_id,
+                'initiated_by': conn['sender_role'],
+                'status': 'accepted',
+                'message': conn.get('message'),
+                'candidate_name': conn.get('sender_name') if conn['sender_role'] == 'candidate' else conn.get('receiver_name'),
+                'company_name': conn.get('sender_company') if conn['sender_role'] == 'employer' else conn.get('receiver_company'),
+            }
+            if request.confirmed_time:
+                chat_data['scheduled_at'] = request.confirmed_time
+                chat_data['status'] = 'scheduled'
+            create_coffee_chat(chat_data)
+
+    return result
+
+
+@app.patch("/api/connections/{connection_id}/reject")
+async def reject_connection_endpoint(
+    connection_id: str,
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Reject a connection request."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    conn = get_connection_by_id(connection_id)
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    if conn['receiver_id'] != user.id:
+        raise HTTPException(status_code=403, detail="Only the receiver can reject")
+
+    result = update_connection(connection_id, {'status': 'rejected'})
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to reject connection")
+
+    # Also decline any bundled meet invite
+    invite = get_meet_invite_by_connection(connection_id)
+    if invite and invite['status'] == 'pending':
+        update_meet_invite(invite['id'], {'status': 'declined'})
+
+    return result
+
+
+@app.get("/api/connections/me")
+async def get_my_connections(
+    user: Optional[AuthUser] = Depends(get_current_user_dependency)
+):
+    """Get all connections for the current user, grouped by status."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    all_connections = get_connections_for_user(user.id)
+
+    # Enrich with meet invites
+    for conn in all_connections:
+        invite = get_meet_invite_by_connection(conn['id'])
+        conn['meet_invite'] = invite
+
+    # Group by status and direction
+    pending_sent = [c for c in all_connections if c['status'] == 'pending' and c['sender_id'] == user.id]
+    pending_received = [c for c in all_connections if c['status'] == 'pending' and c['receiver_id'] == user.id]
+    accepted = [c for c in all_connections if c['status'] == 'accepted']
+    rejected = [c for c in all_connections if c['status'] == 'rejected']
+
+    return {
+        'pending_sent': pending_sent,
+        'pending_received': pending_received,
+        'accepted': accepted,
+        'rejected': rejected,
+    }
 
 
 # ============ Stripe Endpoints ============

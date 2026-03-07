@@ -121,7 +121,7 @@ export function PracticeCoffeeChat() {
           {messages.length <= 1 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {TIPS.map((tip, i) => (
-                <div key={i} className="p-4 rounded-2xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                <div key={i} className="p-4 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                   <tip.icon className="w-4 h-4 mb-2" style={{ color: 'var(--color-accent)' }} />
                   <p className="text-xs font-semibold mb-1" style={{ color: 'var(--color-text)' }}>{tip.title}</p>
                   <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>{tip.desc}</p>
@@ -179,7 +179,7 @@ export function PracticeCoffeeChat() {
                   style={{ backgroundColor: 'var(--color-accent)' }}>
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
-                <div className="px-4 py-3 rounded-2xl" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
                   <div className="flex gap-1">
                     <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-textMuted)', animationDelay: '0ms' }} />
                     <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--color-textMuted)', animationDelay: '150ms' }} />

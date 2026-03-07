@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
@@ -8,15 +7,15 @@
 
 /* CSS custom properties for theming - defaults to Amber Light theme */
 :root {
-  --color-background: #F7F4EF;
-  --color-backgroundSecondary: #FDFCFB;
+  --color-background: #FAFAFA;
+  --color-backgroundSecondary: #FFFFFF;
   --color-surface: #FFFFFF;
-  --color-surfaceHover: #EBE8E2;
-  --color-border: #E8E2D8;
-  --color-borderHover: #C5BEB2;
-  --color-text: #1A1612;
-  --color-textSecondary: #57534E;
-  --color-textMuted: #78716C;
+  --color-surfaceHover: #F5F5F5;
+  --color-border: #E5E5E5;
+  --color-borderHover: #CCCCCC;
+  --color-text: #0A0A0A;
+  --color-textSecondary: #666666;
+  --color-textMuted: #999999;
   --color-accent: #D97706;
   --color-accentHover: #B45309;
   --color-accentText: #FFFFFF;
@@ -24,12 +23,14 @@
   --color-error: #DC2626;
   --color-warning: #F59E0B;
 
-  --font-display: 'Sora', sans-serif;
+  --font-display: 'DM Sans', sans-serif;
   --font-body: 'DM Sans', sans-serif;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
-  --shadow-glow: 0 0 24px rgba(217,119,6,0.12);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+  --glow-accent: none;
+  --glow-accent-strong: none;
 }
 
 @layer base {
@@ -66,7 +67,7 @@
     inset: 0;
     z-index: 9999;
     pointer-events: none;
-    opacity: 0.025;
+    opacity: 0.015;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     background-repeat: repeat;
     background-size: 256px 256px;
@@ -89,32 +90,32 @@
     font-feature-settings: 'liga' 1, 'calt' 1;
   }
 
-  /* custom scrollbar - amber themed */
+  /* custom scrollbar - subtle themed */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
     background: var(--color-surface);
-    border-radius: 10px;
+    border-radius: 8px;
     margin: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-accent);
-    border-radius: 10px;
+    background: var(--color-border);
+    border-radius: 8px;
     border: 2px solid var(--color-surface);
     transition: all 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-accentHover);
+    background: var(--color-borderHover);
     border: 2px solid var(--color-background);
   }
 
   ::-webkit-scrollbar-thumb:active {
-    background: var(--color-accentHover);
+    background: var(--color-borderHover);
   }
 
   ::-webkit-scrollbar-corner {
@@ -124,7 +125,7 @@
   /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-accent) var(--color-surface);
+    scrollbar-color: var(--color-border) var(--color-surface);
   }
 
   /* focus styles */
@@ -192,10 +193,28 @@
 
   /* dark mode glass */
   .glass-dark {
-    background: rgba(12, 10, 9, 0.7);
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* bento box card */
+  .bento-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: border-color 0.2s ease;
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.04);
+  }
+
+  .bento-card:hover {
+    border-color: var(--color-borderHover);
+  }
+
+  .bento-card-accent {
+    border-top: 2px solid var(--color-accent);
   }
 
   /* card hover effect */
@@ -271,6 +290,34 @@
     }
   }
 
+  /* Panel slide-in from right edge (InboxPanel) */
+  .animate-slide-in-right {
+    animation: panelSlideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes panelSlideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* Connection pending pulse */
+  .connection-pulse {
+    animation: connectionPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes connectionPulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
   .slide-in-up {
     animation: slideInUp 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
@@ -321,11 +368,6 @@
   /* Amber text */
   .text-gradient-amber {
     color: #D97706;
-  }
-
-  /* Amber glow */
-  .glow-amber {
-    box-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
   }
 
   /* ── Glass stat card with warm glow ── */
@@ -1023,13 +1065,13 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 
 /* Ember Firefly animations */
 @keyframes emberGlow {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4)); }
-  50% { filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.7)); }
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.25)); }
+  50% { filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.4)); }
 }
 
 @keyframes emberGlowDim {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.2)); }
-  50% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.35)); }
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.15)); }
+  50% { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.25)); }
 }
 
 @keyframes emberGlowRapid {
@@ -1066,6 +1108,87 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 .ember-wing-flutter-slow {
   animation: wingFlutterSlow 1.5s ease-in-out infinite;
 }
+
+/* Glitch mascot effect */
+@keyframes glitchShift {
+  0%, 92%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); opacity: 1; }
+  93% { clip-path: inset(40% 0 0 0); transform: translate(-3px, 0); }
+  95% { clip-path: inset(0 0 40% 0); transform: translate(3px, 0); }
+  97% { clip-path: inset(20% 0 20% 0); transform: translate(-2px, 2px); opacity: 0.8; }
+}
+.glitch-mascot { animation: glitchShift 8s ease-in-out infinite; }
+
+/* Ember firefly hover flutter — gentle bob + tilt in place */
+@keyframes emberFlutter {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  20% {
+    transform: translateY(-3px) rotate(2deg);
+  }
+  40% {
+    transform: translateY(1px) rotate(-1.5deg);
+  }
+  60% {
+    transform: translateY(-4px) rotate(1deg);
+  }
+  80% {
+    transform: translateY(0px) rotate(-2deg);
+  }
+}
+
+.ember-hover-flutter {
+  animation: emberFlutter 3s ease-in-out infinite;
+  display: inline-flex;
+}
+
+/* Coffee streak — pour animation */
+@keyframes coffeePour {
+  0% { height: 0; opacity: 0; }
+  10% { opacity: 1; }
+  100% { opacity: 1; }
+}
+.animate-coffee-pour {
+  animation: coffeePour 2s ease-out forwards;
+}
+
+@keyframes pourStream {
+  0% { opacity: 0; }
+  10% { opacity: 0.7; }
+  70% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+.animate-pour-stream {
+  animation: pourStream 2s ease-out forwards;
+}
+
+/* Kettle tip animation — tilts forward to pour */
+@keyframes kettleTip {
+  0% { transform: rotate(0deg) translateY(0); }
+  15% { transform: rotate(-20deg) translateY(-2px); }
+  70% { transform: rotate(-20deg) translateY(-2px); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+.animate-kettle-tip {
+  animation: kettleTip 2s ease-in-out forwards;
+}
+
+/* Steam animations */
+@keyframes steamRise1 {
+  0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.3; }
+  50% { transform: translateY(-4px) scaleY(1.1); opacity: 0.15; }
+}
+@keyframes steamRise2 {
+  0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.25; }
+  50% { transform: translateY(-5px) scaleY(1.15); opacity: 0.1; }
+}
+@keyframes steamRise3 {
+  0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.2; }
+  50% { transform: translateY(-3px) scaleY(1.05); opacity: 0.08; }
+}
+.animate-steam-1 { animation: steamRise1 3s ease-in-out infinite; }
+.animate-steam-2 { animation: steamRise2 3.5s ease-in-out infinite 0.5s; }
+.animate-steam-3 { animation: steamRise3 2.8s ease-in-out infinite 1s; }
 
 /* Splash screen progress bar */
 @keyframes splashProgress {

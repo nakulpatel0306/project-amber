@@ -1,5 +1,4 @@
 import {
-  Coffee,
   Calendar,
   MapPin,
   Clock,
@@ -20,6 +19,7 @@ export interface CoffeeChatData {
   candidate_id: string;
   employer_id: string;
   role_id?: string | null;
+  connection_id?: string | null;
   status: ChatStatus;
   message?: string | null;
   initiated_by: 'candidate' | 'employer';
@@ -79,13 +79,8 @@ export function CoffeeChatCard({
     : null;
 
   return (
-    <div
-      className="p-5 rounded-2xl border transition-all hover:shadow-sm"
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        borderColor: 'var(--color-border)',
-      }}
-    >
+    <div className="bento-card transition-all hover:border-[var(--color-borderHover)]">
+
       <div className="flex items-start gap-4">
         {/* Avatar - Clickable */}
         <button
@@ -95,7 +90,9 @@ export function CoffeeChatCard({
             backgroundColor: 'var(--color-accent)',
           }}
         >
-          <Coffee className="w-6 h-6 text-white" />
+          <span className="text-sm font-bold text-white">
+            {chat.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+          </span>
         </button>
 
         {/* Info */}
@@ -216,11 +213,11 @@ export function CoffeeChatCard({
           )}
         </div>
 
-        {/* Match score circle */}
+        {/* Match score */}
         {chat.match_score && chat.match_score > 0 && (
           <div className="text-right flex-shrink-0 hidden sm:block">
             <div
-              className="text-lg font-bold"
+              className="text-2xl font-extrabold"
               style={{
                 color: chat.match_score >= 80
                   ? 'var(--color-success)'
@@ -231,7 +228,7 @@ export function CoffeeChatCard({
             >
               {chat.match_score}%
             </div>
-            <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>match</p>
+            <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--color-textMuted)' }}>match</p>
           </div>
         )}
       </div>

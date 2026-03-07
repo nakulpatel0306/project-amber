@@ -10,9 +10,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', hover = false, ...props }, ref) => {
     const variants = {
-      default: 'bg-[var(--color-surface)]',
-      bordered: 'bg-[var(--color-surface)] border border-[var(--color-border)] [box-shadow:var(--shadow-sm)]',
-      elevated: 'bg-[var(--color-surface)] [box-shadow:var(--shadow-md)]',
+      default: 'bg-[var(--color-surface)] border border-[var(--color-border)]',
+      bordered: 'bg-[var(--color-surface)] border border-[var(--color-border)]',
+      elevated: 'bg-[var(--color-surface)] border border-[var(--color-border)]',
     };
 
     const paddings = {
@@ -26,10 +26,10 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-2xl transition-all duration-200',
+          'rounded-xl transition-all duration-200',
           variants[variant],
           paddings[padding],
-          hover && 'hover:[box-shadow:var(--shadow-md)] hover:border-[var(--color-borderHover)] hover:-translate-y-0.5 cursor-pointer',
+          hover && 'hover:border-[var(--color-borderHover)] cursor-pointer',
           className
         )}
         {...props}

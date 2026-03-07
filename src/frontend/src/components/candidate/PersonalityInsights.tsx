@@ -46,6 +46,7 @@ import { ArchetypeCard } from '../ui/ArchetypeCard';
 import { ProfileCompleteness } from '../ui/ProfileCompleteness';
 import { PersonalitySnapshotCard } from '../ui/PersonalitySnapshotCard';
 import { DidYouKnowCard } from '../ui/DidYouKnowCard';
+import { PageBanner } from '../ui/PageBanner';
 import { getArchetypeByName } from '../../lib/archetypes';
 import { calculateCombinedOCEAN, type OCEANScores } from '../../lib/personalityEngine';
 import { getFactsForProfile } from '../../data/personalityFacts';
@@ -434,42 +435,29 @@ export function PersonalityInsights() {
       <div className="max-w-6xl mx-auto">
 
         {/* 1. Hero / Profile Header */}
-        <motion.div
-          className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center gap-4">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: 'var(--color-accent)' }}
-            >
-              <Sparkles className="w-8 h-8 text-white" />
+        <PageBanner
+          title={primaryArchetype}
+          subtitle={tagline}
+          icon={Sparkles}
+          rightContent={
+            <div className="flex items-center gap-3 flex-wrap">
+              <ProfileCompleteness completedCount={completionCount} variant="ring" size="sm" showLabel={false} />
+              <Button variant="ghost" size="sm" onClick={() => setShowSnapshotCard(!showSnapshotCard)}>
+                {showSnapshotCard ? 'Hide Snapshot' : 'Share Profile'}
+              </Button>
+              {cooldownRemaining && cooldownRemaining > 0 ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: 'var(--color-surface)' }}>
+                  <Clock className="w-3.5 h-3.5" style={{ color: 'var(--color-textMuted)' }} />
+                  <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Retake in {formatCooldown(cooldownRemaining)}</span>
+                </div>
+              ) : (
+                <Link to="/app/personality">
+                  <Button variant="outline" size="sm" leftIcon={<RotateCcw className="w-3.5 h-3.5" />}>Retake</Button>
+                </Link>
+              )}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-                {primaryArchetype}
-              </h1>
-              <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{tagline}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <ProfileCompleteness completedCount={completionCount} variant="ring" size="sm" showLabel={false} />
-            <Button variant="ghost" size="sm" onClick={() => setShowSnapshotCard(!showSnapshotCard)}>
-              {showSnapshotCard ? 'Hide Snapshot' : 'Share Profile'}
-            </Button>
-            {cooldownRemaining && cooldownRemaining > 0 ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: 'var(--color-surface)' }}>
-                <Clock className="w-3.5 h-3.5" style={{ color: 'var(--color-textMuted)' }} />
-                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Retake in {formatCooldown(cooldownRemaining)}</span>
-              </div>
-            ) : (
-              <Link to="/app/personality">
-                <Button variant="outline" size="sm" leftIcon={<RotateCcw className="w-3.5 h-3.5" />}>Retake</Button>
-              </Link>
-            )}
-          </div>
-        </motion.div>
+          }
+        />
 
         {/* Snapshot Card (toggleable) */}
         <AnimatePresence>

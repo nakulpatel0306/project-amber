@@ -237,14 +237,14 @@ export function NetworkDiscover({ isCandidate }: Props) {
 
       {/* Community Stats */}
       <div
-        className="p-6 rounded-2xl border"
+        className="p-6 rounded-xl border"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <div className="flex flex-col lg:flex-row lg:items-center gap-6">
           {myArchetype && (
             <div className="flex items-center gap-3 flex-shrink-0">
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
                 style={{ backgroundColor: 'var(--color-accent)' }}
               >
                 {myArchetype.emoji}
@@ -279,7 +279,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
       {/* Two-column: Hot Roles + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Hot Roles Card */}
-        <div className="lg:col-span-2 p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+        <div className="lg:col-span-2 p-6 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold font-display flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
               <Zap className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
@@ -307,7 +307,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
                   <motion.div
                     key={role.id}
                     variants={fadeUp}
-                    className="p-4 rounded-xl border transition-all hover:shadow-sm cursor-pointer"
+                    className="p-4 rounded-xl border transition-all hover:border-[var(--color-borderHover)] cursor-pointer"
                     style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                     onClick={() => setSearchParams({ tab: 'roles' })}
                   >
@@ -363,7 +363,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Activity Feed Card */}
-          <div className="p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <div className="p-6 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
             <h3 className="text-lg font-semibold font-display flex items-center gap-2 mb-4" style={{ color: 'var(--color-text)' }}>
               <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Recent Activity
@@ -397,10 +397,10 @@ export function NetworkDiscover({ isCandidate }: Props) {
 
           {/* Practice CTA Card */}
           <div
-            className="p-6 rounded-2xl text-center"
+            className="p-6 rounded-xl text-center"
             style={{ backgroundColor: 'var(--color-accent)' }}
           >
-            <div className="w-11 h-11 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+            <div className="w-11 h-11 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
               <Mic className="w-5 h-5 text-white" />
             </div>
             <h3 className="text-sm font-bold text-white mb-1">Practice Your Pitch</h3>
@@ -418,7 +418,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
 
       {/* Featured Companies Card */}
       {featuredCompanies.length > 0 && (
-        <div className="p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+        <div className="p-6 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold font-display flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
               <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
@@ -436,7 +436,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
             {featuredCompanies.map(company => (
               <div
                 key={company.id}
-                className="flex-shrink-0 w-56 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-sm"
+                className="flex-shrink-0 w-56 p-4 rounded-xl border cursor-pointer transition-all hover:border-[var(--color-borderHover)]"
                 style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                 onClick={() => setSearchParams({ tab: 'companies' })}
               >
@@ -473,7 +473,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
 
       {/* People Suggestions Card */}
       {peopleSuggestions.length > 0 && (
-        <div className="p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+        <div className="p-6 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold font-display flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
               <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
@@ -492,7 +492,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
               <motion.div
                 key={person.id}
                 variants={fadeUp}
-                className="p-4 rounded-xl border transition-all hover:shadow-sm"
+                className="p-4 rounded-xl border transition-all hover:border-[var(--color-borderHover)]"
                 style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
               >
                 <div className="flex items-center gap-3 mb-3">
@@ -529,7 +529,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
       )}
 
       {/* Top Connectors Card */}
-      <div className="p-6 rounded-2xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+      <div className="p-6 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <Trophy className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />

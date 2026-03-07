@@ -24,6 +24,7 @@ import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
 import { determineEmployerArchetype } from '../../data/employerArchetypes';
 import { supabase } from '../../lib/supabase';
+import { DashboardHeader } from './DashboardHeader';
 
 
 interface CulturePreferences {
@@ -145,6 +146,7 @@ export function EmployerDashboard() {
     { label: 'Avg. Match Score', value: '--', change: '' },
   ]);
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -243,6 +245,8 @@ export function EmployerDashboard() {
         ]);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
+      } finally {
+        setStatsLoading(false);
       }
     };
 
@@ -263,23 +267,12 @@ export function EmployerDashboard() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="max-w-6xl mx-auto px-6 py-8">
       {/* Welcome Header */}
-      <div className="mb-6">
-        <h1
-          className="text-2xl font-bold mb-2"
-          style={{ color: 'var(--color-text)' }}
-        >
-          {hasCompletedCultureQuiz
-            ? `${greeting}, ${firstName}`
-            : `${firstName}, ready to define your culture?`}
-        </h1>
-        <p style={{ color: 'var(--color-textSecondary)' }}>
-          {hasCompletedCultureQuiz
-            ? "Here's an overview of your hiring activity"
-            : "Complete the culture quiz to start matching with candidates who fit your team"}
-        </p>
-      </div>
+      <DashboardHeader
+        greeting={hasCompletedCultureQuiz ? greeting : `${firstName}, ready to define your culture?`}
+        firstName={hasCompletedCultureQuiz ? firstName : ''}
+      />
 
       {/* Setup Banner (if not complete) */}
       {(!hasCompletedProfile || !hasCompletedCultureQuiz) && (
@@ -573,9 +566,13 @@ export function EmployerDashboard() {
               borderColor: 'var(--color-border)',
             }}
           >
-            <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-              {stat.value}
-            </p>
+            {statsLoading ? (
+              <div className="h-8 w-16 rounded-md mb-1 animate-pulse" style={{ backgroundColor: 'var(--color-border)' }} />
+            ) : (
+              <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
+                {stat.value}
+              </p>
+            )}
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               {stat.label}
             </p>
@@ -651,7 +648,7 @@ export function EmployerDashboard() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+            <p className="text-sm text-center py-3 min-h-0" style={{ color: 'var(--color-textMuted)' }}>
               Define your culture to see matched candidates
             </p>
           )}
@@ -711,7 +708,7 @@ export function EmployerDashboard() {
               </Link>
             </div>
           ) : (
-            <div className="text-center py-6">
+            <div className="text-center py-3 min-h-0">
               <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
                 No active roles yet
               </p>
@@ -833,7 +830,7 @@ export function EmployerDashboard() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
+          <p className="text-sm text-center py-3 min-h-0" style={{ color: 'var(--color-textMuted)' }}>
             No coffee chat activity yet
           </p>
         )}

@@ -63,13 +63,7 @@ export function CoffeeChatPrep({ chatId }: CoffeeChatPrepProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div
-        className="mt-2 p-4 rounded-xl border"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-        }}
-      >
+      <div className="mt-2 bento-card">
         <div className="flex items-center gap-2 mb-3">
           <div
             className="h-4 w-24 rounded"
@@ -101,14 +95,7 @@ export function CoffeeChatPrep({ chatId }: CoffeeChatPrepProps) {
   // Error state
   if (error || !data) {
     return (
-      <div
-        className="mt-2 p-4 rounded-xl border text-sm"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-          color: 'var(--color-textMuted)',
-        }}
-      >
+      <div className="mt-2 bento-card text-sm" style={{ color: 'var(--color-textMuted)' }}>
         Prep brief unavailable
       </div>
     );
@@ -117,13 +104,7 @@ export function CoffeeChatPrep({ chatId }: CoffeeChatPrepProps) {
   const { prep, match_score } = data;
 
   return (
-    <div
-      className="mt-2 rounded-xl border overflow-hidden transition-all"
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        borderColor: 'var(--color-border)',
-      }}
-    >
+    <div className="mt-2 bento-card bento-card-accent overflow-hidden transition-all !p-0">
       {/* Collapsed Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -256,10 +237,10 @@ export function CoffeeChatPrep({ chatId }: CoffeeChatPrepProps) {
           {/* Archetype Tips */}
           {prep.archetype_tips && (
             <div
-              className="p-3 rounded-xl border"
+              className="p-3 rounded-xl"
               style={{
                 backgroundColor: 'rgba(217, 119, 6, 0.05)',
-                borderColor: 'rgba(217, 119, 6, 0.2)',
+                border: '1px solid rgba(217, 119, 6, 0.2)',
               }}
             >
               <div className="flex items-start gap-2">

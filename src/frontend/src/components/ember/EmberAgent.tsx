@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Eye, Coffee, TrendingUp, Target, Award, BarChart3 } from 'lucide-react';
+import { Eye, Coffee, TrendingUp, Target, Award, BarChart3, Flame } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { useConnections } from '../../contexts/ConnectionsContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useCandidateMatchData } from '../../hooks/useMatchData';
 import { useSavedMatches } from '../../hooks/useSavedMatches';
@@ -14,7 +16,9 @@ import { PlayerCardGrid } from './gallery/PlayerCardGrid';
 import { GalleryFilterBar } from './gallery/GalleryFilterBar';
 import { DeepDive } from './gallery/DeepDive';
 import { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
+import { ConnectModal } from '../connections/ConnectModal';
 import { Button } from '../ui/Button';
+import { PageBanner } from '../ui/PageBanner';
 import { bentoContainer, bentoItem, counterReveal } from '../../utils/motion';
 import { getMatchColor, avatarGradient } from '../../utils/matchHelpers';
 import type { EmployerResult, PageView, SortOption } from '../../types/matching.types';
@@ -24,6 +28,8 @@ export function EmberAgent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { success: showSuccess, error: showError } = useToast();
+  const { profile } = useAuth();
+  const { getConnectionStatus, sendConnectionRequest } = useConnections();
 
   // Data hooks
   const {
@@ -37,6 +43,7 @@ export function EmberAgent() {
   const [view, setView] = useState<PageView>(deepdiveParam ? 'deepdive' : 'gallery');
   const [selectedEmployer, setSelectedEmployer] = useState<EmployerResult | null>(null);
   const [brewTarget, setBrewTarget] = useState<EmployerResult | null>(null);
+  const [connectTarget, setConnectTarget] = useState<EmployerResult | null>(null);
 
   // Handle deepdive URL param once employers load
   useEffect(() => {
@@ -108,6 +115,11 @@ export function EmberAgent() {
     switch (sortBy) {
       case 'culture': result.sort((a, b) => b.cultureScore - a.cultureScore); break;
       case 'workstyle': result.sort((a, b) => b.workStyleFit - a.workStyleFit); break;
+      case 'recent': result.sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db - da;
+      }); break;
       case 'score':
       default: result.sort((a, b) => b.overallScore - a.overallScore);
     }
@@ -193,6 +205,25 @@ export function EmberAgent() {
       throw new Error('Failed to send');
     }
   }, [candidate, brewTarget, getSavedMatch, showSuccess, showError, setPendingChats]);
+
+  const handleConnect = useCallback(async (message: string, meetInvite?: { proposed_times: string[]; duration_minutes: number }) => {
+    if (!candidate || !connectTarget) return;
+    try {
+      await sendConnectionRequest({
+        receiverId: connectTarget.employerId,
+        senderRole: 'candidate',
+        message,
+        senderName: profile?.full_name || undefined,
+        receiverName: connectTarget.companyName,
+        receiverCompany: connectTarget.companyName,
+        meetInvite,
+      });
+      showSuccess('Sent!', `Connection request sent to ${connectTarget.companyName}`);
+    } catch {
+      showError('Error', 'Failed to send connection request');
+      throw new Error('Failed');
+    }
+  }, [candidate, connectTarget, profile, sendConnectionRequest, showSuccess, showError]);
 
   // Deep dive dimension data
   const deepDiveDimensions = useMemo(() => {
@@ -283,16 +314,15 @@ export function EmberAgent() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
 
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <EmberFirefly size="md" mood="happy" />
-          <div>
-            <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>Ember Matches</h1>
-            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-              {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
-              {employers.length > 0 && ` · ${employers.length} companies`}
-            </p>
-          </div>
-        </div>
+        <PageBanner
+          title="Ember"
+          subtitle={
+            (archetype ? `${archetype.name} archetype` : 'Your personalized match gallery') +
+            (employers.length > 0 ? ` · ${employers.length} companies` : '')
+          }
+          icon={Flame}
+          className="mb-0"
+        />
 
         {/* ── Dashboard Stats Row ── */}
         {dashboardStats && view === 'gallery' && (
@@ -303,12 +333,14 @@ export function EmberAgent() {
             animate="show"
           >
             {/* Total Matches */}
-            <motion.div variants={counterReveal} className="glass-stat p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Total Matches</span>
+            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Total Matches</span>
+                </div>
               </div>
-              <div className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+              <div className="text-4xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
                 {dashboardStats.totalMatches}
               </div>
               {/* Mini bar chart */}
@@ -328,22 +360,22 @@ export function EmberAgent() {
             </motion.div>
 
             {/* Top Scores */}
-            <motion.div variants={counterReveal} className="glass-stat p-4">
+            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Award className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Top Scores</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Top Scores</span>
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="rank-medal rank-medal-gold text-[10px]">1st</span>
-                  <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.topScores[0]) }}>
+                  <span className="text-3xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.topScores[0]) }}>
                     {dashboardStats.topScores[0]}
                   </span>
                 </div>
                 {dashboardStats.topScores[1] && (
                   <div className="flex items-center gap-2">
                     <span className="rank-medal rank-medal-silver text-[8px]">2nd</span>
-                    <span className="text-sm font-semibold" style={{ color: getMatchColor(dashboardStats.topScores[1]) }}>
+                    <span className="text-sm font-bold" style={{ color: getMatchColor(dashboardStats.topScores[1]) }}>
                       {dashboardStats.topScores[1]}
                     </span>
                   </div>
@@ -351,7 +383,7 @@ export function EmberAgent() {
                 {dashboardStats.topScores[2] && (
                   <div className="flex items-center gap-2">
                     <span className="rank-medal rank-medal-bronze text-[8px]">3rd</span>
-                    <span className="text-sm font-semibold" style={{ color: getMatchColor(dashboardStats.topScores[2]) }}>
+                    <span className="text-sm font-bold" style={{ color: getMatchColor(dashboardStats.topScores[2]) }}>
                       {dashboardStats.topScores[2]}
                     </span>
                   </div>
@@ -360,34 +392,38 @@ export function EmberAgent() {
             </motion.div>
 
             {/* Strong Matches */}
-            <motion.div variants={counterReveal} className="glass-stat p-4">
+            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Strong (80+)</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Strong (80+)</span>
               </div>
-              <div className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-                {dashboardStats.strongMatches}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-4xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
+                  {dashboardStats.strongMatches}
+                </span>
+                {dashboardStats.totalMatches > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#22C55E' }}>
+                    {Math.round((dashboardStats.strongMatches / dashboardStats.totalMatches) * 100)}%
+                  </span>
+                )}
               </div>
-              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                {dashboardStats.totalMatches > 0
-                  ? `${Math.round((dashboardStats.strongMatches / dashboardStats.totalMatches) * 100)}% of total`
-                  : ''}
-              </span>
+              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>of total matches</span>
             </motion.div>
 
             {/* Avg Compatibility */}
-            <motion.div variants={counterReveal} className="glass-stat p-4">
+            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--color-textMuted)' }}>Avg Score</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Avg Score</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.avgScore) }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-4xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.avgScore) }}>
                   {dashboardStats.avgScore}
                 </span>
-                <div className="metric-bar flex-1">
-                  <div className="metric-bar-fill" style={{ width: `${dashboardStats.avgScore}%`, backgroundColor: getMatchColor(dashboardStats.avgScore) }} />
-                </div>
+                <span className="text-sm" style={{ color: 'var(--color-textMuted)' }}>%</span>
+              </div>
+              <div className="metric-bar">
+                <div className="metric-bar-fill" style={{ width: `${dashboardStats.avgScore}%`, backgroundColor: getMatchColor(dashboardStats.avgScore) }} />
               </div>
             </motion.div>
           </motion.div>
@@ -402,12 +438,12 @@ export function EmberAgent() {
             animate="show"
           >
             {/* Left 2/3: Hero card */}
-            <motion.div variants={bentoItem} className="lg:col-span-2 hero-featured-card p-5">
+            <motion.div variants={bentoItem} className="lg:col-span-2 bento-card bento-card-accent">
               <div className="flex items-start gap-5">
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
+                    className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden"
                     style={{ background: featuredMatch.logoUrl ? undefined : avatarGradient(featuredMatch.companyName) }}
                   >
                     {featuredMatch.logoUrl ? (
@@ -453,9 +489,15 @@ export function EmberAgent() {
                     <Button size="sm" variant="ghost" onClick={() => handleDeepDive(featuredMatch)}>
                       <Eye className="w-3.5 h-3.5 mr-1" /> Deep Dive
                     </Button>
-                    <Button size="sm" onClick={() => setBrewTarget(featuredMatch)}>
-                      <Coffee className="w-3.5 h-3.5 mr-1" /> Let's Brew
-                    </Button>
+                    {getConnectionStatus(featuredMatch.employerId) === 'accepted' ? (
+                      <Button size="sm" onClick={() => setBrewTarget(featuredMatch)}>
+                        <Coffee className="w-3.5 h-3.5 mr-1" /> Let's Brew
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => setConnectTarget(featuredMatch)}>
+                        Connect
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -467,7 +509,7 @@ export function EmberAgent() {
             </motion.div>
 
             {/* Right 1/3: Score breakdown */}
-            <motion.div variants={bentoItem} className="lg:col-span-1 glass-stat p-5">
+            <motion.div variants={bentoItem} className="lg:col-span-1 bento-card p-5">
               <h4 className="text-xs font-medium mb-4" style={{ color: 'var(--color-textMuted)' }}>Score Breakdown</h4>
               <div className="flex justify-around mb-4">
                 <ScoreRing score={featuredMatch.traitScore} size={56} strokeWidth={3} label="Traits" />
@@ -522,9 +564,11 @@ export function EmberAgent() {
                 mode="candidate"
                 employers={filteredEmployers}
                 savedIds={savedIds}
+                getConnectionStatus={getConnectionStatus}
                 onDeepDive={handleDeepDive}
                 onBrew={(emp) => setBrewTarget(emp)}
                 onToggleSave={handleToggleSave}
+                onConnect={(emp) => setConnectTarget(emp)}
               />
             </motion.div>
           ) : view === 'deepdive' && selectedEmployer ? (
@@ -545,9 +589,11 @@ export function EmberAgent() {
               candidateId={candidate.id}
               employerId={selectedEmployer.employerId}
               isSaved={savedIds.has(selectedEmployer.employerId)}
+              connectionStatus={getConnectionStatus(selectedEmployer.employerId)}
               onBack={handleBackToGallery}
               onBrew={() => setBrewTarget(selectedEmployer)}
               onToggleSave={() => handleToggleSave(selectedEmployer)}
+              onConnect={() => setConnectTarget(selectedEmployer)}
             />
           ) : null}
         </AnimatePresence>
@@ -563,6 +609,19 @@ export function EmberAgent() {
           archetype={brewTarget.archetype}
           overallScore={brewTarget.overallScore}
           onBrew={handleBrew}
+        />
+      )}
+
+      {/* Connect Modal */}
+      {connectTarget && (
+        <ConnectModal
+          isOpen={!!connectTarget}
+          onClose={() => setConnectTarget(null)}
+          name={connectTarget.companyName}
+          subtitle={connectTarget.industry}
+          archetype={connectTarget.archetype}
+          overallScore={connectTarget.overallScore}
+          onConnect={handleConnect}
         />
       )}
     </div>

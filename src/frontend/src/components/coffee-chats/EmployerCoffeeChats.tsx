@@ -12,16 +12,22 @@ import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
 import { CoffeeChatDetailModal } from './CoffeeChatDetailModal';
+import { PageBanner } from '../ui/PageBanner';
+import { InboxPanel } from '../connections/InboxPanel';
+import { DashboardCalendar, type UpcomingChat } from '../dashboard/DashboardCalendar';
+import { Coffee, UserPlus } from 'lucide-react';
+import { useConnections } from '../../contexts/ConnectionsContext';
 
-type TabValue = 'pending' | 'upcoming' | 'completed';
+type TabValue = 'calendar' | 'pending' | 'upcoming' | 'completed';
 
 const tabs: { value: TabValue; label: string }[] = [
+  { value: 'calendar', label: 'Calendar' },
   { value: 'pending', label: 'Pending' },
   { value: 'upcoming', label: 'Upcoming' },
   { value: 'completed', label: 'Completed' },
 ];
 
-const emptyStates: Record<TabValue, { mood: 'happy' | 'neutral' | 'thinking'; message: string }> = {
+const emptyStates: Partial<Record<TabValue, { mood: 'happy' | 'neutral' | 'thinking'; message: string }>> = {
   pending: {
     mood: 'happy',
     message: 'No pending requests. Explore your Ember matches to start connecting!',
@@ -40,10 +46,12 @@ export function EmployerCoffeeChats() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
   const { openChat } = useMessaging();
+  const { pendingReceivedCount } = useConnections();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [inboxOpen, setInboxOpen] = useState(false);
   const [chats, setChats] = useState<CoffeeChatData[]>([]);
-  const [activeTab, setActiveTab] = useState<TabValue>('pending');
+  const [activeTab, setActiveTab] = useState<TabValue>('calendar');
   const [_employerId, setEmployerId] = useState<string | null>(null);
 
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -181,12 +189,54 @@ export function EmployerCoffeeChats() {
     }
   };
 
+  // Prefilled date for ScheduleModal (set from DayDetailPopup)
+  const [prefilledDate, setPrefilledDate] = useState<string | undefined>(undefined);
+
+  // Calendar chats — accepted/scheduled with dates
+  const calendarChats = useMemo<UpcomingChat[]>(() => {
+    return chats
+      .filter(c => c.status === 'accepted' || c.status === 'scheduled' || c.status === 'pending')
+      .map(c => ({
+        id: c.id,
+        company: c.partner_name,
+        person: c.partner_name,
+        role: c.role_title || 'Coffee Chat',
+        time: c.scheduled_at || '',
+        scheduledAt: c.scheduled_at || null,
+        meetingLink: c.meeting_link || null,
+        status: c.status,
+      }));
+  }, [chats]);
+
+  // Unscheduled accepted chats (for DayDetailPopup)
+  const unscheduledAccepted = useMemo<UpcomingChat[]>(() => {
+    return chats
+      .filter(c => c.status === 'accepted' && !c.scheduled_at)
+      .map(c => ({
+        id: c.id,
+        company: c.partner_name,
+        person: c.partner_name,
+        role: c.role_title || 'Coffee Chat',
+        time: '',
+        scheduledAt: null,
+        meetingLink: c.meeting_link || null,
+        status: c.status,
+      }));
+  }, [chats]);
+
+  const handleCalendarSchedule = (chatId: string, date: string) => {
+    setActiveChatId(chatId);
+    setPrefilledDate(date);
+    setScheduleModalOpen(true);
+  };
+
   // Tab-based filtering
   const tabCounts = useMemo(() => ({
+    calendar: calendarChats.length,
     pending: chats.filter(c => c.status === 'pending').length,
     upcoming: chats.filter(c => c.status === 'accepted' || c.status === 'scheduled').length,
     completed: chats.filter(c => c.status === 'completed').length,
-  }), [chats]);
+  }), [chats, calendarChats]);
 
   const filteredChats = useMemo(() => {
     switch (activeTab) {
@@ -197,27 +247,41 @@ export function EmployerCoffeeChats() {
     }
   }, [chats, activeTab]);
 
-  const empty = emptyStates[activeTab];
+  const empty = emptyStates[activeTab as keyof typeof emptyStates];
 
   if (isLoading) {
     return (
-      <CoffeeBrewLoader message="Loading coffee chats..." />
+      <CoffeeBrewLoader variant="content" message="Loading coffee chats..." />
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
-          Coffee Chats
-        </h1>
-        <p style={{ color: 'var(--color-textSecondary)' }}>
-          Manage conversations with potential hires
-        </p>
-      </div>
+      <PageBanner
+        title="Coffee Chats"
+        subtitle="Manage conversations with potential hires"
+        icon={Coffee}
+        rightContent={
+          <button
+            onClick={() => setInboxOpen(true)}
+            className="relative p-2 rounded-lg transition-colors hover:bg-[var(--color-surfaceHover)]"
+            title="Connections"
+          >
+            <UserPlus className="w-5 h-5" style={{ color: 'var(--color-textSecondary)' }} />
+            {pendingReceivedCount > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full text-[9px] font-bold text-white"
+                style={{ backgroundColor: 'var(--color-accent)', minWidth: '16px', height: '16px', padding: '0 3px' }}
+              >
+                {pendingReceivedCount}
+              </span>
+            )}
+          </button>
+        }
+      />
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1 p-1 rounded-xl mb-6" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+      <div className="bento-card flex items-center gap-1 !p-1 mb-6">
         {tabs.map(tab => (
           <button
             key={tab.value}
@@ -242,18 +306,24 @@ export function EmployerCoffeeChats() {
         ))}
       </div>
 
-      {/* Chat list */}
-      {filteredChats.length === 0 ? (
-        <div
-          className="text-center py-16 rounded-2xl border"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-        >
-          <EmberFirefly size="lg" mood={empty.mood} animated />
+      {/* Calendar view */}
+      {activeTab === 'calendar' ? (
+        <DashboardCalendar
+          upcomingChats={calendarChats}
+          pendingChats={tabCounts.pending}
+          showViewAll={false}
+          allAcceptedChats={unscheduledAccepted}
+          mode="schedule"
+          onScheduleChat={handleCalendarSchedule}
+        />
+      ) : filteredChats.length === 0 ? (
+        <div className="bento-card text-center py-16">
+          {empty && <EmberFirefly size="lg" mood={empty.mood} animated />}
           <h3 className="mt-6 text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
             {activeTab === 'pending' ? 'No Pending Requests' : activeTab === 'upcoming' ? 'No Upcoming Chats' : 'No Completed Chats'}
           </h3>
           <p className="mt-2 text-sm max-w-sm mx-auto" style={{ color: 'var(--color-textMuted)' }}>
-            {empty.message}
+            {empty?.message}
           </p>
         </div>
       ) : (
@@ -300,8 +370,12 @@ export function EmployerCoffeeChats() {
 
       <ScheduleModal
         isOpen={scheduleModalOpen}
-        onClose={() => setScheduleModalOpen(false)}
+        onClose={() => {
+          setScheduleModalOpen(false);
+          setPrefilledDate(undefined);
+        }}
         onSchedule={handleSchedule}
+        initialDate={prefilledDate}
       />
 
       <FeedbackModal
@@ -329,6 +403,8 @@ export function EmployerCoffeeChats() {
           }}
         />
       )}
+
+      <InboxPanel isOpen={inboxOpen} onClose={() => setInboxOpen(false)} />
     </div>
   );
 }

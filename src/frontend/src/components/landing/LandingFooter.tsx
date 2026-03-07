@@ -4,7 +4,10 @@ import {
   MapPin,
   Linkedin,
   Instagram,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 import { AmberLogo } from '../ui/AmberLogo';
 import { APP_NAME } from '../../utils/constants';
 
@@ -16,6 +19,8 @@ const RESOURCE_LINKS: { label: string; href: string }[] = [
 ];
 
 export function LandingFooter() {
+  const { isDark, toggleTheme } = useTheme();
+
   return (
     <footer
       className="pt-16 pb-8 px-4 sm:px-6 lg:px-8 border-t"
@@ -252,6 +257,14 @@ export function LandingFooter() {
             <Link to="/accessibility" className="text-xs hover:underline" style={{ color: 'var(--color-textMuted)' }}>
               Accessibility
             </Link>
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-lg transition-colors hover:bg-[var(--color-surfaceHover)]"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
       </div>

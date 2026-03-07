@@ -18,6 +18,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { MessagingProvider } from './contexts/MessagingContext';
+import { ConnectionsProvider } from './contexts/ConnectionsContext';
 
 // Auth components
 import {
@@ -59,6 +60,7 @@ function App() {
         <ThemeProvider>
           <ToastProvider>
             <BrowserRouter>
+              <ConnectionsProvider>
               <MessagingProvider>
               <Routes>
                 {/* Public routes */}
@@ -336,6 +338,7 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               </MessagingProvider>
+              </ConnectionsProvider>
             </BrowserRouter>
           </ToastProvider>
         </ThemeProvider>

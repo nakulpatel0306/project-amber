@@ -280,41 +280,34 @@ export function NetworkRoles({ isCandidate }: Props) {
 
   if (isLoading) return <CoffeeBrewLoader message="Loading roles..." />;
 
-  if (isCandidate && !candidateData) {
-    return (
-      <div className="space-y-6">
-        <div
-          className="p-6 rounded-2xl border"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-        >
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center max-w-sm">
-              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'var(--color-accent)' }}>
-                <Target className="w-7 h-7 text-white" />
-              </div>
-              <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--color-text)' }}>Complete Your Assessment</h2>
-              <p className="text-sm mb-5" style={{ color: 'var(--color-textMuted)' }}>
-                Take our personality assessment to unlock match scores for every role on the platform.
-              </p>
-              <Button size="md" onClick={() => navigate('/app/personality')}>Start Assessment</Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // No longer gate on assessment — roles are shown regardless
 
   const hasActiveFilters = !!(selectedIndustry || selectedWorkStyle || selectedCompanyId || minScore > 0);
-  const avgScore = isCandidate && filteredMatches.length > 0
+  const avgScore = isCandidate && candidateData && filteredMatches.length > 0
     ? Math.round(filteredMatches.reduce((s, m) => s + m.overallMatchScore, 0) / filteredMatches.length)
     : null;
-  const highMatches = filteredMatches.filter(m => m.overallMatchScore >= 80).length;
+  const highMatches = candidateData ? filteredMatches.filter(m => m.overallMatchScore >= 80).length : 0;
 
   return (
     <div className="space-y-6">
+      {/* Inline banner if assessment incomplete */}
+      {isCandidate && !candidateData && (
+        <div
+          className="flex items-center justify-between p-4 rounded-xl border"
+          style={{ backgroundColor: 'rgba(217, 119, 6, 0.06)', borderColor: 'var(--color-accent)' }}
+        >
+          <div className="flex items-center gap-3">
+            <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+            <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+              Complete your assessment to see match scores for each role
+            </p>
+          </div>
+          <Button size="sm" onClick={() => navigate('/app/personality')}>Take Assessment</Button>
+        </div>
+      )}
       {/* Main Card */}
       <div
-        className="p-6 rounded-2xl border"
+        className="p-6 rounded-xl border"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center justify-between mb-6">
@@ -443,7 +436,7 @@ export function NetworkRoles({ isCandidate }: Props) {
                 <motion.div
                   key={match.role.id}
                   variants={fadeUp}
-                  className="p-4 rounded-xl border cursor-pointer transition-all hover:shadow-sm"
+                  className="p-4 rounded-xl border cursor-pointer transition-all hover:border-[var(--color-borderHover)]"
                   style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                   onClick={() => setModalMatch(match)}
                 >
@@ -460,10 +453,10 @@ export function NetworkRoles({ isCandidate }: Props) {
                         <p className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{emp.company_name}</p>
                       </div>
                     </div>
-                    {isCandidate && <ScoreRing score={match.overallMatchScore} />}
+                    {isCandidate && candidateData && <ScoreRing score={match.overallMatchScore} />}
                   </div>
 
-                  {isCandidate && (
+                  {isCandidate && candidateData && (
                     <p className="text-xs font-medium mb-2" style={{ color: getMatchColor(match.overallMatchScore) }}>
                       {getScoreLabel(match.overallMatchScore)} Match
                     </p>
@@ -496,7 +489,7 @@ export function NetworkRoles({ isCandidate }: Props) {
                     </div>
                   )}
 
-                  {isCandidate && (
+                  {isCandidate && candidateData && (
                     <div className="flex gap-4 pt-3 border-t text-xs" style={{ borderColor: 'var(--color-border)', color: 'var(--color-textMuted)' }}>
                       <span className="flex items-center gap-1"><Brain className="w-3 h-3" style={{ color: 'var(--color-accent)' }} />Trait {match.traitMatchScore}%</span>
                       <span className="flex items-center gap-1"><Heart className="w-3 h-3" style={{ color: '#EC4899' }} />Culture {match.cultureMatchScore}%</span>

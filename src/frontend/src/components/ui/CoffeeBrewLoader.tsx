@@ -11,7 +11,7 @@ const STEPS = [
 const STEP_DURATION = 1800;
 
 export interface CoffeeBrewLoaderProps {
-  variant?: 'fullscreen' | 'section' | 'inline';
+  variant?: 'fullscreen' | 'section' | 'content' | 'inline';
   message?: string;
   size?: 'sm' | 'md' | 'lg';
   showRotatingMessages?: boolean;
@@ -84,12 +84,15 @@ export function CoffeeBrewLoader({
   const wrapperClass = cn(
     'flex items-center justify-center',
     variant === 'fullscreen' && 'fixed inset-0 z-50',
-    variant === 'section' && 'py-12',
+    variant === 'section' && 'py-12 w-full',
+    variant === 'content' && 'w-full flex-1 min-h-[400px]',
     variant === 'inline' && 'gap-3',
     className,
   );
   const wrapperStyle =
-    variant === 'fullscreen' ? { backgroundColor: 'var(--color-background)' } : undefined;
+    variant === 'fullscreen'
+      ? { backgroundColor: 'var(--color-background)', paddingLeft: 'var(--sidebar-width, 0px)' }
+      : undefined;
 
   if (variant === 'inline') {
     return (

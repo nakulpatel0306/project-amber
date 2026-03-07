@@ -193,38 +193,6 @@ export function EmberFirefly({
         />
         <rect x="65.5" y="8.5" width="3" height="3" rx="0.5" fill="#FBBF24" transform="rotate(45, 67, 10)" />
 
-        {/* Eyes */}
-        {mood === 'happy' ? (
-          <>
-            {/* Happy - angular chevron eyes */}
-            <path d="M45 30 L47 28 L49 30" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-            <path d="M51 30 L53 28 L55 30" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-          </>
-        ) : mood === 'thinking' ? (
-          <>
-            {/* Thinking - one narrow, one normal */}
-            <rect x="45" y="28.5" width="3.5" height="2.5" rx="0.5" fill="white" />
-            <rect x="52" y="29" width="3" height="1.5" rx="0.5" fill="white" />
-          </>
-        ) : (
-          <>
-            {/* Default - sharp rectangular eyes */}
-            <rect x="45" y="28.5" width="3.5" height="2.5" rx="0.5" fill="white" />
-            <rect x="52" y="28.5" width="3.5" height="2.5" rx="0.5" fill="white" />
-          </>
-        )}
-
-        {/* Mouth - subtle for happy/excited */}
-        {(mood === 'happy' || mood === 'excited') && (
-          <path
-            d="M47 33 L50 34.5 L53 33"
-            stroke="white"
-            strokeWidth="0.7"
-            strokeLinecap="round"
-            fill="none"
-          />
-        )}
-
         {/* Core energy - abdomen glow */}
         <path
           d="M46 54 L50 50 L54 54 L52 62 L48 62 Z"

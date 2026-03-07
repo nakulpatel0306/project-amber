@@ -207,7 +207,7 @@ export function NetworkPeople() {
     <div className="space-y-6">
       {/* Summary Card */}
       <div
-        className="p-6 rounded-2xl border"
+        className="p-6 rounded-xl border"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center justify-between mb-6">
@@ -320,7 +320,7 @@ export function NetworkPeople() {
                 <motion.div
                   key={person.id}
                   variants={fadeUp}
-                  className="p-4 rounded-xl border cursor-pointer transition-all hover:shadow-sm"
+                  className="p-4 rounded-xl border cursor-pointer transition-all hover:border-[var(--color-borderHover)]"
                   style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                   onClick={() => setSelectedPerson(person)}
                 >

@@ -96,7 +96,7 @@ export function CoffeeChatFollowUp({ chat }: CoffeeChatFollowUpProps) {
 
   return (
     <div
-      className="mt-2 rounded-xl border overflow-hidden relative"
+      className="mt-2 bento-card overflow-hidden relative"
       style={{
         backgroundColor: config.bgColor,
         borderColor: config.borderColor,
@@ -109,7 +109,7 @@ export function CoffeeChatFollowUp({ chat }: CoffeeChatFollowUpProps) {
 
       <div className="p-4">
         <h4
-          className="text-sm font-semibold mb-0.5"
+          className="text-base font-bold mb-0.5"
           style={{ color: config.accentColor }}
         >
           {config.header}

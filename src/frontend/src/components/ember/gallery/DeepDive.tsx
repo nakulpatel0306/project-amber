@@ -3,15 +3,18 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, Sparkles, Brain, Heart, Zap, MessageCircle, Coffee,
   Bookmark, BookmarkCheck, GitCompareArrows, Share2, Lightbulb,
-  AlertTriangle, CheckCircle2, HelpCircle, Target,
+  AlertTriangle, CheckCircle2, HelpCircle, Target, ArrowUpRight,
+  TrendingUp, Shield, Users, BarChart3,
 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { ScoreRing } from '../../ui/ScoreRing';
 import { OceanMindMap } from '../../ui/OceanMindMap';
 import { EmberFirefly } from '../EmberFirefly';
 import { CoffeeBrewLoader } from '../../ui/CoffeeBrewLoader';
+import { ConnectButton } from '../../connections/ConnectButton';
 import { avatarGradient, getMatchColor } from '../../../utils/matchHelpers';
 import type { OCEANScores } from '../../../lib/compatibilityScoring';
+import type { ConnectionStatus } from '../../../types/connections.types';
 
 const API_BASE = 'http://127.0.0.1:8000';
 
@@ -40,10 +43,14 @@ interface DeepDiveProps {
   employerId?: string;
   roleId?: string;
   isSaved: boolean;
+  connectionStatus?: ConnectionStatus;
   onBack: () => void;
   onBrew: () => void;
   onToggleSave: () => void;
   onCompare?: () => void;
+  onConnect?: () => void;
+  onAcceptConnection?: () => void;
+  onDeclineConnection?: () => void;
 }
 
 interface EmberNarrative {
@@ -73,10 +80,14 @@ export function DeepDive({
   employerId,
   roleId,
   isSaved,
+  connectionStatus = 'accepted',
   onBack,
   onBrew,
   onToggleSave,
   onCompare,
+  onConnect,
+  onAcceptConnection,
+  onDeclineConnection,
 }: DeepDiveProps) {
   const [narrative, setNarrative] = useState<EmberNarrative | null>(null);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
@@ -117,10 +128,10 @@ export function DeepDive({
   }, [candidateId, employerId, roleId]);
 
   const compositeScores = [
-    { label: 'Trait Match', score: traitScore, icon: Brain },
-    { label: 'Culture Fit', score: cultureScore, icon: Heart },
-    { label: 'Work Style', score: workStyleScore, icon: Zap },
-    { label: 'Communication', score: communicationScore, icon: MessageCircle },
+    { label: 'Trait Match', score: traitScore, icon: Brain, color: '#8B5CF6' },
+    { label: 'Culture Fit', score: cultureScore, icon: Heart, color: '#EC4899' },
+    { label: 'Work Style', score: workStyleScore, icon: Zap, color: '#F59E0B' },
+    { label: 'Communication', score: communicationScore, icon: MessageCircle, color: '#06B6D4' },
   ];
 
   const getAlignmentColor = (fitScore: number) => {
@@ -135,19 +146,16 @@ export function DeepDive({
     return 'Gap';
   };
 
-  // Calculate alignment-based color for candidate circles
-  // Brighter = more aligned with employer preference, muted = larger gap
+  // Alignment-based color for candidate circles
   const getAlignmentBasedColor = (baseColor: string, candidateScore: number, employerScore: number): string => {
     const difference = Math.abs(candidateScore - employerScore);
-    const alignment = 100 - difference; // 100 = perfect match, 0 = max difference
+    const alignment = 100 - difference;
 
-    // Parse hex color to RGB
     const hex = baseColor.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
 
-    // Convert to HSL for better brightness control
     const rNorm = r / 255;
     const gNorm = g / 255;
     const bNorm = b / 255;
@@ -166,28 +174,20 @@ export function DeepDive({
       }
     }
 
-    // Adjust saturation and lightness based on alignment
-    // High alignment (80-100): full saturation
-    // Medium alignment (60-79): slightly reduced saturation
-    // Low alignment (<60): significantly reduced saturation (grayed out)
     let newS = s;
     let newL = l;
 
     if (alignment >= 80) {
-      // High alignment - keep vibrant
       newS = s;
       newL = l;
     } else if (alignment >= 60) {
-      // Medium alignment - slightly muted
       newS = s * 0.7;
-      newL = l + (1 - l) * 0.15; // slightly lighter
+      newL = l + (1 - l) * 0.15;
     } else {
-      // Low alignment - significantly muted/grayed
       newS = s * 0.35;
-      newL = l + (1 - l) * 0.3; // more washed out
+      newL = l + (1 - l) * 0.3;
     }
 
-    // Convert HSL back to RGB
     const hslToRgb = (h: number, s: number, l: number) => {
       let r, g, b;
       if (s === 0) {
@@ -214,7 +214,6 @@ export function DeepDive({
     return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
   };
 
-  // Base colors for OCEAN dimensions
   const BASE_COLORS: Record<string, string> = {
     openness: '#8B5CF6',
     conscientiousness: '#10B981',
@@ -223,7 +222,6 @@ export function DeepDive({
     neuroticism: '#06B6D4',
   };
 
-  // Calculate alignment-adjusted colors for candidate circles
   const candidateAlignmentColors = Object.keys(BASE_COLORS).reduce((acc, key) => {
     const candidateScore = (candidateOcean as unknown as Record<string, number>)[key] || 0;
     const employerScore = (employerOcean as unknown as Record<string, number>)[key] || 0;
@@ -231,13 +229,21 @@ export function DeepDive({
     return acc;
   }, {} as Record<string, string>);
 
+  // Derived metrics for unique widgets
+  const alignedCount = dimensions.filter(d => d.fitScore >= 80).length;
+  const closeCount = dimensions.filter(d => d.fitScore >= 60 && d.fitScore < 80).length;
+  const gapCount = dimensions.filter(d => d.fitScore < 60).length;
+  const avgFit = dimensions.length > 0 ? Math.round(dimensions.reduce((s, d) => s + d.fitScore, 0) / dimensions.length) : 0;
+  const bestDimension = dimensions.length > 0 ? dimensions.reduce((best, d) => d.fitScore > best.fitScore ? d : best) : null;
+  const weakDimension = dimensions.length > 0 ? dimensions.reduce((worst, d) => d.fitScore < worst.fitScore ? d : worst) : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -30 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6"
+      className="space-y-5"
     >
       {/* Back button */}
       <button
@@ -249,11 +255,8 @@ export function DeepDive({
         Back to Gallery
       </button>
 
-      {/* 1. Hero section */}
-      <div
-        className="rounded-2xl p-6"
-        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-      >
+      {/* 1. Hero section — bento-card with accent border */}
+      <div className="bento-card bento-card-accent">
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Avatar */}
           <div
@@ -268,14 +271,14 @@ export function DeepDive({
           </div>
 
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text)' }}>{name}</h1>
+            <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text)' }}>{name}</h1>
             {subtitle && (
               <p className="text-sm mb-2" style={{ color: 'var(--color-textSecondary)' }}>{subtitle}</p>
             )}
             {archetype && (
               <span
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
-                style={{ backgroundColor: `var(--color-accent)15`, color: 'var(--color-accent)' }}
+                style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-accent)' }}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 {archetype.name}
@@ -285,31 +288,98 @@ export function DeepDive({
 
           <ScoreRing score={overallScore} size={96} strokeWidth={5} fontSize="text-2xl" />
         </div>
+      </div>
 
-        {/* Composite score cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-5" style={{ borderTop: '1px solid var(--color-border)' }}>
-          {compositeScores.map(({ label, score, icon: Icon }) => (
-            <div
-              key={label}
-              className="rounded-xl p-3 text-center"
-              style={{ backgroundColor: 'var(--color-background)' }}
-            >
-              <Icon className="w-4 h-4 mx-auto mb-1" style={{ color: getMatchColor(score) }} />
-              <div className="text-lg font-bold" style={{ color: getMatchColor(score) }}>{score}%</div>
-              <div className="text-[10px]" style={{ color: 'var(--color-textMuted)' }}>{label}</div>
+      {/* 2. Composite Score Cards — bento metric cards with big numbers */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {compositeScores.map(({ label, score, icon: Icon, color }) => (
+          <div key={label} className="bento-card bento-card-accent relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>
+                {label}
+              </p>
+              <ArrowUpRight className="w-3.5 h-3.5" style={{ color: 'var(--color-textMuted)', opacity: 0.3 }} />
             </div>
-          ))}
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-extrabold" style={{ color: 'var(--color-text)' }}>{score}</span>
+              <span className="text-sm" style={{ color: 'var(--color-textMuted)' }}>%</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-2">
+              <Icon className="w-3.5 h-3.5" style={{ color }} />
+              <div className="metric-bar flex-1">
+                <div className="metric-bar-fill" style={{ width: `${score}%`, backgroundColor: color }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 3. Compatibility Dashboard — unique mini widgets grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Alignment Summary */}
+        <div className="bento-card">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4" style={{ color: '#10B981' }} />
+            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Alignment</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
+              {alignedCount} Aligned
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#F59E0B' }}>
+              {closeCount} Close
+            </span>
+            {gapCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444' }}>
+                {gapCount} Gap
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Average Fit */}
+        <div className="bento-card">
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart3 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Avg Fit</span>
+          </div>
+          <span className="text-2xl font-extrabold" style={{ color: getMatchColor(avgFit) }}>{avgFit}%</span>
+        </div>
+
+        {/* Strongest Dimension */}
+        <div className="bento-card">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4" style={{ color: '#10B981' }} />
+            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Strongest</span>
+          </div>
+          {bestDimension && (
+            <div>
+              <span className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{bestDimension.name}</span>
+              <span className="text-xs ml-1.5" style={{ color: '#10B981' }}>{bestDimension.fitScore}%</span>
+            </div>
+          )}
+        </div>
+
+        {/* Growth Area */}
+        <div className="bento-card">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4" style={{ color: '#F59E0B' }} />
+            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Growth Area</span>
+          </div>
+          {weakDimension && (
+            <div>
+              <span className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{weakDimension.name}</span>
+              <span className="text-xs ml-1.5" style={{ color: '#F59E0B' }}>{weakDimension.fitScore}%</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 2. OCEAN Comparison Bars */}
-      <div
-        className="rounded-2xl p-5 md:p-6"
-        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-      >
+      {/* 4. OCEAN Comparison Bars */}
+      <div className="bento-card">
         <div className="flex items-center gap-2 mb-4">
           <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-          <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>OCEAN Personality Comparison</h2>
+          <h2 className="text-base font-bold" style={{ color: 'var(--color-text)' }}>OCEAN Personality Comparison</h2>
         </div>
 
         <div className="space-y-4">
@@ -320,22 +390,19 @@ export function DeepDive({
               <div key={dim.name}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{dim.name}</span>
-                  <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${alignment}15`, color: alignment }}>
-                    {label}
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${alignment}15`, color: alignment }}>
+                    {label} · {dim.fitScore}%
                   </span>
                 </div>
                 <div className="relative h-6 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
-                  {/* Employer preference (background) */}
                   <div
                     className="absolute inset-y-0 left-0 rounded-full opacity-30 transition-all duration-700"
                     style={{ width: `${dim.employerPreference}%`, backgroundColor: '#3b82f6' }}
                   />
-                  {/* Candidate score (foreground) */}
                   <div
                     className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
                     style={{ width: `${dim.candidateScore}%`, backgroundColor: alignment, opacity: 0.8 }}
                   />
-                  {/* Labels */}
                   <div className="absolute inset-0 flex items-center justify-between px-3">
                     <span className="text-[10px] font-semibold text-white drop-shadow">
                       {mode === 'candidate' ? 'You' : 'Candidate'}: {dim.candidateScore}
@@ -367,17 +434,13 @@ export function DeepDive({
         </div>
       </div>
 
-      {/* 3. Profile Comparison - Side by Side Circles */}
-      <div
-        className="rounded-2xl p-5 md:p-6"
-        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-      >
+      {/* 5. Profile Comparison - Side by Side Mind Maps */}
+      <div className="bento-card">
         <div className="flex items-center gap-2 mb-4">
           <Target className="w-5 h-5" style={{ color: '#8b5cf6' }} />
-          <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Profile Comparison</h2>
+          <h2 className="text-base font-bold" style={{ color: 'var(--color-text)' }}>Profile Comparison</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Candidate Profile - colors adjusted by alignment */}
           <div>
             <p className="text-sm font-medium text-center mb-3" style={{ color: 'var(--color-textSecondary)' }}>
               {mode === 'candidate' ? 'Your Profile' : 'Candidate Profile'}
@@ -393,7 +456,6 @@ export function DeepDive({
               Brighter = better alignment with preferences
             </p>
           </div>
-          {/* Employer Preferences */}
           <div>
             <p className="text-sm font-medium text-center mb-3" style={{ color: 'var(--color-textSecondary)' }}>
               {mode === 'candidate' ? 'Employer Preferences' : 'Your Preferences'}
@@ -408,14 +470,11 @@ export function DeepDive({
         </div>
       </div>
 
-      {/* 4. Ember's Analysis */}
-      <div
-        className="rounded-2xl p-5 md:p-6"
-        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-      >
+      {/* 6. Ember's Analysis */}
+      <div className="bento-card">
         <div className="flex items-center gap-2 mb-4">
           <EmberFirefly size="sm" mood="happy" />
-          <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Ember's Analysis</h2>
+          <h2 className="text-base font-bold" style={{ color: 'var(--color-text)' }}>Ember's Analysis</h2>
         </div>
 
         {narrativeLoading ? (
@@ -431,80 +490,108 @@ export function DeepDive({
               </div>
             )}
 
+            {/* Strengths + Friction as transaction-style lists */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* What they bring / Why this could work */}
               {narrative.ember_strengths && narrative.ember_strengths.length > 0 && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="w-4 h-4" style={{ color: '#10b981' }} />
-                    <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                      {mode === 'candidate' ? 'Why This Could Work' : 'What They Bring'}
+                <div className="bento-card" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
+                      <CheckCircle2 className="w-4 h-4" style={{ color: '#10b981' }} />
+                    </div>
+                    <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
+                      {mode === 'candidate' ? 'Why This Works' : 'What They Bring'}
                     </h4>
                   </div>
-                  <ul className="space-y-1.5">
+                  <div className="space-y-0">
                     {narrative.ember_strengths.map((s, i) => (
-                      <li key={i} className="text-xs leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
-                        {s}
-                      </li>
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 py-2"
+                        style={{ borderBottom: i < narrative.ember_strengths!.length - 1 ? '1px solid var(--color-border)' : undefined }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#10B981' }} />
+                        <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{s}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
-              {/* Potential friction */}
               {narrative.ember_friction && narrative.ember_friction.length > 0 && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4" style={{ color: '#f59e0b' }} />
-                    <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                <div className="bento-card" style={{ borderColor: 'rgba(245, 158, 11, 0.2)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                      <AlertTriangle className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                    </div>
+                    <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                       {mode === 'candidate' ? 'Watch Out For' : 'Potential Friction'}
                     </h4>
                   </div>
-                  <ul className="space-y-1.5">
+                  <div className="space-y-0">
                     {narrative.ember_friction.map((f, i) => (
-                      <li key={i} className="text-xs leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
-                        {f}
-                      </li>
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 py-2"
+                        style={{ borderBottom: i < narrative.ember_friction!.length - 1 ? '1px solid var(--color-border)' : undefined }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#F59E0B' }} />
+                        <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{f}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
+            </div>
 
-              {/* Success tips */}
+            {/* Tips + Questions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {narrative.ember_success_tips && narrative.ember_success_tips.length > 0 && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="w-4 h-4" style={{ color: '#8b5cf6' }} />
-                    <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                      {mode === 'candidate' ? 'How to Succeed Here' : 'Setting Them Up for Success'}
+                <div className="bento-card" style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
+                      <Lightbulb className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+                    </div>
+                    <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
+                      {mode === 'candidate' ? 'How to Succeed' : 'Setup for Success'}
                     </h4>
                   </div>
-                  <ul className="space-y-1.5">
+                  <div className="space-y-0">
                     {narrative.ember_success_tips.map((t, i) => (
-                      <li key={i} className="text-xs leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
-                        {t}
-                      </li>
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 py-2"
+                        style={{ borderBottom: i < narrative.ember_success_tips!.length - 1 ? '1px solid var(--color-border)' : undefined }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#8B5CF6' }} />
+                        <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{t}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
-              {/* Questions to explore */}
               {narrative.ember_questions && narrative.ember_questions.length > 0 && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <HelpCircle className="w-4 h-4" style={{ color: '#06b6d4' }} />
-                    <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                <div className="bento-card" style={{ borderColor: 'rgba(6, 182, 212, 0.2)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(6, 182, 212, 0.1)' }}>
+                      <HelpCircle className="w-4 h-4" style={{ color: '#06b6d4' }} />
+                    </div>
+                    <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                       Questions to Explore
                     </h4>
                   </div>
-                  <ul className="space-y-1.5">
+                  <div className="space-y-0">
                     {narrative.ember_questions.map((q, i) => (
-                      <li key={i} className="text-xs leading-relaxed" style={{ color: 'var(--color-textMuted)' }}>
-                        {q}
-                      </li>
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 py-2"
+                        style={{ borderBottom: i < narrative.ember_questions!.length - 1 ? '1px solid var(--color-border)' : undefined }}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#06B6D4' }} />
+                        <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{q}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>
@@ -512,14 +599,19 @@ export function DeepDive({
             {/* Recommendation */}
             {narrative.ember_recommendation && (
               <div
-                className="p-4 rounded-xl"
-                style={{ backgroundColor: `var(--color-accent)08`, border: '1px solid var(--color-accent)' }}
+                className="bento-card bento-card-accent"
+                style={{ borderColor: 'var(--color-accent)' }}
               >
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text)' }}>
-                    {narrative.ember_recommendation}
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)' }}>
+                    <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold mb-1" style={{ color: 'var(--color-accent)' }}>Ember's Recommendation</h4>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>
+                      {narrative.ember_recommendation}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -533,21 +625,18 @@ export function DeepDive({
         )}
       </div>
 
-      {/* 6. Personality Snapshot */}
+      {/* 7. Personality Snapshot */}
       {archetype && (
-        <div
-          className="rounded-2xl p-5 md:p-6"
-          style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-        >
+        <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-            <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Personality Snapshot</h2>
+            <h2 className="text-base font-bold" style={{ color: 'var(--color-text)' }}>Personality Snapshot</h2>
           </div>
           <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: `var(--color-accent)15`, color: 'var(--color-accent)' }}
+                style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-accent)' }}
               >
                 <Sparkles className="w-3 h-3" />
                 {archetype.name}
@@ -562,20 +651,27 @@ export function DeepDive({
         </div>
       )}
 
-      {/* 7. Sticky Action Bar */}
+      {/* 8. Sticky Action Bar */}
       <div
-        className="sticky bottom-4 rounded-2xl p-4 flex items-center justify-center gap-3 z-30"
+        className="sticky bottom-4 bento-card p-4 flex items-center justify-center gap-3 z-30"
         style={{
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
           backdropFilter: 'blur(12px)',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
         }}
       >
-        <Button onClick={onBrew}>
-          <Coffee className="w-4 h-4 mr-1.5" />
-          Let's Brew
-        </Button>
+        {connectionStatus === 'accepted' ? (
+          <Button onClick={onBrew}>
+            <Coffee className="w-4 h-4 mr-1.5" />
+            Let's Brew
+          </Button>
+        ) : (
+          <ConnectButton
+            status={connectionStatus}
+            onConnect={() => onConnect?.()}
+            onAccept={() => onAcceptConnection?.()}
+            onDecline={() => onDeclineConnection?.()}
+            size="md"
+          />
+        )}
         <Button variant="outline" onClick={onToggleSave}>
           {isSaved
             ? <><BookmarkCheck className="w-4 h-4 mr-1.5" />Saved</>
