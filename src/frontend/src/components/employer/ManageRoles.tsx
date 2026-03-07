@@ -14,7 +14,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -45,6 +45,8 @@ export function ManageRoles() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => {
     if (!user) return;
@@ -182,7 +184,7 @@ export function ManageRoles() {
     }
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
       <CoffeeBrewLoader size="sm" />
     );

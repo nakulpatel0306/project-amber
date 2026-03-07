@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -102,6 +102,8 @@ export function BrowseCandidates() {
   const [employer, setEmployer] = useState<EmployerData | null>(null);
   const [roles, setRoles] = useState<RoleData[]>([]);
   const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
+
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => {
     if (!user) return;
@@ -296,9 +298,9 @@ export function BrowseCandidates() {
     return 'var(--color-textMuted)';
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Finding candidates..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Finding candidates..." />
     );
   }
 

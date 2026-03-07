@@ -7,7 +7,7 @@ import {
   Heart, Brain, Sparkles, Building2, Trophy,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -97,6 +97,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
   const [peopleSuggestions, setPeopleSuggestions] = useState<PersonSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [myArchetype, setMyArchetype] = useState<{ name: string; emoji: string } | null>(null);
+  const showLoader = useMinLoader(isLoading && statsLoading);
 
   useEffect(() => {
     if (!user) return;
@@ -230,7 +231,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
 
   const initials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-  if (isLoading && statsLoading) return <CoffeeBrewLoader message="Loading your network..." />;
+  if (showLoader) return <CoffeeBrewLoader variant="fullscreen" message="Loading your network..." />;
 
   return (
     <div className="space-y-6">

@@ -17,7 +17,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 // ScoreRing is defined locally below
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -221,6 +221,7 @@ export function MatchingAgent() {
   const [activeView, setActiveView] = useState<'browse' | 'pipeline'>('browse');
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>('saved');
   const { savedMatches, unsave, counts: pipelineCounts } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading);
 
   // Derived filter values
   const industries = useMemo(
@@ -490,9 +491,9 @@ export function MatchingAgent() {
 
   /* ---- Loading state ---- */
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Loading roles..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading roles..." />
     );
   }
 

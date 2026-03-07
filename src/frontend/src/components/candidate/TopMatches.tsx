@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ScoreRing } from '../ui/ScoreRing';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -22,7 +22,6 @@ import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScor
 import { determineArchetype } from '../../lib/archetypes';
 import { getMatchColor } from '../../utils/matchHelpers';
 import { cardGridContainer, cardItem, sectionReveal } from '../../utils/motion';
-import { useMinLoader } from '../../hooks/useMinLoader';
 
 interface TopMatch {
   rank: number;
@@ -170,7 +169,7 @@ export function TopMatches() {
   };
 
   if (showLoader) {
-    return <CoffeeBrewLoader />;
+    return <CoffeeBrewLoader variant="fullscreen" />;
   }
 
   if (matches.length === 0) {

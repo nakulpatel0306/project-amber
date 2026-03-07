@@ -13,7 +13,7 @@ import { LocationPicker } from '../ui/LocationPicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { cn } from '../../utils/cn';
 
 interface CandidateData {
@@ -69,6 +69,8 @@ export function CandidateProfileSection() {
 
   const [originalData, setOriginalData] = useState<CandidateData>(data);
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  const showLoader = useMinLoader(isLoading);
 
   // Use user.id as dependency to prevent unnecessary reloads
   const userId = user?.id;
@@ -160,9 +162,9 @@ export function CandidateProfileSection() {
     setHasChanges(false);
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Loading your profile..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading your profile..." />
     );
   }
 

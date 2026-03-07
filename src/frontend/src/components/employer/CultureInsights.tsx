@@ -36,7 +36,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { OceanMindMap } from '../ui/OceanMindMap';
 import { GradientProgressBar } from '../ui/GradientProgressBar';
 import { ArchetypeCard } from '../ui/ArchetypeCard';
@@ -298,6 +298,8 @@ export function CultureInsights() {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [assessmentCooldowns, setAssessmentCooldowns] = useState<Record<string, number | null>>({});
 
+  const showLoader = useMinLoader(isLoading);
+
   useEffect(() => {
     if (!user) return;
 
@@ -392,9 +394,9 @@ export function CultureInsights() {
     return () => clearInterval(interval);
   }, [cooldownRemaining, assessmentCooldowns]);
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Loading culture insights..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading culture insights..." />
     );
   }
 

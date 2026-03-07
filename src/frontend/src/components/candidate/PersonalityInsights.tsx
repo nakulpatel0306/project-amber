@@ -39,7 +39,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { OceanMindMap } from '../ui/OceanMindMap';
 import { GradientProgressBar } from '../ui/GradientProgressBar';
 import { ArchetypeCard } from '../ui/ArchetypeCard';
@@ -200,6 +200,7 @@ export function PersonalityInsights() {
   const [cooldownRemaining, setCooldownRemaining] = useState<number | null>(null);
   const [assessmentCooldowns, setAssessmentCooldowns] = useState<Record<string, number | null>>({});
   const [showSnapshotCard, setShowSnapshotCard] = useState(false);
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => {
     if (!user) return;
@@ -293,9 +294,9 @@ export function PersonalityInsights() {
 
   const hasCompletedAssessment = personalityData?.openness_score !== null && personalityData?.openness_score !== undefined;
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Loading personality insights..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading personality insights..." />
     );
   }
 

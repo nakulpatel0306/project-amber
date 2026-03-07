@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getUserSettings, updateUserSettings } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { Eye, EyeOff, DollarSign } from 'lucide-react';
 
 interface PrivacySettings {
@@ -25,6 +25,8 @@ export function PrivacySection() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<PrivacySettings>(defaultSettings);
+
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -79,9 +81,9 @@ export function PrivacySection() {
     setHasChanges(false);
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Loading privacy settings..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading privacy settings..." />
     );
   }
 

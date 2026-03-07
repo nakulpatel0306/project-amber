@@ -5,7 +5,7 @@ import { Search, X, MapPin, ArrowRight, Building2, Briefcase, Users, Globe } fro
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { staggerContainer, fadeUp } from '../../utils/motion';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { supabase } from '../../lib/supabase';
 import { avatarGradient } from '../../utils/matchHelpers';
 
@@ -30,6 +30,7 @@ export function NetworkCompanies() {
   const [industryFilter, setIndustryFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => { loadCompanies(); }, []);
 
@@ -82,7 +83,7 @@ export function NetworkCompanies() {
 
   const totalRoles = companies.reduce((sum, c) => sum + c.activeRolesCount, 0);
 
-  if (isLoading) return <CoffeeBrewLoader message="Loading companies..." />;
+  if (showLoader) return <CoffeeBrewLoader variant="fullscreen" message="Loading companies..." />;
 
   return (
     <div className="space-y-6">

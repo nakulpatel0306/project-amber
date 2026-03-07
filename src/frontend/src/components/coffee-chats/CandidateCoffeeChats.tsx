@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useMessaging } from '../../contexts/MessagingContext';
 import { supabase } from '../../lib/supabase';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { CoffeeChatCard, CoffeeChatData, ChatStatus } from './CoffeeChatCard';
 import { CoffeeChatPrep } from './CoffeeChatPrep';
@@ -60,6 +60,8 @@ export function CandidateCoffeeChats() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [activeChatPartner, setActiveChatPartner] = useState('');
   const [activeChat, setActiveChat] = useState<CoffeeChatData | null>(null);
+
+  const showLoader = useMinLoader(isLoading);
 
   // Handle opening message panel
   const handleMessage = useCallback((chatId: string, partnerName: string) => {
@@ -250,9 +252,9 @@ export function CandidateCoffeeChats() {
 
   const empty = emptyStates[activeTab as keyof typeof emptyStates];
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader variant="content" message="Loading your coffee chats..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading your coffee chats..." />
     );
   }
 

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { staggerContainer, fadeUp } from '../../utils/motion';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -124,6 +124,8 @@ export function NetworkRoles({ isCandidate }: Props) {
   const [minScore, setMinScore] = useState<number>(0);
   const [modalMatch, setModalMatch] = useState<MatchResult | null>(null);
   const [savedRoles, setSavedRoles] = useState<Set<string>>(new Set());
+
+  const showLoader = useMinLoader(isLoading);
 
   const industries = useMemo(() => [...new Set(matches.map(m => m.role.employers.industry).filter(Boolean))].sort(), [matches]);
   const companies = useMemo(() => {
@@ -278,7 +280,7 @@ export function NetworkRoles({ isCandidate }: Props) {
     });
   };
 
-  if (isLoading) return <CoffeeBrewLoader message="Loading roles..." />;
+  if (showLoader) return <CoffeeBrewLoader variant="fullscreen" message="Loading Roles..." />;
 
   // No longer gate on assessment — roles are shown regardless
 

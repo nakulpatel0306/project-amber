@@ -4,7 +4,7 @@ import { Search, X, MapPin, Coffee, Filter, Users } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { staggerContainer, fadeUp } from '../../utils/motion';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -64,6 +64,7 @@ export function NetworkPeople() {
   const [showFilters, setShowFilters] = useState(false);
   const [displayCount, setDisplayCount] = useState(30);
   const [selectedPerson, setSelectedPerson] = useState<PersonProfile | null>(null);
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => { if (user) loadPeople(); }, [user]);
 
@@ -201,7 +202,7 @@ export function NetworkPeople() {
 
   const initials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-  if (isLoading) return <CoffeeBrewLoader message="Loading people..." />;
+  if (showLoader) return <CoffeeBrewLoader variant="fullscreen" message="Loading people..." />;
 
   return (
     <div className="space-y-6">

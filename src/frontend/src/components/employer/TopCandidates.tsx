@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 // ScoreRing is defined locally in this component
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -182,6 +182,7 @@ export function TopCandidates() {
   const [activeView, setActiveView] = useState<'browse' | 'pipeline'>('browse');
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>('saved');
   const { savedMatches, unsave: unsaveMatch, counts: pipelineCounts } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading);
 
   // Raw candidates data (before scoring — allows re-scoring when role changes)
   const [rawCandidates, setRawCandidates] = useState<any[]>([]);
@@ -515,9 +516,9 @@ export function TopCandidates() {
 
   /* ---- Loading ---- */
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Ranking candidates by culture fit..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Ranking candidates by culture fit..." />
     );
   }
 

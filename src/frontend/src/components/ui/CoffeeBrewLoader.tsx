@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '../../utils/cn';
 
 const STEPS = [
@@ -9,6 +9,7 @@ const STEPS = [
 ] as const;
 
 const STEP_DURATION = 1800;
+const MIN_LOADER_MS = 2500;
 
 export interface CoffeeBrewLoaderProps {
   variant?: 'fullscreen' | 'section' | 'content' | 'inline';
@@ -30,6 +31,29 @@ const DOT_COLORS = [
   'var(--color-accent)',
   'var(--color-warning)',
 ];
+
+/**
+ * Hook that enforces a minimum display time for loading states.
+ * Returns true for at least `minMs` after `loading` first becomes true.
+ */
+export function useMinLoader(loading: boolean, minMs = MIN_LOADER_MS): boolean {
+  const [visible, setVisible] = useState(loading);
+  const startRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (loading) {
+      startRef.current = Date.now();
+      setVisible(true);
+    } else if (visible) {
+      const elapsed = Date.now() - startRef.current;
+      const remaining = Math.max(0, minMs - elapsed);
+      const timer = setTimeout(() => setVisible(false), remaining);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, minMs]);
+
+  return visible;
+}
 
 export function CoffeeBrewLoader({
   variant = 'section',

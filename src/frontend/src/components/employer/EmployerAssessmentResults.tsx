@@ -4,7 +4,7 @@ import { Building2 } from 'lucide-react';
 import { AssessmentResultsTemplate } from '../assessments/AssessmentResultsTemplate';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { CoffeeBrewLoader } from '../ui/CoffeeBrewLoader';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 
 interface CultureScores {
   openness: number;
@@ -27,6 +27,7 @@ export function EmployerAssessmentResults() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [scores, setScores] = useState<CultureScores | null>(null);
+  const showLoader = useMinLoader(loading);
 
   useEffect(() => {
     async function fetchResults() {
@@ -65,9 +66,9 @@ export function EmployerAssessmentResults() {
     fetchResults();
   }, [user, navigate]);
 
-  if (loading) {
+  if (showLoader) {
     return (
-      <CoffeeBrewLoader message="Loading assessment results..." />
+      <CoffeeBrewLoader variant="fullscreen" message="Loading assessment results..." />
     );
   }
 
