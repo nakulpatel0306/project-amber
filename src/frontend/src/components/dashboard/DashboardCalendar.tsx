@@ -22,6 +22,10 @@ import {
   subMonths,
   isSameMonth,
   isSameDay,
+  setMonth,
+  setYear,
+  getMonth,
+  getYear,
 } from 'date-fns';
 import { Badge } from '../ui/Badge';
 import { DayDetailPopup } from './DayDetailPopup';
@@ -87,6 +91,7 @@ export function DashboardCalendar({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   // Dates that have scheduled chats, with status info for dot color
   const chatDateInfo = useMemo(() => {
@@ -166,98 +171,139 @@ export function DashboardCalendar({
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-2">
           <button
-            onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+            onClick={() => {
+              if (showMonthPicker) {
+                setCurrentMonth(prev => setYear(prev, getYear(prev) - 1));
+              } else {
+                setCurrentMonth(prev => subMonths(prev, 1));
+              }
+            }}
             className="p-1 rounded hover:bg-[var(--color-surfaceHover)] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
           </button>
-          <span className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>
-            {format(currentMonth, 'MMMM yyyy')}
-          </span>
           <button
-            onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+            onClick={() => setShowMonthPicker(prev => !prev)}
+            className="text-xs font-semibold px-2 py-0.5 rounded hover:bg-[var(--color-surfaceHover)] transition-colors"
+            style={{ color: 'var(--color-text)' }}
+          >
+            {showMonthPicker ? String(getYear(currentMonth)) : format(currentMonth, 'MMMM yyyy')}
+          </button>
+          <button
+            onClick={() => {
+              if (showMonthPicker) {
+                setCurrentMonth(prev => setYear(prev, getYear(prev) + 1));
+              } else {
+                setCurrentMonth(prev => addMonths(prev, 1));
+              }
+            }}
             className="p-1 rounded hover:bg-[var(--color-surfaceHover)] transition-colors"
           >
             <ChevronRight className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
           </button>
         </div>
 
-        {/* Weekday headers */}
-        <div className="grid grid-cols-7 mb-1">
-          {WEEKDAYS.map(day => (
-            <div
-              key={day}
-              className="text-center text-[10px] font-medium py-1"
-              style={{ color: 'var(--color-textMuted)' }}
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Day cells */}
-        <div className="grid grid-cols-7 gap-px">
-          {calendarDays.map((day, idx) => {
-            const dayKey = format(day, 'yyyy-MM-dd');
-            const hasChats = chatDates.has(dayKey);
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isSelected = selectedDay ? isSameDay(day, selectedDay) : false;
-            const today = isToday(day);
-
-            return (
+        {showMonthPicker ? (
+          /* Month picker grid — replaces calendar */
+          <div className="grid grid-cols-3 gap-1.5">
+            {Array.from({ length: 12 }, (_, i) => (
               <button
-                key={idx}
+                key={i}
                 onClick={() => {
-                  if (isCurrentMonth) {
-                    setDayPopupDate(day);
-                  }
-                  if (hasChats) {
-                    setSelectedDay(prev => (prev && isSameDay(prev, day)) ? null : day);
-                  } else {
-                    setSelectedDay(null);
-                  }
+                  setCurrentMonth(prev => setMonth(prev, i));
+                  setShowMonthPicker(false);
                 }}
-                className="relative flex flex-col items-center justify-center py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                className="text-xs py-2.5 rounded-lg font-medium transition-colors hover:bg-[var(--color-surfaceHover)]"
                 style={{
-                  color: isSelected
-                    ? 'var(--color-accentText)'
-                    : !isCurrentMonth
-                    ? 'var(--color-textMuted)'
-                    : 'var(--color-text)',
-                  backgroundColor: isSelected
-                    ? 'var(--color-accent)'
-                    : today
-                    ? 'var(--color-surfaceHover)'
-                    : 'transparent',
-                  fontWeight: today || isSelected ? 600 : 400,
-                  opacity: isCurrentMonth ? 1 : 0.4,
+                  backgroundColor: getMonth(currentMonth) === i ? 'var(--color-accent)' : undefined,
+                  color: getMonth(currentMonth) === i ? 'var(--color-accentText)' : 'var(--color-textSecondary)',
                 }}
               >
-                {format(day, 'd')}
-                {hasChats && !isSelected && (
-                  <div className="absolute bottom-0.5 flex gap-0.5">
-                    {chatDateInfo[dayKey]?.hasConfirmed && (
-                      <div className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
-                    )}
-                    {chatDateInfo[dayKey]?.hasPending && (
-                      <div className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
-                    )}
-                  </div>
-                )}
+                {format(setMonth(new Date(), i), 'MMM')}
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          /* Calendar grid */
+          <>
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 mb-1">
+              {WEEKDAYS.map(day => (
+                <div
+                  key={day}
+                  className="text-center text-[10px] font-medium py-1"
+                  style={{ color: 'var(--color-textMuted)' }}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
 
-        {/* Clear filter hint */}
-        {selectedDay && (
-          <button
-            onClick={() => setSelectedDay(null)}
-            className="text-[10px] mt-1.5 font-medium"
-            style={{ color: 'var(--color-accent)' }}
-          >
-            Show all dates
-          </button>
+            {/* Day cells */}
+            <div className="grid grid-cols-7 gap-px">
+              {calendarDays.map((day, idx) => {
+                const dayKey = format(day, 'yyyy-MM-dd');
+                const hasChats = chatDates.has(dayKey);
+                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isSelected = selectedDay ? isSameDay(day, selectedDay) : false;
+                const today = isToday(day);
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (isCurrentMonth) {
+                        setDayPopupDate(day);
+                      }
+                      if (hasChats) {
+                        setSelectedDay(prev => (prev && isSameDay(prev, day)) ? null : day);
+                      } else {
+                        setSelectedDay(null);
+                      }
+                    }}
+                    className="relative flex flex-col items-center justify-center py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                    style={{
+                      color: isSelected
+                        ? 'var(--color-accentText)'
+                        : !isCurrentMonth
+                        ? 'var(--color-textMuted)'
+                        : 'var(--color-text)',
+                      backgroundColor: isSelected
+                        ? 'var(--color-accent)'
+                        : today
+                        ? 'var(--color-surfaceHover)'
+                        : 'transparent',
+                      fontWeight: today || isSelected ? 600 : 400,
+                      opacity: isCurrentMonth ? 1 : 0.4,
+                    }}
+                  >
+                    {format(day, 'd')}
+                    {hasChats && !isSelected && (
+                      <div className="absolute bottom-0.5 flex gap-0.5">
+                        {chatDateInfo[dayKey]?.hasConfirmed && (
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
+                        )}
+                        {chatDateInfo[dayKey]?.hasPending && (
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
+                        )}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Clear filter hint */}
+            {selectedDay && (
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="text-[10px] mt-1.5 font-medium"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                Show all dates
+              </button>
+            )}
+          </>
         )}
       </div>
 

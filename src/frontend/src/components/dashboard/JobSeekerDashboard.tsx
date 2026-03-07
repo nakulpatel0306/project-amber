@@ -13,18 +13,14 @@ import { calculateCompatibility } from '../../lib/compatibilityScoring';
 
 import { DashboardHeader } from './DashboardHeader';
 import { BentoMetricCard } from './BentoMetricCard';
-import { ChatHeatmap } from './ChatHeatmap';
-import { MatchFlowChart } from './MatchFlowChart';
 import { MatchingTable } from './MatchingTable';
-import { OceanRadar } from './OceanRadar';
-import { ActivityTimeline } from './ActivityTimeline';
 import { QuickActions } from './QuickActions';
-import { WeeklyDigest } from './WeeklyDigest';
-import { PersonalityPlayerCard } from './PersonalityPlayerCard';
-import { DashboardCalendar, type UpcomingChat } from './DashboardCalendar';
 import { StreakTracker } from './StreakTracker';
 import { CompatibilityInsights } from './CompatibilityInsights';
 import { ScheduleWidget } from './ScheduleWidget';
+import { ArchetypeStrip } from './ArchetypeStrip';
+import { ActivityCarousel } from './ActivityCarousel';
+import type { UpcomingChat } from './DashboardCalendar';
 
 interface PersonalityScores {
   openness: number;
@@ -53,6 +49,11 @@ interface TopMatch {
   matchScore: number;
   location: string;
   workStyle: string | null;
+  logoUrl: string | null;
+  description: string | null;
+  industry: string | null;
+  employerId: string;
+  chatStatus: 'none' | 'pending' | 'accepted' | 'scheduled' | 'completed' | 'connected';
 }
 
 export function JobSeekerDashboard() {
@@ -69,7 +70,7 @@ export function JobSeekerDashboard() {
   const [matchesAvailable, setMatchesAvailable] = useState(0);
   const [avgMatchScore, setAvgMatchScore] = useState(0);
   const [pendingChats, setPendingChats] = useState(0);
-  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [_connectionsCount, setConnectionsCount] = useState(0);
   const [acceptedChats, setAcceptedChats] = useState(0);
   const [completedChats, setCompletedChats] = useState(0);
   const [_totalRoles, setTotalRoles] = useState(0);
@@ -104,6 +105,9 @@ export function JobSeekerDashboard() {
 
       const typedCandidate = candidate as CandidateData | null;
 
+      // Store top traits for ArchetypeStrip
+      setTopTraits(typedCandidate?.top_traits || []);
+
       // Profile is complete if they have a headline or bio filled out
       const profileComplete = !!(typedCandidate?.headline || typedCandidate?.bio);
       setHasCompletedProfile(profileComplete);
@@ -135,7 +139,6 @@ export function JobSeekerDashboard() {
           agreeableness: typedCandidate.agreeableness_score || 0,
           neuroticism: typedCandidate.neuroticism_score || 0,
         });
-        setTopTraits(typedCandidate.top_traits || []);
       }
     };
 
@@ -251,14 +254,63 @@ export function JobSeekerDashboard() {
           return;
         }
 
-        // Fetch all employers (left join approach — get what RLS allows)
-        const { data: employers } = await supabase
-          .from('employers')
-          .select('id, company_name, location, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_quiz_completed, culture_values');
+        // Fetch employers via RPC (bypasses RLS — direct table query fails for candidates)
+        const { data: employersRaw, error: empErr } = await supabase
+          .rpc('get_employers_for_candidate', { candidate_user_id: user.id });
+
+        if (empErr) {
+          console.error('Error fetching employers via RPC:', empErr);
+        }
 
         const employerMap = new Map(
-          (employers || []).map(e => [e.id, e])
+          ((employersRaw as Record<string, unknown>[] | null) || []).map(e => [e.id as string, e])
         );
+
+        // Fetch candidate record for chat status lookup
+        const { data: candRecord } = await supabase
+          .from('candidates')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        // Build employer_id → chat status map
+        let chatStatusMap = new Map<string, string>();
+        if (candRecord) {
+          const { data: chats } = await supabase
+            .from('coffee_chats')
+            .select('employer_id, status')
+            .eq('candidate_id', candRecord.id);
+
+          if (chats) {
+            // Priority: completed > scheduled > accepted > pending
+            const priority: Record<string, number> = { completed: 4, scheduled: 3, accepted: 2, pending: 1 };
+            for (const chat of chats) {
+              const existing = chatStatusMap.get(chat.employer_id);
+              const existingPri = existing ? (priority[existing] || 0) : 0;
+              const newPri = priority[chat.status] || 0;
+              if (newPri > existingPri) {
+                chatStatusMap.set(chat.employer_id, chat.status);
+              }
+            }
+          }
+
+          // Also check connections
+          const { data: conns } = await supabase
+            .from('connections')
+            .select('employer_id, status')
+            .eq('candidate_id', candRecord.id)
+            .eq('status', 'accepted');
+
+          if (conns) {
+            for (const conn of conns) {
+              // 'connected' overrides everything except completed
+              const existing = chatStatusMap.get(conn.employer_id);
+              if (existing !== 'completed') {
+                chatStatusMap.set(conn.employer_id, 'connected');
+              }
+            }
+          }
+        }
 
         setTotalRoles(roles.length);
 
@@ -291,12 +343,19 @@ export function JobSeekerDashboard() {
               },
             });
 
+            const rawChatStatus = chatStatusMap.get(role.employer_id) || 'none';
+
             return {
               company: (emp?.company_name as string) || 'Unknown',
               role: role.title,
               matchScore: result.overallMatchScore,
               location: role.location || (emp?.location as string) || 'Remote',
               workStyle: role.work_style || null,
+              logoUrl: (emp?.company_logo_url as string) || null,
+              description: (emp?.description as string) || null,
+              industry: (emp?.industry as string) || null,
+              employerId: role.employer_id as string,
+              chatStatus: rawChatStatus as TopMatch['chatStatus'],
             };
           })
           .sort((a, b) => b.matchScore - a.matchScore)
@@ -357,6 +416,11 @@ export function JobSeekerDashboard() {
     <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
       {/* Dashboard Header — search + date + notifications */}
       <DashboardHeader greeting={greeting} firstName={firstName} />
+
+      {/* Archetype Strip — editorial personality display */}
+      {hasCompletedAssessment && personalityScores && topTraits.length > 0 && (
+        <ArchetypeStrip personalityScores={personalityScores} topTraits={topTraits} />
+      )}
 
       {/* Key Metrics Row — 3 bento cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -502,73 +566,15 @@ export function JobSeekerDashboard() {
         </div>
       )}
 
-      {/* Heatmap + Flow Chart — side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChatHeatmap matchCount={matchesAvailable} />
-        <MatchFlowChart matchesAvailable={matchesAvailable} avgMatchScore={avgMatchScore} />
-      </div>
-
-      {/* Deep Matching Table */}
+      {/* Top Personality Matches — clean status table, no card wrapper */}
       <MatchingTable
         matches={topMatches}
         hasCompletedAssessment={hasCompletedAssessment}
+        onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
       />
 
-      {/* OCEAN Radar + Activity Timeline + Weekly Digest — 3 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {hasCompletedAssessment && personalityScores ? (
-          <OceanRadar scores={personalityScores} />
-        ) : (
-          <WeeklyDigest
-            avgMatchScore={avgMatchScore}
-            matchesAvailable={matchesAvailable}
-            connectionsCount={connectionsCount}
-            pendingChats={pendingChats}
-          />
-        )}
-        <ActivityTimeline
-          matchCount={matchesAvailable}
-          chatCount={pendingChats}
-          connectionCount={connectionsCount}
-        />
-        {hasCompletedAssessment && personalityScores ? (
-          <WeeklyDigest
-            avgMatchScore={avgMatchScore}
-            matchesAvailable={matchesAvailable}
-            connectionsCount={connectionsCount}
-            pendingChats={pendingChats}
-          />
-        ) : (
-          <div className="bento-card flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-xs mb-2" style={{ color: 'var(--color-textMuted)' }}>
-                Complete your assessment to unlock OCEAN radar
-              </p>
-              <Link to="/app/personality">
-                <Button size="sm" variant="outline">Take Assessment</Button>
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Player Card + Calendar — side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {hasCompletedAssessment && personalityScores && (
-          <div className="lg:col-span-2">
-            <PersonalityPlayerCard
-              personalityScores={personalityScores}
-              topTraits={topTraits}
-            />
-          </div>
-        )}
-        <div className={hasCompletedAssessment && personalityScores ? 'lg:col-span-3' : 'lg:col-span-5'}>
-          <DashboardCalendar
-            upcomingChats={upcomingChats}
-            pendingChats={pendingChats}
-          />
-        </div>
-      </div>
+      {/* Activity Carousel */}
+      <ActivityCarousel />
 
       {/* Candidate Setup Modal */}
       <CandidateSetupModal
