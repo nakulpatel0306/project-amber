@@ -1,62 +1,129 @@
 /**
  * Stripe integration helpers.
- * Uses Stripe Checkout for payment flow.
  *
- * In production, set VITE_STRIPE_PUBLISHABLE_KEY in .env
- * Backend needs STRIPE_SECRET_KEY for creating checkout sessions.
+ * All paid flows go through the backend which creates a Stripe Checkout
+ * session and returns the hosted checkout URL for redirect.
+ *
+ * Auth: sends JWT when available. Falls back to userId in the request
+ * body / query param so billing works even when SUPABASE_JWT_SECRET is
+ * not configured on the backend (local dev).
  */
 
-const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+import { supabase } from '../supabase';
 
-let stripePromise: Promise<any> | null = null;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-export function getStripe() {
-  if (!stripePromise && STRIPE_KEY) {
-    stripePromise = import('@stripe/stripe-js').then(({ loadStripe }) =>
-      loadStripe(STRIPE_KEY)
-    );
-  }
-  return stripePromise;
+/** Get the current Supabase session (JWT + user id). */
+async function getAuthInfo(): Promise<{ token: string | null; userId: string | null }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    token: session?.access_token ?? null,
+    userId: session?.user?.id ?? null,
+  };
 }
 
-export async function createCheckoutSession(priceId: string, userId: string): Promise<string | null> {
+/** Authenticated fetch wrapper for Stripe API calls. */
+async function stripeFetch(
+  path: string,
+  body?: Record<string, unknown>,
+): Promise<Response> {
+  const { token, userId } = await getAuthInfo();
+  // Always include userId in body as fallback for when backend auth is not configured
+  const payload = body ? { ...body, userId } : { userId };
+  return fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Create a Checkout Session on the backend and redirect to Stripe's
+ * hosted checkout page.
+ *
+ * Returns the checkout URL on success, or throws on error.
+ */
+export async function createCheckoutSession(priceId: string): Promise<string> {
+  let response: Response;
   try {
-    const response = await fetch('/api/stripe/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId, userId }),
-    });
-    const data = await response.json();
-    return data.sessionId || null;
+    response = await stripeFetch('/api/stripe/create-checkout-session', { priceId });
   } catch {
-    return null;
+    throw new Error('Unable to reach the server. Please check your connection and try again.');
   }
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || `Checkout failed (HTTP ${response.status})`);
+  }
+
+  const data = await response.json();
+
+  if (!data.url) {
+    throw new Error(data.message || 'No checkout URL returned. Payment service may not be configured.');
+  }
+
+  return data.url;
 }
 
-export async function redirectToCheckout(priceId: string, userId: string): Promise<void> {
-  const stripe = await getStripe();
-  if (!stripe) {
-    // Stripe not configured — show demo flow
-    console.warn('Stripe not configured. Set VITE_STRIPE_PUBLISHABLE_KEY.');
-    return;
-  }
-
-  const sessionId = await createCheckoutSession(priceId, userId);
-  if (sessionId) {
-    await stripe.redirectToCheckout({ sessionId });
-  }
-}
-
-export async function createPortalSession(userId: string): Promise<string | null> {
+/**
+ * Redirect the browser to Stripe Checkout for the given price.
+ * Shows errors via the returned error string (null = success redirect).
+ */
+export async function redirectToCheckout(priceId: string): Promise<string | null> {
   try {
-    const response = await fetch('/api/stripe/create-portal-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-    const data = await response.json();
-    return data.url || null;
-  } catch {
+    const url = await createCheckoutSession(priceId);
+    window.location.href = url;
     return null;
+  } catch (err) {
+    return err instanceof Error ? err.message : 'Failed to start checkout';
   }
+}
+
+/**
+ * Create a Billing Portal session and return the portal URL.
+ */
+export async function createPortalSession(): Promise<string> {
+  const response = await stripeFetch('/api/stripe/create-portal-session');
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || `HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.url) {
+    throw new Error(data.message || 'No portal URL returned');
+  }
+
+  return data.url;
+}
+
+/**
+ * Fetch the current user's subscription status from the backend.
+ */
+export interface SubscriptionInfo {
+  plan: 'free' | 'smooth_talker' | 'connector';
+  status: 'active' | 'past_due' | 'canceled' | 'inactive';
+  interval: 'monthly' | 'yearly' | null;
+  has_stripe_customer: boolean;
+}
+
+export async function getSubscriptionStatus(): Promise<SubscriptionInfo> {
+  const { token, userId } = await getAuthInfo();
+  const params = userId ? `?userId=${userId}` : '';
+  const response = await fetch(`${API_BASE}/api/stripe/subscription${params}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    return { plan: 'free', status: 'inactive', interval: null, has_stripe_customer: false };
+  }
+
+  return response.json();
 }

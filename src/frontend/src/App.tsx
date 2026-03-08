@@ -47,7 +47,7 @@ import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResu
 import { EmberAgent, EmberEmployerPage } from './components/ember';
 import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
 import { NetworkHub, PracticeCoffeeChat } from './components/network';
-import { PricingPage } from './components/pricing';
+import { PricingPage, BillingSuccessPage, BillingCancelPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment, TeamDynamicsAssessment, LeadershipStyleAssessment, GrowthPhilosophyAssessment, WorkEnvironmentAssessment } from './components/assessments';
 
@@ -81,6 +81,10 @@ function App() {
                   <Route path="/accessibility" element={<AccessibilityPage />} />
                   <Route path="/pricing" element={<PricingPage />} />
                 </Route>
+
+                {/* Billing result pages (after Stripe redirect) */}
+                <Route path="/billing/success" element={<BillingSuccessPage />} />
+                <Route path="/billing/cancel" element={<BillingCancelPage />} />
 
                 {/* Auth routes (guest only) */}
                 <Route

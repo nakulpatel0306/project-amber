@@ -1,9 +1,12 @@
 export type PlanTier = 'free' | 'pro' | 'premium';
+export type SubscriptionPlan = 'free' | 'smooth_talker' | 'connector';
 export type UserRole = 'candidate' | 'employer';
 
 export interface PricingPlan {
   id: string;
   tier: PlanTier;
+  /** Internal plan key stored in the database */
+  planKey: SubscriptionPlan;
   name: string;
   tagline: string;
   price: number; // monthly in USD, 0 for free
@@ -12,14 +15,44 @@ export interface PricingPlan {
   limitations?: string[];
   cta: string;
   popular?: boolean;
-  stripePriceId?: string; // Stripe Price ID - set in production
-  stripeYearlyPriceId?: string;
+  stripePriceId?: string; // Stripe Price ID for monthly billing
+  stripeYearlyPriceId?: string; // Stripe Price ID for yearly billing
+}
+
+/**
+ * Price ID mapping — reads from env vars set in .env, with hardcoded
+ * test-mode fallbacks so local development works out of the box.
+ */
+export const PRICE_IDS = {
+  // Candidate plans
+  smooth_talker_monthly: import.meta.env.VITE_STRIPE_PRICE_SMOOTH_MONTHLY || 'price_1T2oVzHXKhBQCJWjU2CJciW7',
+  smooth_talker_yearly:  import.meta.env.VITE_STRIPE_PRICE_SMOOTH_YEARLY  || 'price_1T2oWYHXKhBQCJWjxFrbIaLX',
+  connector_monthly:     import.meta.env.VITE_STRIPE_PRICE_CONNECTOR_MONTHLY || 'price_1T2oXMHXKhBQCJWjDm9jLe3r',
+  connector_yearly:      import.meta.env.VITE_STRIPE_PRICE_CONNECTOR_YEARLY  || 'price_1T2oY1HXKhBQCJWjXUAzGSYX',
+  // Employer plans (reuse same price IDs — both roles map to the same Stripe products)
+  barista_monthly:       import.meta.env.VITE_STRIPE_PRICE_BARISTA_MONTHLY    || 'price_1T2oVzHXKhBQCJWjU2CJciW7',
+  barista_yearly:        import.meta.env.VITE_STRIPE_PRICE_BARISTA_YEARLY     || 'price_1T2oWYHXKhBQCJWjxFrbIaLX',
+  roastmaster_monthly:   import.meta.env.VITE_STRIPE_PRICE_ROASTMASTER_MONTHLY || 'price_1T2oXMHXKhBQCJWjDm9jLe3r',
+  roastmaster_yearly:    import.meta.env.VITE_STRIPE_PRICE_ROASTMASTER_YEARLY  || 'price_1T2oY1HXKhBQCJWjXUAzGSYX',
+} as const;
+
+/**
+ * Reverse-lookup: given a Stripe price ID, return the plan + interval.
+ * Used on the success page to show what the user just subscribed to.
+ */
+export function planFromPriceId(priceId: string): { plan: SubscriptionPlan; interval: 'monthly' | 'yearly' } | null {
+  if (priceId === PRICE_IDS.smooth_talker_monthly) return { plan: 'smooth_talker', interval: 'monthly' };
+  if (priceId === PRICE_IDS.smooth_talker_yearly)  return { plan: 'smooth_talker', interval: 'yearly' };
+  if (priceId === PRICE_IDS.connector_monthly)     return { plan: 'connector', interval: 'monthly' };
+  if (priceId === PRICE_IDS.connector_yearly)      return { plan: 'connector', interval: 'yearly' };
+  return null;
 }
 
 export const CANDIDATE_PLANS: PricingPlan[] = [
   {
     id: 'candidate_free',
     tier: 'free',
+    planKey: 'free',
     name: 'Lurker',
     tagline: 'Dip your toes in',
     price: 0,
@@ -39,7 +72,8 @@ export const CANDIDATE_PLANS: PricingPlan[] = [
   {
     id: 'candidate_pro',
     tier: 'pro',
-    name: 'Mingler',
+    planKey: 'smooth_talker',
+    name: 'Smooth Talker',
     tagline: 'Stand out from the crowd',
     price: 12,
     yearlyPrice: 9,
@@ -51,29 +85,30 @@ export const CANDIDATE_PLANS: PricingPlan[] = [
       'Read receipts on requests',
       'Enhanced profile',
     ],
-    cta: 'start mingling',
+    cta: 'start talking',
     popular: true,
-    stripePriceId: 'price_candidate_pro_monthly',
-    stripeYearlyPriceId: 'price_candidate_pro_yearly',
+    stripePriceId: PRICE_IDS.smooth_talker_monthly,
+    stripeYearlyPriceId: PRICE_IDS.smooth_talker_yearly,
   },
   {
     id: 'candidate_premium',
     tier: 'premium',
-    name: 'Networker',
+    planKey: 'connector',
+    name: 'Connector',
     tagline: 'Your network is your net worth',
     price: 24,
     yearlyPrice: 19,
     features: [
       'Unlimited connects',
-      'Everything in Mingler',
+      'Everything in Smooth Talker',
       'Personalized Ember coaching',
       'Profile boost',
       'Direct employer introductions',
       'Interview prep with Ember',
     ],
     cta: 'go premium',
-    stripePriceId: 'price_candidate_premium_monthly',
-    stripeYearlyPriceId: 'price_candidate_premium_yearly',
+    stripePriceId: PRICE_IDS.connector_monthly,
+    stripeYearlyPriceId: PRICE_IDS.connector_yearly,
   },
 ];
 
@@ -81,6 +116,7 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
   {
     id: 'employer_free',
     tier: 'free',
+    planKey: 'free',
     name: 'Cold Brew',
     tagline: 'Beta access, on the house',
     price: 0,
@@ -101,6 +137,7 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
   {
     id: 'employer_pro',
     tier: 'pro',
+    planKey: 'smooth_talker',
     name: 'Barista',
     tagline: 'Craft the perfect team',
     price: 49,
@@ -116,12 +153,13 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
     ],
     cta: 'brew better hires',
     popular: true,
-    stripePriceId: 'price_employer_pro_monthly',
-    stripeYearlyPriceId: 'price_employer_pro_yearly',
+    stripePriceId: PRICE_IDS.barista_monthly,
+    stripeYearlyPriceId: PRICE_IDS.barista_yearly,
   },
   {
     id: 'employer_premium',
     tier: 'premium',
+    planKey: 'connector',
     name: 'Roastmaster',
     tagline: 'Hire with confidence',
     price: 99,
@@ -136,8 +174,8 @@ export const EMPLOYER_PLANS: PricingPlan[] = [
       'ATS integrations',
     ],
     cta: 'scale your hiring',
-    stripePriceId: 'price_employer_premium_monthly',
-    stripeYearlyPriceId: 'price_employer_premium_yearly',
+    stripePriceId: PRICE_IDS.roastmaster_monthly,
+    stripeYearlyPriceId: PRICE_IDS.roastmaster_yearly,
   },
 ];
 

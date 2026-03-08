@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Crown,
@@ -6,12 +6,13 @@ import {
   Sparkles,
   ExternalLink,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { CANDIDATE_PLANS, EMPLOYER_PLANS } from '../../lib/stripe/plans';
-import { createPortalSession } from '../../lib/stripe/stripe';
+import { createPortalSession, getSubscriptionStatus, type SubscriptionInfo } from '../../lib/stripe/stripe';
 
 const tierIcons: Record<string, React.ElementType> = {
   free: Sparkles,
@@ -19,36 +20,71 @@ const tierIcons: Record<string, React.ElementType> = {
   premium: Crown,
 };
 
+/** Map DB plan name → plan tier for display lookup */
+const planToTier: Record<string, string> = {
+  free: 'free',
+  smooth_talker: 'pro',
+  connector: 'premium',
+};
+
+const statusLabels: Record<string, { text: string; color: string }> = {
+  active: { text: 'Active', color: 'var(--color-success)' },
+  past_due: { text: 'Past Due', color: '#ef4444' },
+  canceled: { text: 'Canceled', color: 'var(--color-textMuted)' },
+  inactive: { text: 'No subscription', color: 'var(--color-textMuted)' },
+};
+
 export function SubscriptionSection() {
   const { user, isEmployer } = useAuth();
   const { error: showError } = useToast();
   const navigate = useNavigate();
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [isLoadingSub, setIsLoadingSub] = useState(true);
 
-  // In production, this would come from Supabase user metadata or a subscriptions table
-  const currentPlanId = isEmployer ? 'employer_free' : 'candidate_free';
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchSub() {
+      try {
+        const info = await getSubscriptionStatus();
+        if (!cancelled) setSubscription(info);
+      } catch {
+        // Fallback to free
+        if (!cancelled) setSubscription({ plan: 'free', status: 'inactive', interval: null, has_stripe_customer: false });
+      } finally {
+        if (!cancelled) setIsLoadingSub(false);
+      }
+    }
+    fetchSub();
+    return () => { cancelled = true; };
+  }, []);
+
   const plans = isEmployer ? EMPLOYER_PLANS : CANDIDATE_PLANS;
-  const currentPlan = plans.find(p => p.id === currentPlanId) || plans[0];
+  const currentTier = planToTier[subscription?.plan || 'free'] || 'free';
+  const currentPlan = plans.find(p => p.tier === currentTier) || plans[0];
+  const Icon = tierIcons[currentPlan.tier];
+  const statusInfo = statusLabels[subscription?.status || 'inactive'];
 
   const handleManageSubscription = async () => {
     if (!user) return;
     setIsLoadingPortal(true);
     try {
-      const url = await createPortalSession(user.id);
-      if (url) {
-        window.location.href = url;
-      } else {
-        // Stripe not configured - go to pricing
-        navigate('/app/pricing');
-      }
+      const url = await createPortalSession();
+      window.location.href = url;
     } catch {
-      showError('Error', 'Could not open subscription portal');
+      showError('Error', 'Could not open subscription portal. Make sure you have an active subscription.');
     } finally {
       setIsLoadingPortal(false);
     }
   };
 
-  const Icon = tierIcons[currentPlan.tier];
+  if (isLoadingSub) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--color-textMuted)' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -87,6 +123,18 @@ export function SubscriptionSection() {
             <p className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
               {currentPlan.price === 0 ? 'Free' : `$${currentPlan.price}/mo`}
             </p>
+            {subscription?.status && subscription.status !== 'inactive' && (
+              <span
+                className="text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: `${statusInfo.color}15`,
+                  color: statusInfo.color,
+                }}
+              >
+                {statusInfo.text}
+                {subscription.interval ? ` (${subscription.interval})` : ''}
+              </span>
+            )}
           </div>
         </div>
 
@@ -113,11 +161,11 @@ export function SubscriptionSection() {
         >
           {currentPlan.tier === 'free' ? 'upgrade plan' : 'change plan'}
         </Button>
-        {currentPlan.tier !== 'free' && (
+        {subscription?.has_stripe_customer && (
           <Button
             variant="outline"
             onClick={handleManageSubscription}
-            leftIcon={<ExternalLink className="w-4 h-4" />}
+            leftIcon={isLoadingPortal ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
             disabled={isLoadingPortal}
           >
             manage billing
