@@ -461,7 +461,7 @@ export function Assessment() {
         <div className="text-center">
           <div
             className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
+            style={{ backgroundColor: 'var(--color-accent)' }}
           >
             <Sparkles className="w-8 h-8 text-white animate-pulse" />
           </div>
@@ -483,7 +483,7 @@ export function Assessment() {
         <motion.div
           className="h-1"
           style={{
-            background: 'linear-gradient(90deg, var(--color-accent), var(--color-accentHover))',
+            backgroundColor: 'var(--color-accent)',
           }}
           animate={{ width: `${progress}%` }}
           transition={{ type: 'spring', stiffness: 100, damping: 20 }}

@@ -100,7 +100,7 @@ export function PricingPage() {
           <div
             className="p-6 rounded-2xl mb-8 border text-center"
             style={{
-              background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.05))',
+              backgroundColor: 'rgba(217, 119, 6, 0.08)',
               borderColor: 'var(--color-accent)',
             }}
           >

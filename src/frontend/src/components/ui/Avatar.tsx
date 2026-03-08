@@ -69,11 +69,11 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
         {emojiData ? (
           // Render emoji avatar
           (() => {
-            const { emoji, gradient } = getAvatarDisplay(emojiData.avatarId, emojiData.colorId);
+            const { emoji, backgroundColor } = getAvatarDisplay(emojiData.avatarId, emojiData.colorId);
             return (
               <div
                 className={cn('flex h-full w-full items-center justify-center', emojiSizeMap[size])}
-                style={{ background: gradient }}
+                style={{ backgroundColor }}
               >
                 {emoji}
               </div>
@@ -91,7 +91,7 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
           <div
             className="flex h-full w-full items-center justify-center font-medium"
             style={{
-              background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+              backgroundColor: 'var(--color-accent)',
               color: 'var(--color-accentText)',
             }}
           >

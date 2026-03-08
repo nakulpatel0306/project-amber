@@ -178,7 +178,7 @@ export function SubscriptionSection() {
         <div
           className="p-4 rounded-xl"
           style={{
-            background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(139, 92, 246, 0.08))',
+            backgroundColor: 'rgba(217, 119, 6, 0.08)',
             border: '1px solid var(--color-border)',
           }}
         >

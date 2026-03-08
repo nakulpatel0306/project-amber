@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 // ScoreRing is defined locally below
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -172,19 +173,19 @@ function companySizeOrder(size: string): number {
   return order[size] || 0;
 }
 
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #6366f1, #8b5cf6)',
-  'linear-gradient(135deg, #f43f5e, #ec4899)',
-  'linear-gradient(135deg, #14b8a6, #06b6d4)',
-  'linear-gradient(135deg, #f59e0b, #ef4444)',
-  'linear-gradient(135deg, #8b5cf6, #d946ef)',
-  'linear-gradient(135deg, #10b981, #3b82f6)',
+const AVATAR_COLORS = [
+  '#6366f1',
+  '#f43f5e',
+  '#14b8a6',
+  '#f59e0b',
+  '#8b5cf6',
+  '#10b981',
 ];
 
-function avatarGradient(name: string): string {
+function avatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 /* ------------------------------------------------------------------ */
@@ -220,6 +221,7 @@ export function MatchingAgent() {
   const [activeView, setActiveView] = useState<'browse' | 'pipeline'>('browse');
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>('saved');
   const { savedMatches, unsave, counts: pipelineCounts } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading);
 
   // Derived filter values
   const industries = useMemo(
@@ -489,16 +491,9 @@ export function MatchingAgent() {
 
   /* ---- Loading state ---- */
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse" style={{ backgroundColor: 'var(--color-accent)' }}>
-            <Search className="w-8 h-8 text-white" />
-          </div>
-          <p style={{ color: 'var(--color-textMuted)' }}>Loading roles...</p>
-        </div>
-      </div>
+      <CoffeeBrewLoader variant="fullscreen" message="Loading roles..." />
     );
   }
 
@@ -510,7 +505,7 @@ export function MatchingAgent() {
         <div className="text-center max-w-md">
           <div
             className="w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))' }}
+            style={{ backgroundColor: 'var(--color-accent)' }}
           >
             <Target className="w-10 h-10 text-white" />
           </div>
@@ -787,7 +782,7 @@ export function MatchingAgent() {
                       {/* Company initial avatar */}
                       <div
                         className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: avatarGradient(companyName) }}
+                        style={{ backgroundColor: avatarColor(companyName) }}
                       >
                         <span className="text-lg font-semibold text-white">
                           {companyName.charAt(0).toUpperCase()}

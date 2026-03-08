@@ -281,3 +281,123 @@ def get_coffee_chat_by_id(chat_id: str) -> Optional[dict]:
     except Exception as e:
         print(f"Error fetching coffee chat: {e}")
         return None
+
+
+# ============ Connection Helpers ============
+
+def create_connection(data: dict) -> Optional[dict]:
+    """Create a new connection request."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('connections').insert(data).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error creating connection: {e}")
+        return None
+
+
+def get_connections_for_user(user_id: str) -> list[dict]:
+    """Get all connections where user is sender or receiver."""
+    client = get_supabase()
+    if not client:
+        return []
+    try:
+        sent = client.table('connections').select('*').eq('sender_id', user_id).execute()
+        received = client.table('connections').select('*').eq('receiver_id', user_id).execute()
+        return (sent.data or []) + (received.data or [])
+    except Exception as e:
+        print(f"Error fetching connections: {e}")
+        return []
+
+
+def get_connection_by_id(connection_id: str) -> Optional[dict]:
+    """Get a single connection by ID."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('connections').select('*').eq('id', connection_id).single().execute()
+        return result.data
+    except Exception as e:
+        print(f"Error fetching connection: {e}")
+        return None
+
+
+def update_connection(connection_id: str, data: dict) -> Optional[dict]:
+    """Update a connection record."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('connections').update(data).eq('id', connection_id).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error updating connection: {e}")
+        return None
+
+
+def get_connection_between(user_a: str, user_b: str) -> Optional[dict]:
+    """Get the connection between two users (in either direction)."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        # Check A→B
+        result = client.table('connections').select('*').eq(
+            'sender_id', user_a
+        ).eq('receiver_id', user_b).execute()
+        if result.data:
+            return result.data[0]
+        # Check B→A
+        result = client.table('connections').select('*').eq(
+            'sender_id', user_b
+        ).eq('receiver_id', user_a).execute()
+        if result.data:
+            return result.data[0]
+        return None
+    except Exception as e:
+        print(f"Error fetching connection between users: {e}")
+        return None
+
+
+def create_meet_invite(data: dict) -> Optional[dict]:
+    """Create a connection meet invite."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('connection_meet_invites').insert(data).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error creating meet invite: {e}")
+        return None
+
+
+def update_meet_invite(invite_id: str, data: dict) -> Optional[dict]:
+    """Update a meet invite record."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('connection_meet_invites').update(data).eq('id', invite_id).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error updating meet invite: {e}")
+        return None
+
+
+def get_meet_invite_by_connection(connection_id: str) -> Optional[dict]:
+    """Get the meet invite for a connection."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('connection_meet_invites').select('*').eq(
+            'connection_id', connection_id
+        ).order('created_at', desc=True).limit(1).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error fetching meet invite: {e}")
+        return None

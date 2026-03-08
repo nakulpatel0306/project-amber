@@ -96,15 +96,8 @@ export function PersonalityPlayerCard({ personalityScores, topTraits }: Personal
         style={{
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-accent)',
-          background: 'radial-gradient(ellipse at top right, rgba(217, 119, 6, 0.04), var(--color-surface) 70%)',
         }}
       >
-        {/* Gradient strip */}
-        <div
-          className="h-[3px]"
-          style={{ background: 'linear-gradient(90deg, #8B5CF6, #F59E0B, #10B981)' }}
-        />
-
         <div className="p-5">
           {/* Header: Archetype title */}
           <div className="flex items-center gap-3 mb-4">

@@ -2,15 +2,19 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
+import { useConnections } from '../../contexts/ConnectionsContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useEmployerMatchData } from '../../hooks/useMatchData';
 import { useSavedMatches } from '../../hooks/useSavedMatches';
 import { EmberFirefly } from './EmberFirefly';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { PlayerCardGrid } from './gallery/PlayerCardGrid';
 import { GalleryFilterBar } from './gallery/GalleryFilterBar';
 import { DeepDive } from './gallery/DeepDive';
 import { CompareView } from './gallery/CompareView';
 import { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
+import { ConnectModal } from '../connections/ConnectModal';
 import { Button } from '../ui/Button';
 import type { CandidateResult, PageView, SortOption } from '../../types/matching.types';
 import type { OCEANScores } from '../../lib/compatibilityScoring';
@@ -21,6 +25,8 @@ export function EmberEmployerPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { success: showSuccess, error: showError } = useToast();
+  const { profile } = useAuth();
+  const { getConnectionStatus, sendConnectionRequest } = useConnections();
 
   // Data hooks
   const {
@@ -28,12 +34,14 @@ export function EmberEmployerPage() {
     selectedRoleId, handleRoleChange, setPendingChats,
   } = useEmployerMatchData();
   const { isSaved, save, unsave, getSavedMatch } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading, 3500);
 
   // View state
   const deepdiveParam = searchParams.get('deepdive');
   const [view, setView] = useState<EmployerView>(deepdiveParam ? 'deepdive' : 'gallery');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateResult | null>(null);
   const [brewTarget, setBrewTarget] = useState<CandidateResult | null>(null);
+  const [connectTarget, setConnectTarget] = useState<CandidateResult | null>(null);
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
 
   // Handle deepdive URL param once candidates load
@@ -202,6 +210,25 @@ export function EmberEmployerPage() {
     }
   }, [employer, brewTarget, selectedRoleId, roles, getSavedMatch, showSuccess, showError, setPendingChats]);
 
+  const handleConnect = useCallback(async (message: string, meetInvite?: { proposed_times: string[]; duration_minutes: number }) => {
+    if (!employer || !connectTarget) return;
+    try {
+      await sendConnectionRequest({
+        receiverId: connectTarget.candidateId,
+        senderRole: 'employer',
+        message,
+        senderName: profile?.full_name || undefined,
+        senderCompany: employer.company_name,
+        receiverName: connectTarget.name,
+        meetInvite,
+      });
+      showSuccess('Sent!', `Connection request sent to ${connectTarget.name}`);
+    } catch {
+      showError('Error', 'Failed to send connection request');
+      throw new Error('Failed');
+    }
+  }, [employer, connectTarget, profile, sendConnectionRequest, showSuccess, showError]);
+
   // Deep dive dimension data
   const deepDiveDimensions = useMemo(() => {
     if (!selectedCandidate || !employer) return [];
@@ -220,17 +247,8 @@ export function EmberEmployerPage() {
   }, [candidates, compareIds]);
 
   // Loading
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="text-center">
-          <EmberFirefly size="lg" mood="thinking" animated />
-          <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Preparing your insights...
-          </p>
-        </div>
-      </div>
-    );
+  if (showLoader) {
+    return <CoffeeBrewLoader variant="fullscreen" />;
   }
 
   // No employer setup
@@ -329,10 +347,12 @@ export function EmberEmployerPage() {
                 savedIds={savedIds}
                 selectedIds={compareIds}
                 showSelect={true}
+                getConnectionStatus={getConnectionStatus}
                 onDeepDive={handleDeepDive}
                 onBrew={(c) => setBrewTarget(c)}
                 onToggleSave={handleToggleSave}
                 onToggleSelect={handleToggleSelect}
+                onConnect={(c) => setConnectTarget(c)}
               />
             </motion.div>
           ) : view === 'deepdive' && selectedCandidate ? (
@@ -354,9 +374,11 @@ export function EmberEmployerPage() {
               employerId={employer.id}
               roleId={selectedRoleId || undefined}
               isSaved={savedIds.has(selectedCandidate.candidateId)}
+              connectionStatus={getConnectionStatus(selectedCandidate.candidateId)}
               onBack={handleBackToGallery}
               onBrew={() => setBrewTarget(selectedCandidate)}
               onToggleSave={() => handleToggleSave(selectedCandidate)}
+              onConnect={() => setConnectTarget(selectedCandidate)}
               onCompare={() => {
                 setCompareIds(prev => {
                   const next = new Set(prev);
@@ -387,6 +409,19 @@ export function EmberEmployerPage() {
           archetype={brewTarget.archetype}
           overallScore={brewTarget.overallScore}
           onBrew={handleBrew}
+        />
+      )}
+
+      {/* Connect Modal */}
+      {connectTarget && (
+        <ConnectModal
+          isOpen={!!connectTarget}
+          onClose={() => setConnectTarget(null)}
+          name={connectTarget.name}
+          subtitle={connectTarget.headline}
+          archetype={connectTarget.archetype}
+          overallScore={connectTarget.overallScore}
+          onConnect={handleConnect}
         />
       )}
     </div>

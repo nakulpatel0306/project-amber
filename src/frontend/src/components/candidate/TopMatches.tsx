@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Trophy,
   Building2,
@@ -8,14 +9,19 @@ import {
   Briefcase,
   ChevronRight,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { ScoreRing } from '../ui/ScoreRing';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility, OCEANScores } from '../../lib/compatibilityScoring';
 import { determineArchetype } from '../../lib/archetypes';
+import { getMatchColor } from '../../utils/matchHelpers';
+import { cardGridContainer, cardItem, sectionReveal } from '../../utils/motion';
 
 interface TopMatch {
   rank: number;
@@ -38,31 +44,14 @@ interface TopMatch {
   };
 }
 
-function ScoreRing({ score, size = 64, label }: { score: number; size?: number; label?: string }) {
-  const radius = (size - 6) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-  const color = score >= 85 ? 'var(--color-success)' : score >= 70 ? 'var(--color-accent)' : 'var(--color-warning)';
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-border)" strokeWidth={3} />
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={3}
-            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-            className="transition-all duration-1000 ease-out" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold" style={{ color }}>{score}</span>
-        </div>
-      </div>
-      {label && <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{label}</span>}
-    </div>
-  );
-}
-
 const OCEAN_LABELS = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Stability'];
+
+function getRankMedalClass(rank: number): string | null {
+  if (rank === 1) return 'rank-medal rank-medal-gold';
+  if (rank === 2) return 'rank-medal rank-medal-silver';
+  if (rank === 3) return 'rank-medal rank-medal-bronze';
+  return null;
+}
 
 export function TopMatches() {
   const { user } = useAuth();
@@ -73,6 +62,18 @@ export function TopMatches() {
   const [selectedMatch, setSelectedMatch] = useState<TopMatch | null>(null);
   const [archetype, setArchetype] = useState<ReturnType<typeof determineArchetype> | null>(null);
   const [candidateId, setCandidateId] = useState<string | null>(null);
+  const showLoader = useMinLoader(isLoading, 3500);
+
+  // Dashboard stats
+  const stats = useMemo(() => {
+    if (matches.length === 0) return null;
+    const scores = matches.map(m => m.overallScore);
+    return {
+      total: matches.length,
+      topScore: Math.max(...scores),
+      avgScore: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+    };
+  }, [matches]);
 
   useEffect(() => {
     if (!user) return;
@@ -167,17 +168,8 @@ export function TopMatches() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <EmberFirefly size="lg" mood="thinking" animated />
-          <p className="mt-4 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            Calculating your top matches...
-          </p>
-        </div>
-      </div>
-    );
+  if (showLoader) {
+    return <CoffeeBrewLoader variant="fullscreen" />;
   }
 
   if (matches.length === 0) {
@@ -200,17 +192,38 @@ export function TopMatches() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <motion.div
+      className="max-w-6xl mx-auto px-6 py-8"
+      variants={sectionReveal}
+      initial="hidden"
+      animate="show"
+    >
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
             <Trophy className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
             Your Top Matches
           </h1>
-          <p style={{ color: 'var(--color-textSecondary)' }}>
-            {archetype ? `As ${archetype.name}, here are your best personality fits` : 'Roles ranked by personality compatibility'}
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p style={{ color: 'var(--color-textSecondary)' }}>
+              {archetype ? `As ${archetype.name}, here are your best personality fits` : 'Roles ranked by personality compatibility'}
+            </p>
+            {stats && (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="stat-badge">
+                  <TrendingUp className="w-2.5 h-2.5" />
+                  {stats.total} matches
+                </span>
+                <span className="stat-badge">
+                  Top {stats.topScore}%
+                </span>
+                <span className="stat-badge">
+                  Avg {stats.avgScore}%
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         {archetype && (
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
@@ -222,78 +235,115 @@ export function TopMatches() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Match list */}
-        <div className="lg:col-span-2 space-y-3">
-          {matches.map(match => (
-            <button
-              key={match.roleId}
-              onClick={() => setSelectedMatch(match)}
-              className={`w-full p-4 rounded-2xl text-left transition-all ${
-                selectedMatch?.roleId === match.roleId
-                  ? 'ring-2 ring-[var(--color-accent)]'
-                  : 'hover:bg-[var(--color-surfaceHover)]'
-              }`}
-              style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
-                    <Building2 className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
+        <motion.div
+          className="lg:col-span-2 space-y-3"
+          variants={cardGridContainer}
+          initial="hidden"
+          animate="show"
+        >
+          {matches.map(match => {
+            const medalClass = getRankMedalClass(match.rank);
+
+            return (
+              <motion.div key={match.roleId} variants={cardItem}>
+                <button
+                  onClick={() => setSelectedMatch(match)}
+                  className={`w-full p-4 rounded-2xl text-left transition-all ${
+                    selectedMatch?.roleId === match.roleId
+                      ? 'ring-2 ring-[var(--color-accent)]'
+                      : 'hover:bg-[var(--color-surfaceHover)]'
+                  }`}
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: selectedMatch?.roleId === match.roleId ? '0 0 16px color-mix(in srgb, var(--color-accent) 12%, transparent)' : undefined,
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+                        <Building2 className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
+                      </div>
+                      {medalClass ? (
+                        <span className={`${medalClass} absolute -top-1.5 -right-1.5 text-[9px]`}>
+                          {match.rank}
+                        </span>
+                      ) : (
+                        <div
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{
+                            backgroundColor: 'var(--color-surface)',
+                            color: 'var(--color-textMuted)',
+                            border: '1px solid var(--color-border)',
+                          }}
+                        >
+                          {match.rank}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>{match.roleTitle}</h3>
+                      <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{match.companyName}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        {match.location && (
+                          <span className="text-xs flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
+                            <MapPin className="w-3 h-3" /> {match.location}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(match.overallScore) }}>
+                        {match.overallScore}%
+                      </div>
+                      {/* Mini metric bars */}
+                      <div className="space-y-0.5 mt-1 w-20">
+                        {[
+                          { score: match.traitScore, label: 'T' },
+                          { score: match.cultureScore, label: 'C' },
+                        ].map(({ score, label }) => (
+                          <div key={label} className="flex items-center gap-1">
+                            <span className="text-[9px] w-3" style={{ color: 'var(--color-textMuted)' }}>{label}</span>
+                            <div className="metric-bar flex-1">
+                              <div className="metric-bar-fill" style={{ width: `${score}%`, backgroundColor: getMatchColor(score) }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
                   </div>
-                  <div
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{
-                      backgroundColor: match.rank <= 3 ? 'var(--color-accent)' : 'var(--color-surface)',
-                      color: match.rank <= 3 ? 'white' : 'var(--color-textMuted)',
-                      border: match.rank > 3 ? '1px solid var(--color-border)' : 'none',
-                    }}
-                  >
-                    {match.rank}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>{match.roleTitle}</h3>
-                  <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{match.companyName}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    {match.location && (
-                      <span className="text-xs flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
-                        <MapPin className="w-3 h-3" /> {match.location}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-bold" style={{ color: match.overallScore >= 85 ? 'var(--color-success)' : match.overallScore >= 70 ? 'var(--color-accent)' : 'var(--color-warning)' }}>
-                    {match.overallScore}%
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{match.traitScore}% T</span>
-                    <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{match.cultureScore}% C</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--color-textMuted)' }} />
-              </div>
-            </button>
-          ))}
-        </div>
+                </button>
+              </motion.div>
+            );
+          })}
+        </motion.div>
 
         {/* Detail panel */}
         <div className="lg:col-span-1">
           {selectedMatch ? (
-            <div className="sticky top-6 p-5 rounded-2xl space-y-5" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div className="sticky top-6 glass-stat p-5 space-y-5">
               <div className="text-center pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
                 <div className="flex justify-center gap-3">
-                  <ScoreRing score={selectedMatch.overallScore} label="Overall" />
-                  <ScoreRing score={selectedMatch.traitScore} size={50} label="Traits" />
-                  <ScoreRing score={selectedMatch.cultureScore} size={50} label="Culture" />
+                  <div className="inner-glow-ring">
+                    <ScoreRing score={selectedMatch.overallScore} size={64} strokeWidth={3} label="Overall" />
+                  </div>
+                  <ScoreRing score={selectedMatch.traitScore} size={50} strokeWidth={3} label="Traits" />
+                  <ScoreRing score={selectedMatch.cultureScore} size={50} strokeWidth={3} label="Culture" />
                 </div>
-                <h3 className="font-semibold text-lg mt-3" style={{ color: 'var(--color-text)' }}>{selectedMatch.roleTitle}</h3>
+                <h3 className="font-semibold text-lg mt-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{selectedMatch.roleTitle}</h3>
                 <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{selectedMatch.companyName}</p>
+                {selectedMatch.rank <= 3 && (
+                  <span className={getRankMedalClass(selectedMatch.rank) || ''} style={{ marginTop: 4, display: 'inline-flex' }}>
+                    #{selectedMatch.rank}
+                  </span>
+                )}
               </div>
 
-              {/* OCEAN mini bars */}
+              {/* OCEAN breakdown with metric bars */}
               <div>
                 <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text)' }}>OCEAN Breakdown</h4>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {[
                     selectedMatch.breakdown.opennessFit,
                     selectedMatch.breakdown.conscientiousnessFit,
@@ -302,12 +352,15 @@ export function TopMatches() {
                     selectedMatch.breakdown.neuroticismFit,
                   ].map((fit, i) => (
                     <div key={i}>
-                      <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center justify-between mb-1">
                         <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{OCEAN_LABELS[i]}</span>
-                        <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{fit}%</span>
+                        <span className="text-xs font-semibold" style={{ color: getMatchColor(fit) }}>{fit}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-                        <div className="h-full rounded-full" style={{ width: `${fit}%`, backgroundColor: fit >= 80 ? 'var(--color-success)' : fit >= 60 ? 'var(--color-accent)' : 'var(--color-warning)' }} />
+                      <div className="metric-bar">
+                        <div
+                          className="metric-bar-fill"
+                          style={{ width: `${fit}%`, backgroundColor: getMatchColor(fit) }}
+                        />
                       </div>
                     </div>
                   ))}
@@ -362,6 +415,6 @@ export function TopMatches() {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

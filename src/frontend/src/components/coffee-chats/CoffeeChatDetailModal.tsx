@@ -173,7 +173,7 @@ export function CoffeeChatDetailModal({
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                backgroundColor: 'var(--color-accent)',
               }}
             >
               {viewerRole === 'candidate' ? (

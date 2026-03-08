@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -102,6 +102,8 @@ export function BrowseCandidates() {
   const [employer, setEmployer] = useState<EmployerData | null>(null);
   const [roles, setRoles] = useState<RoleData[]>([]);
   const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
+
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => {
     if (!user) return;
@@ -296,11 +298,9 @@ export function BrowseCandidates() {
     return 'var(--color-textMuted)';
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader variant="fullscreen" message="Finding candidates..." />
     );
   }
 
@@ -528,8 +528,7 @@ export function BrowseCandidates() {
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                       style={{
-                        background:
-                          'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                        backgroundColor: 'var(--color-accent)',
                       }}
                     >
                       <span className="text-lg font-medium text-white">

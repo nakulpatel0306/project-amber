@@ -12,6 +12,7 @@ export {
   type CardProps,
 } from './Card';
 export { Spinner, PageLoader, InlineLoader, type SpinnerProps } from './Spinner';
+export { CoffeeBrewLoader, useMinLoader, type CoffeeBrewLoaderProps } from './CoffeeBrewLoader';
 export { Avatar, AvatarGroup, type AvatarProps, type AvatarGroupProps } from './Avatar';
 export { Badge, StatusBadge, type BadgeProps, type StatusBadgeProps } from './Badge';
 export { Toast, ToastContainer, type ToastProps, type ToastContainerProps } from './Toast';

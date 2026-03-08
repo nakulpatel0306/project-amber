@@ -156,7 +156,7 @@ export function CultureQuiz() {
           <div
             className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
             style={{
-              background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+              backgroundColor: 'var(--color-accent)',
               boxShadow: '0 8px 24px rgba(217, 119, 6, 0.25)',
             }}
           >
@@ -259,7 +259,7 @@ export function CultureQuiz() {
           <div
             className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
             style={{
-              background: 'linear-gradient(135deg, var(--color-success), #059669)',
+              backgroundColor: 'var(--color-success)',
             }}
           >
             <Check className="w-10 h-10 text-white" />

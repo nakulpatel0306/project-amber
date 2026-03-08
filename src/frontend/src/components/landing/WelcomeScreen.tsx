@@ -15,21 +15,19 @@ import {
   Users,
   Zap
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AnimatedBlobs,
   CursorSpotlight,
   FloatingCoffeeBeans,
-  FloatingThemeSelector,
   InteractiveGreeting,
   MagneticButton,
   ScrollProgress,
   TiltCard,
   TypewriterText,
 } from '.';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { LandingFooter } from './LandingFooter';
 import { LandingNav } from './LandingNav';
@@ -433,7 +431,7 @@ function TestimonialCarousel() {
                   {/* Subtle top glow */}
                   <div
                     className="absolute top-0 left-0 right-0 h-1 opacity-40"
-                    style={{ background: `linear-gradient(90deg, transparent, ${s.color}, transparent)` }}
+                    style={{ backgroundColor: s.color }}
                   />
 
                   {/* Quote */}
@@ -699,7 +697,7 @@ function ValuePropTabs() {
         <div
           className="h-1 transition-all duration-500"
           style={{
-            background: `linear-gradient(90deg, transparent, ${prop.color}, transparent)`,
+            backgroundColor: prop.color,
           }}
         />
       </div>
@@ -707,12 +705,41 @@ function ValuePropTabs() {
   );
 }
 
-function ScrollSection({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
+function ScrollSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
-    <div ref={ref} className={`scroll-animate ${isVisible ? 'visible'  : ''} ${className}`}>
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-100px' }}
+      transition={{ duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }}
+    >
       {children}
-    </div>
+    </motion.div>
+  );
+}
+
+const staggerContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+};
+
+const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+};
+
+function StaggerGrid({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: '-80px' }}
+      variants={staggerContainer}
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -889,8 +916,6 @@ export function WelcomeScreen() {
       <FloatingCoffeeBeans />
       <CursorSpotlight />
       <ScrollProgress />
-      <FloatingThemeSelector />
-
       {/* Navigation */}
       <LandingNav />
 
@@ -903,9 +928,12 @@ export function WelcomeScreen() {
           </div>
 
           {/* Main Heading */}
-          <h1
-            className="text-6xl sm:text-7xl lg:text-8xl font-bold mb-6 tracking-tight animate-slide-up"
+          <motion.h1
+            className="text-6xl sm:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
             style={{ color: 'var(--color-text)' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
           >
             Find Jobs That Fit{' '}
             <span className="block mt-2">
@@ -914,17 +942,25 @@ export function WelcomeScreen() {
                 className="animate-gradient-text"
               />
             </span>
-          </h1>
+          </motion.h1>
 
-          <p
-            className="text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-slide-up animate-delay-200"
+          <motion.p
+            className="text-lg sm:text-xl max-w-2xl mx-auto mb-10"
             style={{ color: 'var(--color-textSecondary)' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
           >
             The Job Search Is Broken. We Match You Where You'll Actually Belong, Based On Who You Are, Not What's On Your Resume.
-          </p>
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in animate-delay-300">
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          >
             <Link to="/auth/signup">
               <MagneticButton
                 className="px-8 py-4 rounded-2xl text-base font-semibold flex items-center gap-3 animate-glow-pulse"
@@ -952,7 +988,7 @@ export function WelcomeScreen() {
                 I'm Hiring
               </MagneticButton>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -1057,48 +1093,49 @@ export function WelcomeScreen() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {processSteps.map((step) => (
-                <TiltCard
-                  key={step.number}
-                  className="p-8 rounded-3xl border cursor-default"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                  }}
-                  tiltAmount={5}
-                >
-                  <div className="flex items-start gap-5">
-                    <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${step.color}15` }}
-                    >
-                      <step.icon className="w-7 h-7" style={{ color: step.color }} />
-                    </div>
-                    <div>
+                <motion.div key={step.number} variants={staggerItem}>
+                  <TiltCard
+                    className="p-8 rounded-3xl border cursor-default"
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                    tiltAmount={5}
+                  >
+                    <div className="flex items-start gap-5">
                       <div
-                        className="text-xs font-mono font-bold mb-2"
-                        style={{ color: step.color }}
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${step.color}15` }}
                       >
-                        {step.number}
+                        <step.icon className="w-7 h-7" style={{ color: step.color }} />
                       </div>
-                      <h3
-                        className="text-xl font-semibold mb-2"
-                        style={{ color: 'var(--color-text)' }}
-                      >
-                        {step.title}
-                      </h3>
-                      <p
-                        className="text-sm leading-relaxed"
-                        style={{ color: 'var(--color-textSecondary)' }}
-                      >
-                        {step.description}
-                      </p>
+                      <div>
+                        <div
+                          className="text-xs font-mono font-bold mb-2"
+                          style={{ color: step.color }}
+                        >
+                          {step.number}
+                        </div>
+                        <h3
+                          className="text-xl font-semibold mb-2"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {step.title}
+                        </h3>
+                        <p
+                          className="text-sm leading-relaxed"
+                          style={{ color: 'var(--color-textSecondary)' }}
+                        >
+                          {step.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </TiltCard>
+                  </TiltCard>
+                </motion.div>
               ))}
-            </div>
+            </StaggerGrid>
           </div>
         </section>
       </ScrollSection>
@@ -1149,8 +1186,9 @@ export function WelcomeScreen() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StaggerGrid className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* For Candidates */}
+              <motion.div variants={staggerItem}>
               <TiltCard
                 className="p-8 rounded-2xl border relative overflow-hidden"
                 style={{
@@ -1201,8 +1239,10 @@ export function WelcomeScreen() {
                   </Link>
                 </div>
               </TiltCard>
+              </motion.div>
 
               {/* For Employers */}
+              <motion.div variants={staggerItem}>
               <TiltCard
                 className="p-8 rounded-2xl border relative overflow-hidden"
                 style={{
@@ -1254,7 +1294,8 @@ export function WelcomeScreen() {
                   </Link>
                 </div>
               </TiltCard>
-            </div>
+              </motion.div>
+            </StaggerGrid>
           </div>
         </section>
       </ScrollSection>
@@ -1443,11 +1484,13 @@ export function WelcomeScreen() {
             </div>
 
             {/* FAQ items as individual cards */}
-            <div className="space-y-3">
+            <StaggerGrid className="space-y-3">
               {faqItems.map((item, index) => (
-                <FAQCard key={index} item={item} index={index} />
+                <motion.div key={index} variants={staggerItem}>
+                  <FAQCard item={item} index={index} />
+                </motion.div>
               ))}
-            </div>
+            </StaggerGrid>
 
             {/* Bottom CTA */}
             <div
@@ -1587,11 +1630,10 @@ export function WelcomeScreen() {
             </div>
 
             {/* Trust line */}
-            <div
+            <StaggerGrid
               className="flex items-center justify-center gap-5 mt-10 text-xs"
-              style={{ color: 'var(--color-textMuted)' }}
             >
-              <span className="flex items-center gap-1.5">
+              <motion.span variants={staggerItem} className="flex items-center gap-1.5" style={{ color: 'var(--color-textMuted)' }}>
                 <motion.div
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0 }}
@@ -1599,12 +1641,12 @@ export function WelcomeScreen() {
                   <Shield className="w-3.5 h-3.5" />
                 </motion.div>
                 Science-Backed
-              </span>
-              <span
+              </motion.span>
+              <motion.span variants={staggerItem}
                 className="w-1 h-1 rounded-full"
                 style={{ backgroundColor: 'var(--color-border)' }}
               />
-              <span className="flex items-center gap-1.5">
+              <motion.span variants={staggerItem} className="flex items-center gap-1.5" style={{ color: 'var(--color-textMuted)' }}>
                 <motion.div
                   animate={{ y: [0, -2, 0] }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
@@ -1612,12 +1654,12 @@ export function WelcomeScreen() {
                   <Coffee className="w-3.5 h-3.5" />
                 </motion.div>
                 Coffee Chats
-              </span>
-              <span
+              </motion.span>
+              <motion.span variants={staggerItem}
                 className="w-1 h-1 rounded-full"
                 style={{ backgroundColor: 'var(--color-border)' }}
               />
-              <span className="flex items-center gap-1.5">
+              <motion.span variants={staggerItem} className="flex items-center gap-1.5" style={{ color: 'var(--color-textMuted)' }}>
                 <motion.div
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
@@ -1625,8 +1667,8 @@ export function WelcomeScreen() {
                   <Heart className="w-3.5 h-3.5" />
                 </motion.div>
                 Culture First
-              </span>
-            </div>
+              </motion.span>
+            </StaggerGrid>
           </div>
         </section>
       </ScrollSection>

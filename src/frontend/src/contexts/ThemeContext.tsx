@@ -23,20 +23,19 @@ export interface Theme {
 }
 
 export const themes: Theme[] = [
-  // Amber themes (default for new platform)
   {
     id: 'amber-light',
     name: 'Amber Light',
     colors: {
-      background: '#F5F3EF',
-      backgroundSecondary: '#FDFCFB',
+      background: '#FAFAFA',
+      backgroundSecondary: '#FFFFFF',
       surface: '#FFFFFF',
-      surfaceHover: '#EBE8E2',
-      border: '#DDD8CE',
-      borderHover: '#C5BEB2',
-      text: '#1C1917',
-      textSecondary: '#57534E',
-      textMuted: '#78716C',
+      surfaceHover: '#F5F5F5',
+      border: '#E5E5E5',
+      borderHover: '#CCCCCC',
+      text: '#0A0A0A',
+      textSecondary: '#666666',
+      textMuted: '#999999',
       accent: '#D97706',
       accentHover: '#B45309',
       accentText: '#FFFFFF',
@@ -49,211 +48,70 @@ export const themes: Theme[] = [
     id: 'amber-dark',
     name: 'Amber Dark',
     colors: {
-      background: '#1C1917',
-      backgroundSecondary: '#292524',
-      surface: '#44403C',
-      surfaceHover: '#57534E',
-      border: '#57534E',
-      borderHover: '#78716C',
-      text: '#FAFAF9',
-      textSecondary: '#D6D3D1',
-      textMuted: '#A8A29E',
-      accent: '#F59E0B',
-      accentHover: '#D97706',
-      accentText: '#1C1917',
+      background: '#000000',
+      backgroundSecondary: '#0A0A0A',
+      surface: '#111111',
+      surfaceHover: '#1A1A1A',
+      border: '#222222',
+      borderHover: '#333333',
+      text: '#FAFAFA',
+      textSecondary: '#888888',
+      textMuted: '#555555',
+      accent: '#F09030',
+      accentHover: '#F5A855',
+      accentText: '#000000',
       success: '#22C55E',
       error: '#EF4444',
       warning: '#FBBF24',
-    },
-  },
-  // Legacy themes (keep for users who prefer them)
-  {
-    id: 'midnight',
-    name: 'Midnight',
-    colors: {
-      background: '#0a0a0f',
-      backgroundSecondary: '#12121a',
-      surface: '#1a1a24',
-      surfaceHover: '#22222e',
-      border: '#2a2a3a',
-      borderHover: '#3a3a4a',
-      text: '#f5f5f7',
-      textSecondary: '#a1a1aa',
-      textMuted: '#71717a',
-      accent: '#8b5cf6',
-      accentHover: '#7c3aed',
-      accentText: '#ffffff',
-      success: '#22c55e',
-      error: '#ef4444',
-      warning: '#f59e0b',
-    },
-  },
-  {
-    id: 'snow',
-    name: 'Snow',
-    colors: {
-      background: '#ffffff',
-      backgroundSecondary: '#f7f7f8',
-      surface: '#f0f0f2',
-      surfaceHover: '#e8e8ec',
-      border: '#e0e0e5',
-      borderHover: '#d0d0d8',
-      text: '#1a1a1f',
-      textSecondary: '#52525b',
-      textMuted: '#a1a1aa',
-      accent: '#2563eb',
-      accentHover: '#1d4ed8',
-      accentText: '#ffffff',
-      success: '#16a34a',
-      error: '#dc2626',
-      warning: '#d97706',
-    },
-  },
-  {
-    id: 'ocean',
-    name: 'Ocean',
-    colors: {
-      background: '#0c1222',
-      backgroundSecondary: '#111827',
-      surface: '#1e293b',
-      surfaceHover: '#273548',
-      border: '#334155',
-      borderHover: '#475569',
-      text: '#f1f5f9',
-      textSecondary: '#94a3b8',
-      textMuted: '#64748b',
-      accent: '#38bdf8',
-      accentHover: '#0ea5e9',
-      accentText: '#0c1222',
-      success: '#34d399',
-      error: '#f87171',
-      warning: '#fbbf24',
-    },
-  },
-  {
-    id: 'rose',
-    name: 'Rose',
-    colors: {
-      background: '#1a1318',
-      backgroundSecondary: '#231a1f',
-      surface: '#2d2228',
-      surfaceHover: '#3a2d33',
-      border: '#4a3a42',
-      borderHover: '#5c4a52',
-      text: '#fdf2f8',
-      textSecondary: '#f9a8d4',
-      textMuted: '#be6b8f',
-      accent: '#f472b6',
-      accentHover: '#ec4899',
-      accentText: '#1a1318',
-      success: '#86efac',
-      error: '#fca5a5',
-      warning: '#fde047',
-    },
-  },
-  {
-    id: 'lavender',
-    name: 'Lavender',
-    colors: {
-      background: '#faf8ff',
-      backgroundSecondary: '#f5f0ff',
-      surface: '#ede5ff',
-      surfaceHover: '#e2d6ff',
-      border: '#d8caff',
-      borderHover: '#c4b0ff',
-      text: '#1e1b2e',
-      textSecondary: '#4a4565',
-      textMuted: '#7c7693',
-      accent: '#8b5cf6',
-      accentHover: '#7c3aed',
-      accentText: '#ffffff',
-      success: '#16a34a',
-      error: '#dc2626',
-      warning: '#d97706',
-    },
-  },
-  {
-    id: 'slate',
-    name: 'Slate',
-    colors: {
-      background: '#0f172a',
-      backgroundSecondary: '#1e293b',
-      surface: '#334155',
-      surfaceHover: '#475569',
-      border: '#475569',
-      borderHover: '#64748b',
-      text: '#f8fafc',
-      textSecondary: '#cbd5e1',
-      textMuted: '#94a3b8',
-      accent: '#6366f1',
-      accentHover: '#4f46e5',
-      accentText: '#ffffff',
-      success: '#22c55e',
-      error: '#ef4444',
-      warning: '#f59e0b',
     },
   },
 ];
 
 interface ThemeContextType {
   currentTheme: Theme;
+  isDark: boolean;
   setTheme: (themeId: string) => void;
+  toggleTheme: () => void;
   themes: Theme[];
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'amber-theme';
-const CUSTOM_THEMES_KEY = 'amber-custom-themes';
-
-function getCustomThemes(): Theme[] {
-  try {
-    const saved = localStorage.getItem(CUSTOM_THEMES_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch {
-    return [];
-  }
-}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const customThemes = getCustomThemes();
-    const allThemes = [...themes, ...customThemes];
-    const found = allThemes.find(t => t.id === saved);
-    // Default to amber-light for new users
+    const found = themes.find(t => t.id === saved);
     return found || themes[0];
   });
+
+  const isDark = currentTheme.id === 'amber-dark';
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, currentTheme.id);
 
-    // Apply CSS variables
     const root = document.documentElement;
     Object.entries(currentTheme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
     });
 
-    // Set color-scheme for native elements
-    const isDark = currentTheme.id.includes('dark') ||
-                   currentTheme.id === 'midnight' ||
-                   currentTheme.id === 'ocean' ||
-                   currentTheme.id === 'rose' ||
-                   currentTheme.id === 'slate';
     root.style.colorScheme = isDark ? 'dark' : 'light';
-  }, [currentTheme]);
+  }, [currentTheme, isDark]);
 
   const setTheme = (themeId: string) => {
-    const customThemes = getCustomThemes();
-    const allThemes = [...themes, ...customThemes];
-    const theme = allThemes.find(t => t.id === themeId);
+    const theme = themes.find(t => t.id === themeId);
     if (theme) {
       setCurrentTheme(theme);
     }
   };
 
+  const toggleTheme = () => {
+    setCurrentTheme(isDark ? themes[0] : themes[1]);
+  };
+
   return (
-    <ThemeContext.Provider value={{ currentTheme, setTheme, themes }}>
+    <ThemeContext.Provider value={{ currentTheme, isDark, setTheme, toggleTheme, themes }}>
       {children}
     </ThemeContext.Provider>
   );

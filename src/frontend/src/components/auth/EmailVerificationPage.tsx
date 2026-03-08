@@ -60,7 +60,7 @@ export function EmailVerificationPage() {
             <div
               className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
               style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                backgroundColor: 'var(--color-accent)',
               }}
             >
               <Mail className="w-8 h-8 text-white" />

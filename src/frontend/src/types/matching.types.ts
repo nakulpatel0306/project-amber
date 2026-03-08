@@ -160,6 +160,7 @@ export interface EmployerResult {
   };
   employerOcean: OCEANScores;
   cultureValues: string[];
+  createdAt?: string;
 }
 
 export interface EmberInsights {

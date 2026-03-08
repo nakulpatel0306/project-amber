@@ -190,7 +190,7 @@ export function CreateRole() {
           <div
             className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
             style={{
-              background: 'linear-gradient(135deg, var(--color-success), #059669)',
+              backgroundColor: 'var(--color-success)',
             }}
           >
             <Check className="w-10 h-10 text-white" />

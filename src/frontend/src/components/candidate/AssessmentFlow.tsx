@@ -126,7 +126,7 @@ export function AssessmentFlow() {
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
                 style={{
-                  background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                  backgroundColor: 'var(--color-accent)',
                   boxShadow: '0 8px 24px rgba(139, 92, 246, 0.25)',
                 }}
               >
@@ -337,7 +337,7 @@ export function AssessmentFlow() {
             <div
               className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accentHover))',
+                backgroundColor: 'var(--color-accent)',
               }}
             >
               <Check className="w-10 h-10 text-white" />

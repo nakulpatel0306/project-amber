@@ -150,6 +150,7 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
               },
               employerOcean,
               cultureValues: emp.culture_values || [],
+              createdAt: (emp as any).created_at || undefined,
             };
           });
 

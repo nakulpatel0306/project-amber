@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CheckCircle2,
@@ -11,11 +11,16 @@ import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility } from '../../lib/compatibilityScoring';
 
-import { DashboardGreeting } from './DashboardGreeting';
-import { DashboardStats } from './DashboardStats';
-import { PersonalityPlayerCard } from './PersonalityPlayerCard';
-import { DashboardTopMatches } from './DashboardTopMatches';
-import { DashboardCalendar } from './DashboardCalendar';
+import { DashboardHeader } from './DashboardHeader';
+import { BentoMetricCard } from './BentoMetricCard';
+import { MatchingTable } from './MatchingTable';
+import { QuickActions } from './QuickActions';
+import { StreakTracker } from './StreakTracker';
+import { CompatibilityInsights } from './CompatibilityInsights';
+import { ScheduleWidget } from './ScheduleWidget';
+import { ArchetypeStrip } from './ArchetypeStrip';
+import { ActivityCarousel } from './ActivityCarousel';
+import type { UpcomingChat } from './DashboardCalendar';
 
 interface PersonalityScores {
   openness: number;
@@ -44,15 +49,11 @@ interface TopMatch {
   matchScore: number;
   location: string;
   workStyle: string | null;
-}
-
-interface UpcomingChat {
-  company: string;
-  person: string;
-  role: string;
-  time: string;
-  scheduledAt: string | null;
-  status: string;
+  logoUrl: string | null;
+  description: string | null;
+  industry: string | null;
+  employerId: string;
+  chatStatus: 'none' | 'pending' | 'accepted' | 'scheduled' | 'completed' | 'connected';
 }
 
 export function JobSeekerDashboard() {
@@ -65,11 +66,19 @@ export function JobSeekerDashboard() {
   const [topTraits, setTopTraits] = useState<string[]>([]);
 
   // Stats
-  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [_profileCompletion, setProfileCompletion] = useState(0);
   const [matchesAvailable, setMatchesAvailable] = useState(0);
   const [avgMatchScore, setAvgMatchScore] = useState(0);
   const [pendingChats, setPendingChats] = useState(0);
-  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [_connectionsCount, setConnectionsCount] = useState(0);
+  const [acceptedChats, setAcceptedChats] = useState(0);
+  const [completedChats, setCompletedChats] = useState(0);
+  const [_totalRoles, setTotalRoles] = useState(0);
+  const [uniqueCompanies, setUniqueCompanies] = useState(0);
+
+  // Loading states — prevent 0 → N/A → value flash
+  const [matchesLoaded, setMatchesLoaded] = useState(false);
+  const [chatsLoaded, setChatsLoaded] = useState(false);
 
   // Data
   const [topMatches, setTopMatches] = useState<TopMatch[]>([]);
@@ -95,6 +104,9 @@ export function JobSeekerDashboard() {
         .single();
 
       const typedCandidate = candidate as CandidateData | null;
+
+      // Store top traits for ArchetypeStrip
+      setTopTraits(typedCandidate?.top_traits || []);
 
       // Profile is complete if they have a headline or bio filled out
       const profileComplete = !!(typedCandidate?.headline || typedCandidate?.bio);
@@ -127,7 +139,6 @@ export function JobSeekerDashboard() {
           agreeableness: typedCandidate.agreeableness_score || 0,
           neuroticism: typedCandidate.neuroticism_score || 0,
         });
-        setTopTraits(typedCandidate.top_traits || []);
       }
     };
 
@@ -173,11 +184,13 @@ export function JobSeekerDashboard() {
         // Get connections count (accepted + completed chats)
         const { data: connectionData } = await supabase
           .from('coffee_chats')
-          .select('id')
+          .select('id, status')
           .eq('candidate_id', candidate.id)
           .in('status', ['accepted', 'completed']);
 
         setConnectionsCount(connectionData?.length || 0);
+        setAcceptedChats(connectionData?.filter(c => c.status === 'accepted').length || 0);
+        setCompletedChats(connectionData?.filter(c => c.status === 'completed').length || 0);
 
         // Get upcoming coffee chats (accepted/pending) with scheduledAt and status
         const { data: chats } = await supabase
@@ -193,17 +206,21 @@ export function JobSeekerDashboard() {
             const emp = c.employers as Record<string, unknown> | null;
             const empProfile = emp?.profiles as Record<string, unknown> | null;
             return {
+              id: c.id,
               company: (emp?.company_name as string) || 'Unknown',
               person: (empProfile?.full_name as string) || 'Unknown',
               role: 'Hiring Manager',
               time: c.scheduled_at ? new Date(c.scheduled_at).toLocaleDateString() : 'TBD',
               scheduledAt: c.scheduled_at || null,
+              meetingLink: c.meeting_link || null,
               status: c.status || 'pending',
             };
           }));
         }
       } catch (err) {
         console.error('Error loading chats:', err);
+      } finally {
+        setChatsLoaded(true);
       }
     };
 
@@ -212,173 +229,334 @@ export function JobSeekerDashboard() {
 
   // Load matches (requires assessment completion)
   useEffect(() => {
-    if (!user || !hasCompletedAssessment || !personalityScores) return;
+    if (!user) return;
+    if (!hasCompletedAssessment || !personalityScores) {
+      // If assessment not done, we know the final value already
+      if (hasCompletedAssessment === false) setMatchesLoaded(true);
+      return;
+    }
 
     const loadMatches = async () => {
       try {
-        const { data: roles } = await supabase
+        // Fetch roles and employer data separately to avoid inner-join RLS issues
+        const { data: roles, error: rolesErr } = await supabase
           .from('roles')
-          .select('*, employers!inner(company_name, location, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_quiz_completed, culture_values)')
+          .select('*')
           .eq('status', 'active');
 
-        if (roles && personalityScores) {
-          const matches = roles
-            .filter(r => {
-              const emp = r.employers as Record<string, unknown> | null;
-              return emp?.culture_quiz_completed;
-            })
-            .map(role => {
-              const emp = role.employers as Record<string, unknown>;
+        if (rolesErr) {
+          console.error('Error fetching roles:', rolesErr);
+          return;
+        }
 
-              const result = calculateCompatibility({
-                candidateOCEAN: personalityScores,
-                employerPreferences: {
-                  openness: (emp?.openness_preference as number) || 50,
-                  conscientiousness: (emp?.conscientiousness_preference as number) || 50,
-                  extraversion: (emp?.extraversion_preference as number) || 50,
-                  agreeableness: (emp?.agreeableness_preference as number) || 50,
-                  neuroticism: (emp?.neuroticism_preference as number) || 50,
-                  cultureValues: (emp?.culture_values as string[]) || [],
-                },
-                roleRequirements: {
-                  required_openness_min: role.required_openness_min ?? null,
-                  required_openness_max: role.required_openness_max ?? null,
-                  required_conscientiousness_min: role.required_conscientiousness_min ?? null,
-                  required_conscientiousness_max: role.required_conscientiousness_max ?? null,
-                  required_extraversion_min: role.required_extraversion_min ?? null,
-                  required_extraversion_max: role.required_extraversion_max ?? null,
-                  required_agreeableness_min: role.required_agreeableness_min ?? null,
-                  required_agreeableness_max: role.required_agreeableness_max ?? null,
-                  required_neuroticism_min: role.required_neuroticism_min ?? null,
-                  required_neuroticism_max: role.required_neuroticism_max ?? null,
-                  work_style: role.work_style ?? null,
-                },
-              });
+        if (!roles || roles.length === 0) {
+          setMatchesAvailable(0);
+          return;
+        }
 
-              return {
-                company: (emp?.company_name as string) || 'Unknown',
-                role: role.title,
-                matchScore: result.overallMatchScore,
-                location: role.location || (emp?.location as string) || 'Remote',
-                workStyle: role.work_style || null,
-              };
-            })
-            .sort((a, b) => b.matchScore - a.matchScore)
-            .slice(0, 5);
+        // Fetch employers via RPC (bypasses RLS — direct table query fails for candidates)
+        const { data: employersRaw, error: empErr } = await supabase
+          .rpc('get_employers_for_candidate', { candidate_user_id: user.id });
 
-          setTopMatches(matches);
-          setMatchesAvailable(roles.filter(r => {
-            const emp = r.employers as Record<string, unknown> | null;
-            return emp?.culture_quiz_completed;
-          }).length);
+        if (empErr) {
+          console.error('Error fetching employers via RPC:', empErr);
+        }
 
-          if (matches.length > 0) {
-            setAvgMatchScore(Math.round(matches.reduce((s, m) => s + m.matchScore, 0) / matches.length));
+        const employerMap = new Map(
+          ((employersRaw as Record<string, unknown>[] | null) || []).map(e => [e.id as string, e])
+        );
+
+        // Fetch candidate record for chat status lookup
+        const { data: candRecord } = await supabase
+          .from('candidates')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        // Build employer_id → chat status map
+        let chatStatusMap = new Map<string, string>();
+        if (candRecord) {
+          const { data: chats } = await supabase
+            .from('coffee_chats')
+            .select('employer_id, status')
+            .eq('candidate_id', candRecord.id);
+
+          if (chats) {
+            // Priority: completed > scheduled > accepted > pending
+            const priority: Record<string, number> = { completed: 4, scheduled: 3, accepted: 2, pending: 1 };
+            for (const chat of chats) {
+              const existing = chatStatusMap.get(chat.employer_id);
+              const existingPri = existing ? (priority[existing] || 0) : 0;
+              const newPri = priority[chat.status] || 0;
+              if (newPri > existingPri) {
+                chatStatusMap.set(chat.employer_id, chat.status);
+              }
+            }
           }
+
+          // Also check connections
+          const { data: conns } = await supabase
+            .from('connections')
+            .select('employer_id, status')
+            .eq('candidate_id', candRecord.id)
+            .eq('status', 'accepted');
+
+          if (conns) {
+            for (const conn of conns) {
+              // 'connected' overrides everything except completed
+              const existing = chatStatusMap.get(conn.employer_id);
+              if (existing !== 'completed') {
+                chatStatusMap.set(conn.employer_id, 'connected');
+              }
+            }
+          }
+        }
+
+        setTotalRoles(roles.length);
+
+        const matches = roles
+          .map(role => {
+            const emp = employerMap.get(role.employer_id) as Record<string, unknown> | undefined;
+
+            const result = calculateCompatibility({
+              candidateOCEAN: personalityScores,
+              employerPreferences: {
+                openness: (emp?.openness_preference as number) || 50,
+                conscientiousness: (emp?.conscientiousness_preference as number) || 50,
+                extraversion: (emp?.extraversion_preference as number) || 50,
+                agreeableness: (emp?.agreeableness_preference as number) || 50,
+                neuroticism: (emp?.neuroticism_preference as number) || 50,
+                cultureValues: (emp?.culture_values as string[]) || [],
+              },
+              roleRequirements: {
+                required_openness_min: role.required_openness_min ?? null,
+                required_openness_max: role.required_openness_max ?? null,
+                required_conscientiousness_min: role.required_conscientiousness_min ?? null,
+                required_conscientiousness_max: role.required_conscientiousness_max ?? null,
+                required_extraversion_min: role.required_extraversion_min ?? null,
+                required_extraversion_max: role.required_extraversion_max ?? null,
+                required_agreeableness_min: role.required_agreeableness_min ?? null,
+                required_agreeableness_max: role.required_agreeableness_max ?? null,
+                required_neuroticism_min: role.required_neuroticism_min ?? null,
+                required_neuroticism_max: role.required_neuroticism_max ?? null,
+                work_style: role.work_style ?? null,
+              },
+            });
+
+            const rawChatStatus = chatStatusMap.get(role.employer_id) || 'none';
+
+            return {
+              company: (emp?.company_name as string) || 'Unknown',
+              role: role.title,
+              matchScore: result.overallMatchScore,
+              location: role.location || (emp?.location as string) || 'Remote',
+              workStyle: role.work_style || null,
+              logoUrl: (emp?.company_logo_url as string) || null,
+              description: (emp?.description as string) || null,
+              industry: (emp?.industry as string) || null,
+              employerId: role.employer_id as string,
+              chatStatus: rawChatStatus as TopMatch['chatStatus'],
+            };
+          })
+          .sort((a, b) => b.matchScore - a.matchScore)
+          .slice(0, 5);
+
+        setTopMatches(matches);
+        setMatchesAvailable(roles.length);
+        setUniqueCompanies(new Set(roles.map(r => r.employer_id)).size);
+
+        // Compute average across ALL roles, not just top 5
+        const allScores = roles.map(role => {
+          const emp = employerMap.get(role.employer_id) as Record<string, unknown> | undefined;
+          return calculateCompatibility({
+            candidateOCEAN: personalityScores,
+            employerPreferences: {
+              openness: (emp?.openness_preference as number) || 50,
+              conscientiousness: (emp?.conscientiousness_preference as number) || 50,
+              extraversion: (emp?.extraversion_preference as number) || 50,
+              agreeableness: (emp?.agreeableness_preference as number) || 50,
+              neuroticism: (emp?.neuroticism_preference as number) || 50,
+              cultureValues: (emp?.culture_values as string[]) || [],
+            },
+            roleRequirements: {
+              required_openness_min: role.required_openness_min ?? null,
+              required_openness_max: role.required_openness_max ?? null,
+              required_conscientiousness_min: role.required_conscientiousness_min ?? null,
+              required_conscientiousness_max: role.required_conscientiousness_max ?? null,
+              required_extraversion_min: role.required_extraversion_min ?? null,
+              required_extraversion_max: role.required_extraversion_max ?? null,
+              required_agreeableness_min: role.required_agreeableness_min ?? null,
+              required_agreeableness_max: role.required_agreeableness_max ?? null,
+              required_neuroticism_min: role.required_neuroticism_min ?? null,
+              required_neuroticism_max: role.required_neuroticism_max ?? null,
+              work_style: role.work_style ?? null,
+            },
+          }).overallMatchScore;
+        });
+
+        if (allScores.length > 0) {
+          setAvgMatchScore(Math.round(allScores.reduce((s, score) => s + score, 0) / allScores.length));
         }
       } catch (err) {
         console.error('Error loading matches:', err);
+      } finally {
+        setMatchesLoaded(true);
       }
     };
 
     loadMatches();
   }, [user, hasCompletedAssessment, personalityScores]);
 
+  const navigate = useNavigate();
+
+  // Best match score
+  const bestMatchScore = topMatches.length > 0 ? topMatches[0].matchScore : 0;
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-      {/* Greeting */}
-      <DashboardGreeting
-        firstName={firstName}
-        greeting={greeting}
-        hasCompletedAssessment={hasCompletedAssessment}
-        topTraits={topTraits}
-        matchesAvailable={matchesAvailable}
-        avgMatchScore={avgMatchScore}
-      />
+    <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
+      {/* Dashboard Header — search + date + notifications */}
+      <DashboardHeader greeting={greeting} firstName={firstName} />
 
-      {/* Stats Row */}
-      <DashboardStats
-        connectionsCount={connectionsCount}
-        pendingChats={pendingChats}
-        matchesAvailable={matchesAvailable}
-        avgMatchScore={avgMatchScore}
-        profileCompletion={profileCompletion}
-      />
+      {/* Archetype Strip — editorial personality display */}
+      {hasCompletedAssessment && personalityScores && topTraits.length > 0 && (
+        <ArchetypeStrip personalityScores={personalityScores} topTraits={topTraits} />
+      )}
 
-      {/* Progress Banner (if not complete) */}
+      {/* Key Metrics Row — 3 bento cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <BentoMetricCard
+          title="Match Index Score"
+          loading={!matchesLoaded}
+          value={avgMatchScore > 0 ? `${avgMatchScore}%` : hasCompletedAssessment ? '0%' : 'N/A'}
+          subtitle={
+            avgMatchScore > 0
+              ? `Average compatibility across ${matchesAvailable} ${matchesAvailable === 1 ? 'role' : 'roles'}`
+              : hasCompletedAssessment
+              ? 'No roles available yet'
+              : 'Complete assessment to unlock'
+          }
+          accentBorder
+          tags={avgMatchScore > 0 ? [
+            { label: `Best ${bestMatchScore}%`, shade: 'light' as const },
+            { label: `${matchesAvailable} Roles Analyzed`, shade: 'medium' as const },
+            { label: `${uniqueCompanies} ${uniqueCompanies === 1 ? 'Company' : 'Companies'}`, shade: 'dark' as const },
+          ] : hasCompletedAssessment ? [
+            { label: 'Assessment Complete', shade: 'light' as const },
+            { label: 'Awaiting Roles', shade: 'medium' as const },
+          ] : [
+            { label: 'Not Started', shade: 'dark' as const },
+          ]}
+          onClick={() => navigate(hasCompletedAssessment ? '/app/ember' : '/app/personality')}
+        />
+        <BentoMetricCard
+          title="Available Roles"
+          loading={!matchesLoaded}
+          value={String(matchesAvailable)}
+          subtitle={
+            matchesAvailable > 0
+              ? `Open positions across ${uniqueCompanies} ${uniqueCompanies === 1 ? 'company' : 'companies'}`
+              : 'No open positions right now'
+          }
+          accentBorder
+          tags={matchesAvailable > 0 ? [
+            { label: `${matchesAvailable} Active`, shade: 'light' as const },
+            { label: `${uniqueCompanies} ${uniqueCompanies === 1 ? 'Company' : 'Companies'}`, shade: 'medium' as const },
+            { label: 'Explore', shade: 'dark' as const },
+          ] : []}
+          onClick={() => navigate('/app/network')}
+        />
+        <BentoMetricCard
+          title="Coffee Chats"
+          loading={!chatsLoaded}
+          value={String(pendingChats + acceptedChats + completedChats)}
+          subtitle={
+            (pendingChats + acceptedChats + completedChats) > 0
+              ? 'Your conversation activity'
+              : 'Start connecting with employers'
+          }
+          accentBorder
+          tags={[
+            ...(pendingChats > 0 ? [{ label: `${pendingChats} Pending`, shade: 'light' as const }] : []),
+            ...(acceptedChats > 0 ? [{ label: `${acceptedChats} Scheduled`, shade: 'medium' as const }] : []),
+            ...(completedChats > 0 ? [{ label: `${completedChats} Completed`, shade: 'dark' as const }] : []),
+          ]}
+          onClick={() => navigate('/app/chats')}
+        />
+      </div>
+
+      {/* Quick Actions */}
+      <QuickActions hasCompletedAssessment={hasCompletedAssessment} />
+
+      {/* Widgets row: Streak + Insights + Schedule (2-col) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StreakTracker />
+        <CompatibilityInsights />
+        <div className="md:col-span-2">
+          <ScheduleWidget
+            upcomingChats={upcomingChats}
+            pendingChats={pendingChats}
+            acceptedChats={acceptedChats}
+            allAcceptedChats={upcomingChats.filter(c => c.status === 'accepted' && !c.scheduledAt)}
+          />
+        </div>
+      </div>
+
+      {/* Setup Banner (if not complete) */}
       {(!hasCompletedProfile || !hasCompletedAssessment) && (
         <div
-          className="p-5 rounded-2xl border"
-          style={{
-            background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.05))',
-            borderColor: 'var(--color-accent)',
-          }}
+          className="bento-card"
+          style={{ borderColor: 'var(--color-accent)' }}
         >
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <h2
-                className="text-lg font-semibold mb-2 flex items-center gap-2"
+                className="text-sm font-semibold mb-2 flex items-center gap-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+                <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                 Complete Your Setup
               </h2>
-              <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-textSecondary)' }}>
                 {!hasCompletedProfile
-                  ? 'Start by setting up your profile, then take the personality assessment to get matched with jobs.'
-                  : 'Take the personality assessment to start getting matched with jobs that fit your style.'}
+                  ? 'Set up your profile, then take the personality assessment to get matched.'
+                  : 'Take the personality assessment to start getting matched with jobs.'}
               </p>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCompletedProfile ? '' : 'border-2'}`}
-                    style={{
-                      backgroundColor: hasCompletedProfile ? 'var(--color-success)' : 'transparent',
-                      borderColor: hasCompletedProfile ? 'transparent' : 'var(--color-border)',
-                    }}
-                  >
-                    {hasCompletedProfile && <CheckCircle2 className="w-3 h-3 text-white" />}
+              <div className="flex items-center gap-3">
+                {[
+                  { label: 'Profile', done: hasCompletedProfile },
+                  { label: 'Assessment', done: hasCompletedAssessment },
+                  { label: 'Matches', done: false },
+                ].map((step, i) => (
+                  <div key={step.label} className="flex items-center gap-2">
+                    {i > 0 && (
+                      <div className="w-6 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
+                    )}
+                    <div
+                      className={`w-4 h-4 rounded-full flex items-center justify-center ${step.done ? '' : 'border'}`}
+                      style={{
+                        backgroundColor: step.done ? 'var(--color-success)' : 'transparent',
+                        borderColor: step.done ? 'transparent' : 'var(--color-border)',
+                      }}
+                    >
+                      {step.done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                    <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
+                      {step.label}
+                    </span>
                   </div>
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    Profile
-                  </span>
-                </div>
-                <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCompletedAssessment ? '' : 'border-2'}`}
-                    style={{
-                      backgroundColor: hasCompletedAssessment ? 'var(--color-success)' : 'transparent',
-                      borderColor: hasCompletedAssessment ? 'transparent' : 'var(--color-border)',
-                    }}
-                  >
-                    {hasCompletedAssessment && <CheckCircle2 className="w-3 h-3 text-white" />}
-                  </div>
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    Assessment
-                  </span>
-                </div>
-                <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-5 h-5 rounded-full border-2"
-                    style={{ borderColor: 'var(--color-border)' }}
-                  />
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    Matches
-                  </span>
-                </div>
+                ))}
               </div>
             </div>
             {hasCompletedProfile ? (
               <Link to="/app/personality">
-                <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
+                <Button size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
                   Take Assessment
                 </Button>
               </Link>
             ) : (
               <Button
-                rightIcon={<ArrowRight className="w-4 h-4" />}
+                size="sm"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                 onClick={() => setShowSetupModal(true)}
               >
                 Set Up Profile
@@ -388,32 +566,15 @@ export function JobSeekerDashboard() {
         </div>
       )}
 
-      {/* Player Card + Top Matches (side by side on desktop) */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Player Card (2/5 width) */}
-        {hasCompletedAssessment && personalityScores && (
-          <div className="lg:col-span-2">
-            <PersonalityPlayerCard
-              personalityScores={personalityScores}
-              topTraits={topTraits}
-            />
-          </div>
-        )}
-
-        {/* Top Matches (3/5 width, or full width if no assessment) */}
-        <div className={hasCompletedAssessment && personalityScores ? 'lg:col-span-3' : 'lg:col-span-5'}>
-          <DashboardTopMatches
-            topMatches={topMatches}
-            hasCompletedAssessment={hasCompletedAssessment}
-          />
-        </div>
-      </div>
-
-      {/* Calendar Widget */}
-      <DashboardCalendar
-        upcomingChats={upcomingChats}
-        pendingChats={pendingChats}
+      {/* Top Personality Matches — clean status table, no card wrapper */}
+      <MatchingTable
+        matches={topMatches}
+        hasCompletedAssessment={hasCompletedAssessment}
+        onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
       />
+
+      {/* Activity Carousel */}
+      <ActivityCarousel />
 
       {/* Candidate Setup Modal */}
       <CandidateSetupModal

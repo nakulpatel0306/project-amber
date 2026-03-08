@@ -1,29 +1,8 @@
-import { useTheme, themes, type Theme } from '../../contexts/ThemeContext';
-import { Check, Sun, Moon } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { useTheme } from '../../contexts/ThemeContext';
+import { Sun, Moon } from 'lucide-react';
 
 export function AppearanceSection() {
-  const { currentTheme, setTheme } = useTheme();
-
-  const themeGroups = [
-    {
-      label: 'Amber',
-      description: 'our signature warm palette',
-      themes: themes.filter(t => t.id.startsWith('amber')),
-    },
-    {
-      label: 'Other',
-      description: 'additional theme options',
-      themes: themes.filter(t => !t.id.startsWith('amber')),
-    },
-  ];
-
-  const isDark = (theme: Theme) =>
-    theme.id.includes('dark') ||
-    theme.id === 'midnight' ||
-    theme.id === 'ocean' ||
-    theme.id === 'rose' ||
-    theme.id === 'slate';
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <div className="space-y-6">
@@ -39,117 +18,52 @@ export function AppearanceSection() {
         </p>
       </div>
 
-      {themeGroups.map(group => (
-        <div key={group.label}>
-          <div className="flex items-center gap-2 mb-3">
-            <h3
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-text)' }}
-            >
-              {group.label}
-            </h3>
-            <span
-              className="text-xs"
-              style={{ color: 'var(--color-textMuted)' }}
-            >
-              — {group.description}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {group.themes.map(theme => (
-              <button
-                key={theme.id}
-                onClick={() => setTheme(theme.id)}
-                className={cn(
-                  'relative p-3 rounded-xl border transition-all text-left',
-                  currentTheme.id === theme.id
-                    ? 'ring-2 ring-[var(--color-accent)]'
-                    : 'hover:border-[var(--color-borderHover)]'
-                )}
-                style={{
-                  borderColor:
-                    currentTheme.id === theme.id
-                      ? 'var(--color-accent)'
-                      : 'var(--color-border)',
-                  backgroundColor: 'var(--color-surface)',
-                }}
-              >
-                {/* Theme preview */}
-                <div
-                  className="w-full h-16 rounded-lg mb-2 overflow-hidden"
-                  style={{ backgroundColor: theme.colors.background }}
-                >
-                  <div className="h-full p-2 flex flex-col">
-                    <div
-                      className="w-full h-2 rounded mb-1"
-                      style={{ backgroundColor: theme.colors.surface }}
-                    />
-                    <div className="flex gap-1 flex-1">
-                      <div
-                        className="w-1/3 rounded"
-                        style={{ backgroundColor: theme.colors.surface }}
-                      />
-                      <div className="flex-1 flex flex-col gap-1">
-                        <div
-                          className="h-1.5 rounded w-3/4"
-                          style={{ backgroundColor: theme.colors.textMuted }}
-                        />
-                        <div
-                          className="h-1.5 rounded w-1/2"
-                          style={{ backgroundColor: theme.colors.accent }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Theme info */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {isDark(theme) ? (
-                      <Moon className="w-3 h-3" style={{ color: 'var(--color-textMuted)' }} />
-                    ) : (
-                      <Sun className="w-3 h-3" style={{ color: 'var(--color-textMuted)' }} />
-                    )}
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: 'var(--color-text)' }}
-                    >
-                      {theme.name}
-                    </span>
-                  </div>
-                  {currentTheme.id === theme.id && (
-                    <Check
-                      className="w-4 h-4"
-                      style={{ color: 'var(--color-accent)' }}
-                    />
-                  )}
-                </div>
-
-                {/* Color swatches */}
-                <div className="flex gap-1 mt-2">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: theme.colors.accent }}
-                    title="Accent"
-                  />
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: theme.colors.background }}
-                    title="Background"
-                  />
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: theme.colors.text }}
-                    title="Text"
-                  />
-                </div>
-              </button>
-            ))}
+      {/* Toggle row */}
+      <div
+        className="flex items-center justify-between p-4 rounded-xl border"
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          {isDark ? (
+            <Moon className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+          ) : (
+            <Sun className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+          )}
+          <div>
+            <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+              {isDark ? 'Dark Mode' : 'Light Mode'}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+              {isDark ? 'Amber Dark theme active' : 'Amber Light theme active'}
+            </p>
           </div>
         </div>
-      ))}
+
+        <button
+          onClick={toggleTheme}
+          className="relative w-12 h-7 rounded-full transition-colors duration-200"
+          style={{
+            backgroundColor: isDark ? 'var(--color-accent)' : 'var(--color-border)',
+          }}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span
+            className="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform duration-200 flex items-center justify-center"
+            style={{
+              transform: isDark ? 'translateX(20px)' : 'translateX(0)',
+            }}
+          >
+            {isDark ? (
+              <Moon className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
+            ) : (
+              <Sun className="w-3.5 h-3.5" style={{ color: '#D97706' }} />
+            )}
+          </span>
+        </button>
+      </div>
 
       {/* Info */}
       <div

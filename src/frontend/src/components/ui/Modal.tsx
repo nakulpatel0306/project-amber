@@ -78,7 +78,7 @@ export function Modal({
       <div
         ref={overlayRef}
         className={cn(
-          'fixed inset-0 z-50 bg-black/50 backdrop-blur-sm',
+          'fixed inset-0 z-50 bg-black/60 backdrop-blur-md',
           'animate-fade-in'
         )}
         onClick={closeOnOverlayClick ? onClose : undefined}
@@ -95,7 +95,7 @@ export function Modal({
           aria-describedby={description ? 'modal-description' : undefined}
           tabIndex={-1}
           className={cn(
-            'relative w-full rounded-2xl p-6 shadow-xl',
+            'relative w-full rounded-2xl p-6 [box-shadow:var(--shadow-lg)]',
             'animate-scale-in',
             sizeMap[size]
           )}

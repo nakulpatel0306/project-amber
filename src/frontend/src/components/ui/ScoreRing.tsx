@@ -27,6 +27,7 @@ export function ScoreRing({ score, size = 52, strokeWidth = 3, label, fontSize =
             fill="none" stroke={color} strokeWidth={strokeWidth}
             strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
             className="transition-all duration-1000 ease-out"
+            style={{ filter: `drop-shadow(0 0 4px ${color})` }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">

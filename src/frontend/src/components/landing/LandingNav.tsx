@@ -3,7 +3,6 @@ import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { AmberLogo } from '../ui/AmberLogo';
-import { APP_NAME } from '../../utils/constants';
 import { MagneticButton } from './MagneticButton';
 
 export function LandingNav() {
@@ -12,9 +11,6 @@ export function LandingNav() {
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-6 pb-6 pointer-events-none"
-      style={{
-        background: 'linear-gradient(to bottom, var(--color-background) 40%, transparent)',
-      }}
     >
       <div
         className="max-w-5xl mx-auto px-6 py-3 rounded-2xl border pointer-events-auto"

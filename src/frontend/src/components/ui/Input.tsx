@@ -37,16 +37,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-xl border text-sm transition-colors duration-150',
-              'focus:outline-none focus:ring-2 focus:ring-offset-0',
+              'w-full rounded-xl border text-sm transition-all duration-150',
+              'focus:outline-none',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'placeholder:text-[var(--color-textMuted)] placeholder:opacity-70',
               leftIcon ? 'pl-10' : 'pl-4',
               rightIcon ? 'pr-10' : 'pr-4',
               'py-2.5',
               error
-                ? 'border-[var(--color-error)] focus:ring-[var(--color-error)]'
-                : 'border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]',
+                ? 'border-[var(--color-error)] focus:[box-shadow:0_0_0_2px_var(--color-error)]'
+                : 'border-[var(--color-border)] focus:border-[var(--color-accent)] focus:[box-shadow:0_0_0_2px_var(--color-accent),var(--shadow-glow)]',
               className
             )}
             style={{
@@ -109,14 +109,14 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            'w-full rounded-xl border text-sm transition-colors duration-150 resize-none',
-            'focus:outline-none focus:ring-2 focus:ring-offset-0',
+            'w-full rounded-xl border text-sm transition-all duration-150 resize-none',
+            'focus:outline-none',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'placeholder:text-[var(--color-textMuted)] placeholder:opacity-70',
             'px-4 py-3',
             error
-              ? 'border-[var(--color-error)] focus:ring-[var(--color-error)]'
-              : 'border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]',
+              ? 'border-[var(--color-error)] focus:[box-shadow:0_0_0_2px_var(--color-error)]'
+              : 'border-[var(--color-border)] focus:border-[var(--color-accent)] focus:[box-shadow:0_0_0_2px_var(--color-accent),var(--shadow-glow)]',
             className
           )}
           style={{

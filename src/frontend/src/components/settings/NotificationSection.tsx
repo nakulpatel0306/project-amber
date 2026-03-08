@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getUserSettings, updateUserSettings, supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { Input } from '../ui/Input';
 
 interface NotificationSettings {
@@ -47,6 +47,8 @@ export function NotificationSection() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<NotificationSettings>(defaultSettings);
+
+  const showLoader = useMinLoader(isLoading);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -130,11 +132,9 @@ export function NotificationSection() {
     setHasChanges(false);
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader variant="fullscreen" message="Loading notifications..." />
     );
   }
 

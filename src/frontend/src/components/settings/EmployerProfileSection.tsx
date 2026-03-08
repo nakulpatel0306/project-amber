@@ -12,7 +12,7 @@ import { LocationPicker } from '../ui/LocationPicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
-import { Spinner } from '../ui/Spinner';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { cn } from '../../utils/cn';
 
 interface EmployerData {
@@ -64,6 +64,8 @@ export function EmployerProfileSection() {
 
   const [originalData, setOriginalData] = useState<EmployerData>(data);
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  const showLoader = useMinLoader(isLoading);
 
   // Use user.id as dependency to prevent unnecessary reloads
   const userId = user?.id;
@@ -145,11 +147,9 @@ export function EmployerProfileSection() {
     setHasChanges(false);
   };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
-      </div>
+      <CoffeeBrewLoader variant="fullscreen" message="Loading company profile..." />
     );
   }
 
