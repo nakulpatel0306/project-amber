@@ -556,8 +556,8 @@ export function EmberAgent() {
               {featuredMatch && (
                 <motion.div variants={emberFadeUp}>
                   <TopMatchCard
-                    name={featuredMatch.companyName}
-                    subtitle={featuredMatch.industry}
+                    name={featuredMatch.profileName}
+                    subtitle={featuredMatch.companyName}
                     score={featuredMatch.overallScore}
                     avatarUrl={featuredMatch.logoUrl}
                     onDeepDive={() => handleDeepDive(featuredMatch)}
