@@ -44,6 +44,7 @@ interface CandidateData {
 }
 
 interface TopMatch {
+  name: string;
   company: string;
   role: string;
   matchScore: number;
@@ -81,7 +82,9 @@ export function JobSeekerDashboard() {
   const [chatsLoaded, setChatsLoaded] = useState(false);
 
   // Data
+  const [allMatches, setAllMatches] = useState<TopMatch[]>([]);
   const [topMatches, setTopMatches] = useState<TopMatch[]>([]);
+  const [matchPage, setMatchPage] = useState(0);
   const [upcomingChats, setUpcomingChats] = useState<UpcomingChat[]>([]);
 
   useEffect(() => {
@@ -262,9 +265,26 @@ export function JobSeekerDashboard() {
           console.error('Error fetching employers via RPC:', empErr);
         }
 
+        const employersArr = (employersRaw as Record<string, unknown>[] | null) || [];
         const employerMap = new Map(
-          ((employersRaw as Record<string, unknown>[] | null) || []).map(e => [e.id as string, e])
+          employersArr.map(e => [e.id as string, e])
         );
+
+        // Fetch employer profile names
+        const empUserIds = employersArr.map(e => e.user_id as string).filter(Boolean);
+        let empProfileMap = new Map<string, string>();
+        if (empUserIds.length > 0) {
+          try {
+            const { data: rpcData, error: rpcErr } = await supabase
+              .rpc('get_profiles_by_ids', { user_ids: empUserIds });
+            const profiles = rpcErr ? [] : (rpcData || []);
+            for (const p of profiles) {
+              empProfileMap.set(p.id, p.full_name || '');
+            }
+          } catch {
+            // Profile lookup failed
+          }
+        }
 
         // Fetch candidate record for chat status lookup
         const { data: candRecord } = await supabase
@@ -345,7 +365,10 @@ export function JobSeekerDashboard() {
 
             const rawChatStatus = chatStatusMap.get(role.employer_id) || 'none';
 
+            const empUserId = emp?.user_id as string | undefined;
+
             return {
+              name: (empUserId && empProfileMap.get(empUserId)) || (emp?.company_name as string) || 'Unknown',
               company: (emp?.company_name as string) || 'Unknown',
               role: role.title,
               matchScore: result.overallMatchScore,
@@ -358,10 +381,11 @@ export function JobSeekerDashboard() {
               chatStatus: rawChatStatus as TopMatch['chatStatus'],
             };
           })
-          .sort((a, b) => b.matchScore - a.matchScore)
-          .slice(0, 5);
+          .sort((a, b) => b.matchScore - a.matchScore);
 
-        setTopMatches(matches);
+        setAllMatches(matches);
+        setMatchPage(0);
+        setTopMatches(matches.slice(0, 5));
         setMatchesAvailable(roles.length);
         setUniqueCompanies(new Set(roles.map(r => r.employer_id)).size);
 
@@ -408,6 +432,19 @@ export function JobSeekerDashboard() {
   }, [user, hasCompletedAssessment, personalityScores]);
 
   const navigate = useNavigate();
+
+  const handleRefreshMatches = () => {
+    if (allMatches.length <= 5) return;
+    const nextPage = matchPage + 1;
+    const start = (nextPage * 5) % allMatches.length;
+    const page = allMatches.slice(start, start + 5);
+    // If we wrapped past the end, fill from the beginning
+    if (page.length < 5) {
+      page.push(...allMatches.slice(0, 5 - page.length));
+    }
+    setMatchPage(nextPage);
+    setTopMatches(page);
+  };
 
   // Best match score
   const bestMatchScore = topMatches.length > 0 ? topMatches[0].matchScore : 0;
@@ -571,6 +608,7 @@ export function JobSeekerDashboard() {
         matches={topMatches}
         hasCompletedAssessment={hasCompletedAssessment}
         onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
+        onRefresh={handleRefreshMatches}
       />
 
       {/* Activity Carousel */}

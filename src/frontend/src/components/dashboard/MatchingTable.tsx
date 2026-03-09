@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   Briefcase,
   MapPin,
-  ArrowUpDown,
+  RefreshCw,
   Coffee,
   Send,
   UserCheck,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 interface MatchRow {
+  name: string;
   company: string;
   role: string;
   matchScore: number;
@@ -28,11 +29,9 @@ interface MatchingTableProps {
   matches: MatchRow[];
   hasCompletedAssessment: boolean;
   onRowClick?: (match: MatchRow) => void;
+  onRefresh?: () => void;
 }
 
-type FilterTab = 'all' | 'top' | 'good' | 'exploring';
-type SortField = 'score' | 'company' | 'role';
-type SortDir = 'asc' | 'desc';
 
 function formatWorkStyle(ws: string | null): string {
   if (!ws) return 'Flexible';
@@ -86,44 +85,12 @@ function getStatusConfig(status: MatchRow['chatStatus']): StatusConfig {
   }
 }
 
-const TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'top', label: 'Top Matches' },
-  { key: 'good', label: 'Good Fit' },
-  { key: 'exploring', label: 'Exploring' },
-];
-
-export function MatchingTable({ matches, hasCompletedAssessment, onRowClick }: MatchingTableProps) {
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
-  const [sortField, setSortField] = useState<SortField>('score');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir(field === 'score' ? 'desc' : 'asc');
-    }
-  };
-
+export function MatchingTable({ matches, hasCompletedAssessment, onRowClick, onRefresh }: MatchingTableProps) {
   const filtered = useMemo(() => {
-    let rows = [...matches];
-
-    if (activeTab === 'top') rows = rows.filter(m => m.matchScore >= 85);
-    else if (activeTab === 'good') rows = rows.filter(m => m.matchScore >= 55 && m.matchScore < 85);
-    else if (activeTab === 'exploring') rows = rows.filter(m => m.matchScore < 55);
-
-    rows.sort((a, b) => {
-      let cmp = 0;
-      if (sortField === 'score') cmp = a.matchScore - b.matchScore;
-      else if (sortField === 'company') cmp = a.company.localeCompare(b.company);
-      else if (sortField === 'role') cmp = a.role.localeCompare(b.role);
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-
+    const rows = [...matches];
+    rows.sort((a, b) => b.matchScore - a.matchScore);
     return rows;
-  }, [matches, activeTab, sortField, sortDir]);
+  }, [matches]);
 
   if (!hasCompletedAssessment) {
     return (
@@ -146,7 +113,7 @@ export function MatchingTable({ matches, hasCompletedAssessment, onRowClick }: M
 
   return (
     <div>
-      {/* Header: title + filter tabs */}
+      {/* Header: title + refresh */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
           <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
@@ -159,57 +126,46 @@ export function MatchingTable({ matches, hasCompletedAssessment, onRowClick }: M
             Check & Maintain Your Match Status
           </p>
         </div>
-        <div className="flex items-center gap-1">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: activeTab === tab.key ? 'var(--color-accent)' : 'transparent',
-                color: activeTab === tab.key ? 'white' : 'var(--color-textMuted)',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-[var(--color-surfaceHover)]"
+            style={{ color: 'var(--color-textMuted)' }}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </button>
+        )}
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
+        <table className="w-full min-w-[1000px]">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
               <th
-                className="pb-2.5 pl-1 text-left text-[10px] font-semibold uppercase tracking-[0.08em] cursor-pointer select-none"
+                className="pb-2.5 pl-1 text-left text-[10px] font-semibold uppercase tracking-[0.08em]"
                 style={{ color: 'var(--color-textMuted)' }}
-                onClick={() => toggleSort('company')}
               >
-                <span className="flex items-center gap-1">
-                  Company
-                  <ArrowUpDown className="w-3 h-3" style={{ opacity: sortField === 'company' ? 1 : 0.3 }} />
-                </span>
+                Company
               </th>
               <th
-                className="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] cursor-pointer select-none"
+                className="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em]"
                 style={{ color: 'var(--color-textMuted)' }}
-                onClick={() => toggleSort('role')}
               >
-                <span className="flex items-center gap-1">
-                  Role
-                  <ArrowUpDown className="w-3 h-3" style={{ opacity: sortField === 'role' ? 1 : 0.3 }} />
-                </span>
+                Name
               </th>
               <th
-                className="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] cursor-pointer select-none"
+                className="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em]"
                 style={{ color: 'var(--color-textMuted)' }}
-                onClick={() => toggleSort('score')}
               >
-                <span className="flex items-center gap-1">
-                  Match
-                  <ArrowUpDown className="w-3 h-3" style={{ opacity: sortField === 'score' ? 1 : 0.3 }} />
-                </span>
+                Role
+              </th>
+              <th
+                className="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em]"
+                style={{ color: 'var(--color-textMuted)' }}
+              >
+                Match
               </th>
               <th
                 className="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em]"
@@ -229,13 +185,11 @@ export function MatchingTable({ matches, hasCompletedAssessment, onRowClick }: M
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="py-8 text-center text-sm"
                   style={{ color: 'var(--color-textMuted)' }}
                 >
-                  {activeTab === 'all'
-                    ? 'No matches found yet'
-                    : `No ${TABS.find(t => t.key === activeTab)?.label.toLowerCase()} matches`}
+                  No matches found yet
                 </td>
               </tr>
             ) : (
@@ -294,6 +248,16 @@ export function MatchingTable({ matches, hasCompletedAssessment, onRowClick }: M
                           </p>
                         </div>
                       </div>
+                    </td>
+
+                    {/* Name */}
+                    <td className="py-3.5 pr-5">
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: 'var(--color-accent)' }}
+                      >
+                        {match.name}
+                      </span>
                     </td>
 
                     {/* Role */}
