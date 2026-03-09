@@ -128,16 +128,16 @@ export function DeepDive({
   }, [candidateId, employerId, roleId]);
 
   const compositeScores = [
-    { label: 'Trait Match', score: traitScore, icon: Brain, color: '#8B5CF6' },
-    { label: 'Culture Fit', score: cultureScore, icon: Heart, color: '#EC4899' },
-    { label: 'Work Style', score: workStyleScore, icon: Zap, color: '#F59E0B' },
-    { label: 'Communication', score: communicationScore, icon: MessageCircle, color: '#06B6D4' },
+    { label: 'Trait Match', score: traitScore, icon: Brain, color: 'var(--color-accent)' },
+    { label: 'Culture Fit', score: cultureScore, icon: Heart, color: 'var(--color-accent)' },
+    { label: 'Work Style', score: workStyleScore, icon: Zap, color: 'var(--color-accent)' },
+    { label: 'Communication', score: communicationScore, icon: MessageCircle, color: 'var(--color-accent)' },
   ];
 
-  const getAlignmentColor = (fitScore: number) => {
-    if (fitScore >= 80) return '#10b981';
-    if (fitScore >= 60) return '#f59e0b';
-    return '#ef4444';
+  const getAlignmentOpacity = (fitScore: number) => {
+    if (fitScore >= 80) return 1;
+    if (fitScore >= 60) return 0.6;
+    return 0.3;
   };
 
   const getAlignmentLabel = (fitScore: number) => {
@@ -215,11 +215,11 @@ export function DeepDive({
   };
 
   const BASE_COLORS: Record<string, string> = {
-    openness: '#8B5CF6',
-    conscientiousness: '#10B981',
-    extraversion: '#F59E0B',
-    agreeableness: '#EC4899',
-    neuroticism: '#06B6D4',
+    openness: 'var(--color-accent)',
+    conscientiousness: 'var(--color-accent)',
+    extraversion: 'var(--color-accent)',
+    agreeableness: 'var(--color-accent)',
+    neuroticism: 'var(--color-accent)',
   };
 
   const candidateAlignmentColors = Object.keys(BASE_COLORS).reduce((acc, key) => {
@@ -255,8 +255,8 @@ export function DeepDive({
         Back to Gallery
       </button>
 
-      {/* 1. Hero section — bento-card with accent border */}
-      <div className="bento-card bento-card-accent">
+      {/* 1. Hero section */}
+      <div className="bento-card">
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Avatar */}
           <div
@@ -278,7 +278,7 @@ export function DeepDive({
             {archetype && (
               <span
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
-                style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-accent)' }}
+                style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 {archetype.name}
@@ -293,7 +293,7 @@ export function DeepDive({
       {/* 2. Composite Score Cards — bento metric cards with big numbers */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {compositeScores.map(({ label, score, icon: Icon, color }) => (
-          <div key={label} className="bento-card bento-card-accent relative overflow-hidden">
+          <div key={label} className="bento-card relative overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>
                 {label}
@@ -319,18 +319,18 @@ export function DeepDive({
         {/* Alignment Summary */}
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-4 h-4" style={{ color: '#10B981' }} />
+            <Shield className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
             <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Alignment</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}>
               {alignedCount} Aligned
             </span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#F59E0B' }}>
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)', opacity: 0.6 }}>
               {closeCount} Close
             </span>
             {gapCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444' }}>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)', opacity: 0.3 }}>
                 {gapCount} Gap
               </span>
             )}
@@ -349,13 +349,13 @@ export function DeepDive({
         {/* Strongest Dimension */}
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4" style={{ color: '#10B981' }} />
+            <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
             <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Strongest</span>
           </div>
           {bestDimension && (
             <div>
               <span className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{bestDimension.name}</span>
-              <span className="text-xs ml-1.5" style={{ color: '#10B981' }}>{bestDimension.fitScore}%</span>
+              <span className="text-xs ml-1.5" style={{ color: 'var(--color-accent)' }}>{bestDimension.fitScore}%</span>
             </div>
           )}
         </div>
@@ -363,13 +363,13 @@ export function DeepDive({
         {/* Growth Area */}
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4" style={{ color: '#F59E0B' }} />
+            <Users className="w-4 h-4" style={{ color: 'var(--color-accent)', opacity: 0.6 }} />
             <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Growth Area</span>
           </div>
           {weakDimension && (
             <div>
               <span className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>{weakDimension.name}</span>
-              <span className="text-xs ml-1.5" style={{ color: '#F59E0B' }}>{weakDimension.fitScore}%</span>
+              <span className="text-xs ml-1.5" style={{ color: 'var(--color-accent)', opacity: 0.6 }}>{weakDimension.fitScore}%</span>
             </div>
           )}
         </div>
@@ -384,24 +384,23 @@ export function DeepDive({
 
         <div className="space-y-4">
           {dimensions.map(dim => {
-            const alignment = getAlignmentColor(dim.fitScore);
             const label = getAlignmentLabel(dim.fitScore);
             return (
               <div key={dim.name}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{dim.name}</span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${alignment}15`, color: alignment }}>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)', opacity: getAlignmentOpacity(dim.fitScore) }}>
                     {label} · {dim.fitScore}%
                   </span>
                 </div>
                 <div className="relative h-6 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full opacity-30 transition-all duration-700"
-                    style={{ width: `${dim.employerPreference}%`, backgroundColor: '#3b82f6' }}
+                    className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+                    style={{ width: `${dim.employerPreference}%`, backgroundColor: 'var(--color-accent)', opacity: 0.2 }}
                   />
                   <div
                     className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
-                    style={{ width: `${dim.candidateScore}%`, backgroundColor: alignment, opacity: 0.8 }}
+                    style={{ width: `${dim.candidateScore}%`, backgroundColor: 'var(--color-accent)', opacity: getAlignmentOpacity(dim.fitScore) }}
                   />
                   <div className="absolute inset-0 flex items-center justify-between px-3">
                     <span className="text-[10px] font-semibold text-white drop-shadow">
@@ -420,15 +419,15 @@ export function DeepDive({
         {/* Legend */}
         <div className="flex items-center gap-4 mt-4 text-[10px]" style={{ color: 'var(--color-textMuted)' }}>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#10b981' }} />
+            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: 'var(--color-accent)' }} />
             Aligned (80%+)
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
+            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: 'var(--color-accent)', opacity: 0.6 }} />
             Close (60-79%)
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#ef4444' }} />
+            <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: 'var(--color-accent)', opacity: 0.3 }} />
             Gap (&lt;60%)
           </div>
         </div>
@@ -437,7 +436,7 @@ export function DeepDive({
       {/* 5. Profile Comparison - Side by Side Mind Maps */}
       <div className="bento-card">
         <div className="flex items-center gap-2 mb-4">
-          <Target className="w-5 h-5" style={{ color: '#8b5cf6' }} />
+          <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
           <h2 className="text-base font-bold" style={{ color: 'var(--color-text)' }}>Profile Comparison</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -493,10 +492,10 @@ export function DeepDive({
             {/* Strengths + Friction as transaction-style lists */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {narrative.ember_strengths && narrative.ember_strengths.length > 0 && (
-                <div className="bento-card" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                <div className="bento-card" style={{ borderColor: 'var(--color-border)' }}>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
-                      <CheckCircle2 className="w-4 h-4" style={{ color: '#10b981' }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
+                      <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                     </div>
                     <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                       {mode === 'candidate' ? 'Why This Works' : 'What They Bring'}
@@ -509,7 +508,7 @@ export function DeepDive({
                         className="flex items-start gap-2 py-2"
                         style={{ borderBottom: i < narrative.ember_strengths!.length - 1 ? '1px solid var(--color-border)' : undefined }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#10B981' }} />
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: 'var(--color-accent)' }} />
                         <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{s}</span>
                       </div>
                     ))}
@@ -518,10 +517,10 @@ export function DeepDive({
               )}
 
               {narrative.ember_friction && narrative.ember_friction.length > 0 && (
-                <div className="bento-card" style={{ borderColor: 'rgba(245, 158, 11, 0.2)' }}>
+                <div className="bento-card" style={{ borderColor: 'var(--color-border)' }}>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-                      <AlertTriangle className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
+                      <AlertTriangle className="w-4 h-4" style={{ color: 'var(--color-accent)', opacity: 0.7 }} />
                     </div>
                     <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                       {mode === 'candidate' ? 'Watch Out For' : 'Potential Friction'}
@@ -534,7 +533,7 @@ export function DeepDive({
                         className="flex items-start gap-2 py-2"
                         style={{ borderBottom: i < narrative.ember_friction!.length - 1 ? '1px solid var(--color-border)' : undefined }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#F59E0B' }} />
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: 'var(--color-accent)', opacity: 0.7 }} />
                         <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{f}</span>
                       </div>
                     ))}
@@ -546,10 +545,10 @@ export function DeepDive({
             {/* Tips + Questions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {narrative.ember_success_tips && narrative.ember_success_tips.length > 0 && (
-                <div className="bento-card" style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                <div className="bento-card" style={{ borderColor: 'var(--color-border)' }}>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
-                      <Lightbulb className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
+                      <Lightbulb className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                     </div>
                     <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                       {mode === 'candidate' ? 'How to Succeed' : 'Setup for Success'}
@@ -562,7 +561,7 @@ export function DeepDive({
                         className="flex items-start gap-2 py-2"
                         style={{ borderBottom: i < narrative.ember_success_tips!.length - 1 ? '1px solid var(--color-border)' : undefined }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#8B5CF6' }} />
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: 'var(--color-accent)' }} />
                         <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{t}</span>
                       </div>
                     ))}
@@ -571,10 +570,10 @@ export function DeepDive({
               )}
 
               {narrative.ember_questions && narrative.ember_questions.length > 0 && (
-                <div className="bento-card" style={{ borderColor: 'rgba(6, 182, 212, 0.2)' }}>
+                <div className="bento-card" style={{ borderColor: 'var(--color-border)' }}>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(6, 182, 212, 0.1)' }}>
-                      <HelpCircle className="w-4 h-4" style={{ color: '#06b6d4' }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
+                      <HelpCircle className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                     </div>
                     <h4 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                       Questions to Explore
@@ -587,7 +586,7 @@ export function DeepDive({
                         className="flex items-start gap-2 py-2"
                         style={{ borderBottom: i < narrative.ember_questions!.length - 1 ? '1px solid var(--color-border)' : undefined }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: '#06B6D4' }} />
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: 'var(--color-accent)' }} />
                         <span className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>{q}</span>
                       </div>
                     ))}
@@ -603,7 +602,7 @@ export function DeepDive({
                 style={{ borderColor: 'var(--color-accent)' }}
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
                     <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                   </div>
                   <div>
@@ -636,7 +635,7 @@ export function DeepDive({
             <div className="flex items-center gap-2 mb-2">
               <span
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-accent)' }}
+                style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
               >
                 <Sparkles className="w-3 h-3" />
                 {archetype.name}
@@ -655,7 +654,7 @@ export function DeepDive({
       <div
         className="sticky bottom-4 bento-card p-4 flex items-center justify-center gap-3 z-30"
         style={{
-          backdropFilter: 'blur(12px)',
+          backgroundColor: 'var(--color-surface)',
         }}
       >
         {connectionStatus === 'accepted' ? (

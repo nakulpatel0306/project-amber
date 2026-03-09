@@ -1461,3 +1461,5 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
   }
 }
 
+/* ── Ember page scope — inherits global theme, no forced overrides ── */
+
