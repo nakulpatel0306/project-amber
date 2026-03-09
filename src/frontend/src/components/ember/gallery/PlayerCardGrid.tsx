@@ -104,8 +104,8 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
               <motion.div key={employer.employerId} variants={cardItem}>
                 <PlayerCard
                   id={employer.employerId}
-                  name={employer.companyName}
-                  subtitle={employer.industry}
+                  name={employer.profileName}
+                  subtitle={employer.companyName}
                   archetype={employer.archetype}
                   overallScore={employer.overallScore}
                   cultureScore={employer.cultureScore}

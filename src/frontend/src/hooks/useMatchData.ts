@@ -105,7 +105,27 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
           return;
         }
 
-        // Step 3: Score employers directly (like how employers score candidates)
+        // Step 3: Fetch employer profile names
+        const employerUserIds = employersData.map((emp: EmployerData) => emp.user_id);
+        let employerProfilesData: any[] = [];
+        try {
+          const { data: rpcData, error: rpcErr } = await supabase
+            .rpc('get_profiles_by_ids', { user_ids: employerUserIds });
+          if (rpcErr) {
+            const { data: fallbackData } = await supabase
+              .from('profiles')
+              .select('id, full_name, email')
+              .in('id', employerUserIds);
+            employerProfilesData = fallbackData || [];
+          } else {
+            employerProfilesData = rpcData || [];
+          }
+        } catch {
+          // Profile lookup failed
+        }
+        const employerProfileMap = new Map((employerProfilesData || []).map((p: any) => [p.id, p]));
+
+        // Step 4: Score employers directly (like how employers score candidates)
         const employerResults: EmployerResult[] = employersData
           .filter((emp: EmployerData) => emp.openness_preference !== null) // Only employers with preferences set
           .map((emp: EmployerData) => {
@@ -128,8 +148,11 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
 
             const empArchetype = determineArchetype(employerOcean);
 
+            const empProfile = employerProfileMap.get(emp.user_id);
+
             return {
               employerId: emp.id,
+              profileName: empProfile?.full_name || emp.company_name,
               companyName: emp.company_name,
               description: emp.description || '',
               industry: emp.industry || '',

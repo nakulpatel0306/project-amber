@@ -140,6 +140,7 @@ export interface CandidateResult {
 
 export interface EmployerResult {
   employerId: string;
+  profileName: string;
   companyName: string;
   description: string;
   industry: string;
