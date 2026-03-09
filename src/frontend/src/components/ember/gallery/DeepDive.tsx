@@ -11,7 +11,8 @@ import { Modal } from '../../ui/Modal';
 import { EmberFirefly } from '../EmberFirefly';
 import { CoffeeBrewLoader } from '../../ui/CoffeeBrewLoader';
 import { ConnectButton } from '../../connections/ConnectButton';
-import type { OCEANScores } from '../../../lib/compatibilityScoring';
+import { supabase } from '../../../lib/supabase';
+import { calculateCompatibility, type OCEANScores } from '../../../lib/compatibilityScoring';
 import type { ConnectionStatus } from '../../../types/connections.types';
 
 const API_BASE = 'http://127.0.0.1:8000';
@@ -234,6 +235,7 @@ export function DeepDive({
   const [compositeModal, setCompositeModal] = useState<string | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
   const [deepDiveTab, setDeepDiveTab] = useState(0);
+  const [employerRoles, setEmployerRoles] = useState<{ id: string; title: string; score: number }[]>([]);
 
   const initial = name.charAt(0).toUpperCase();
 
@@ -267,6 +269,42 @@ export function DeepDive({
     };
     fetchNarrative();
   }, [candidateId, employerId, roleId]);
+
+  /* Fetch employer roles with per-role compatibility */
+  useEffect(() => {
+    if (!employerId || mode !== 'candidate') return;
+    const fetchRoles = async () => {
+      const { data } = await supabase
+        .from('roles')
+        .select('id, title, work_style, required_openness_min, required_openness_max, required_conscientiousness_min, required_conscientiousness_max, required_extraversion_min, required_extraversion_max, required_agreeableness_min, required_agreeableness_max, required_neuroticism_min, required_neuroticism_max')
+        .eq('employer_id', employerId);
+      if (!data || data.length === 0) return;
+      const scored = data.map(role => {
+        const result = calculateCompatibility({
+          candidateOCEAN: _candidateOcean,
+          employerPreferences: { ..._employerOcean },
+          roleWorkStyle: role.work_style || undefined,
+          roleRequirements: {
+            required_openness_min: role.required_openness_min,
+            required_openness_max: role.required_openness_max,
+            required_conscientiousness_min: role.required_conscientiousness_min,
+            required_conscientiousness_max: role.required_conscientiousness_max,
+            required_extraversion_min: role.required_extraversion_min,
+            required_extraversion_max: role.required_extraversion_max,
+            required_agreeableness_min: role.required_agreeableness_min,
+            required_agreeableness_max: role.required_agreeableness_max,
+            required_neuroticism_min: role.required_neuroticism_min,
+            required_neuroticism_max: role.required_neuroticism_max,
+            work_style: role.work_style,
+          },
+        });
+        return { id: role.id, title: role.title, score: result.overallMatchScore };
+      });
+      scored.sort((a, b) => b.score - a.score);
+      setEmployerRoles(scored);
+    };
+    fetchRoles();
+  }, [employerId, mode, _candidateOcean, _employerOcean]);
 
   /* Composite scores */
   const compositeScores = [
@@ -379,6 +417,21 @@ export function DeepDive({
                 </span>
               )}
             </div>
+            {/* Available roles */}
+            {employerRoles.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--color-textMuted)' }}>Roles</span>
+                {employerRoles.map(role => (
+                  <span
+                    key={role.id}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium"
+                    style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+                  >
+                    {role.title}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
