@@ -8,6 +8,9 @@ import {
   Loader2,
   Trash2,
   Pencil,
+  Eye,
+  EyeOff,
+  Image,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -19,6 +22,14 @@ import { HOBBIES, HOBBY_CATEGORIES, getHobbyById, type Hobby, type HobbyCategory
 interface PhotoWithCaption {
   url: string;
   caption: string;
+}
+
+interface ActivityPost {
+  id: string;
+  image_url: string;
+  caption: string;
+  hobby_tags: string[];
+  created_at: string;
 }
 
 interface ProfileEditModalProps {
@@ -45,9 +56,18 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Visibility toggle
+  const [profileVisible, setProfileVisible] = useState(true);
+  const [savingVisibility, setSavingVisibility] = useState(false);
+
+  // My Posts
+  const [myPosts, setMyPosts] = useState<ActivityPost[]>([]);
+
   useEffect(() => {
     if (isOpen && user) {
       loadData();
+      loadVisibility();
+      loadMyPosts();
     }
   }, [isOpen, user]);
 
@@ -55,7 +75,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
     if (!user) return;
     setIsLoading(true);
     try {
-      // First try to get basic data
       const { data, error } = await supabase
         .from('candidates')
         .select('hobbies, catalog_photos')
@@ -71,7 +90,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       if (data) {
         setHobbies(data.hobbies || []);
 
-        // Try to get caption data separately (column may not exist)
         let captionData: PhotoWithCaption[] = [];
         try {
           const { data: captionResult } = await supabase
@@ -84,14 +102,12 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
             captionData = captionResult.catalog_photos_data as PhotoWithCaption[];
           }
         } catch {
-          // Column doesn't exist yet, use empty captions
+          // Column doesn't exist yet
         }
 
-        // Use caption data if available, otherwise convert old format
         if (captionData.length > 0) {
           setPhotos(captionData);
         } else if (data.catalog_photos && data.catalog_photos.length > 0) {
-          // Convert old format to new format
           setPhotos(data.catalog_photos.map((url: string) => ({ url, caption: '' })));
         } else {
           setPhotos([]);
@@ -101,6 +117,73 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       console.error('Error loading data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadVisibility = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('profile_visible')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        setProfileVisible(data.profile_visible);
+      }
+    } catch {
+      // No settings row yet — default to visible
+    }
+  };
+
+  const toggleVisibility = async () => {
+    if (!user) return;
+    setSavingVisibility(true);
+    const newValue = !profileVisible;
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(
+          { user_id: user.id, profile_visible: newValue },
+          { onConflict: 'user_id' }
+        );
+      if (error) throw error;
+      setProfileVisible(newValue);
+      showSuccess('Updated', newValue ? 'Profile visible in feed' : 'Profile hidden from feed');
+    } catch {
+      showError('Error', 'Failed to update visibility');
+    } finally {
+      setSavingVisibility(false);
+    }
+  };
+
+  const loadMyPosts = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from('activity_posts')
+        .select('id, image_url, caption, hobby_tags, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      setMyPosts(data || []);
+    } catch {
+      // Table may not have data yet
+    }
+  };
+
+  const deleteMyPost = async (postId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('activity_posts')
+        .delete()
+        .eq('id', postId);
+      if (error) throw error;
+      setMyPosts(prev => prev.filter(p => p.id !== postId));
+      showSuccess('Deleted', 'Post removed');
+    } catch {
+      showError('Error', 'Failed to delete post');
     }
   };
 
@@ -145,7 +228,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
     const trimmed = customHobby.trim();
     if (!trimmed) return;
 
-    // Create a custom hobby ID
     const customId = `custom:${trimmed.toLowerCase().replace(/\s+/g, '-')}`;
 
     if (tempSelectedHobbies.includes(customId)) {
@@ -169,7 +251,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   const savePhotos = async (newPhotos: PhotoWithCaption[]) => {
     if (!user) return false;
     try {
-      // Always update catalog_photos (the URL array)
       const { error: photosError } = await supabase
         .from('candidates')
         .update({
@@ -179,7 +260,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
 
       if (photosError) throw photosError;
 
-      // Try to update caption data (column may not exist)
       try {
         await supabase
           .from('candidates')
@@ -188,7 +268,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
           })
           .eq('user_id', user.id);
       } catch {
-        // Column doesn't exist yet, captions won't be saved
         console.warn('catalog_photos_data column not available');
       }
 
@@ -239,7 +318,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
 
       if (success) {
         showSuccess('Photo Uploaded', 'Add a caption to describe your photo!');
-        // Auto-open caption editor for new photo
         setEditingCaption(newPhotos.length - 1);
         setCaptionText('');
       }
@@ -274,7 +352,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   };
 
   const selectedHobbies = hobbies.map(id => {
-    // Handle custom hobbies
     if (id.startsWith('custom:')) {
       const name = id.replace('custom:', '').replace(/-/g, ' ');
       return { id, name: name.charAt(0).toUpperCase() + name.slice(1), emoji: '✨', category: 'social' as const };
@@ -291,6 +368,43 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
           </div>
         ) : (
           <>
+            {/* Visibility Toggle */}
+            <div
+              className="flex items-center justify-between p-3 rounded-xl"
+              style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+            >
+              <div className="flex items-center gap-2">
+                {profileVisible ? (
+                  <Eye className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                ) : (
+                  <EyeOff className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
+                )}
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                    Show my profile in community feed
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                    {profileVisible ? 'Your catalog photos appear in the feed' : 'Your photos are hidden from the feed'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleVisibility}
+                disabled={savingVisibility}
+                className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                style={{
+                  backgroundColor: profileVisible ? 'var(--color-accent)' : 'var(--color-border)',
+                }}
+              >
+                <span
+                  className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
+                  style={{
+                    left: profileVisible ? '22px' : '2px',
+                  }}
+                />
+              </button>
+            </div>
+
             {/* Photos Section */}
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -469,6 +583,51 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
                     Click to add hobbies
                   </p>
                 </div>
+              )}
+            </div>
+
+            {/* My Posts Section */}
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
+                <Image className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                My Posts ({myPosts.length})
+              </h3>
+              {myPosts.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {myPosts.map(post => (
+                    <div
+                      key={post.id}
+                      className="relative rounded-xl overflow-hidden group"
+                      style={{ border: '1px solid var(--color-border)' }}
+                    >
+                      <div className="aspect-square">
+                        <img
+                          src={post.image_url}
+                          alt={post.caption}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
+                        <div className="w-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-white text-[10px] line-clamp-2 mb-1">
+                            {post.caption}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => deleteMyPost(post.id)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm py-4 text-center" style={{ color: 'var(--color-textMuted)' }}>
+                  No posts yet. Use the "+ New Post" button to create one.
+                </p>
               )}
             </div>
 
