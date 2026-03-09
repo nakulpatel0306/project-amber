@@ -47,6 +47,7 @@ import { ProfileCompleteness } from '../ui/ProfileCompleteness';
 import { PersonalitySnapshotCard } from '../ui/PersonalitySnapshotCard';
 import { DidYouKnowCard } from '../ui/DidYouKnowCard';
 import { PageBanner } from '../ui/PageBanner';
+import { Avatar } from '../ui/Avatar';
 import { getArchetypeByName } from '../../lib/archetypes';
 import { calculateCombinedOCEAN, type OCEANScores } from '../../lib/personalityEngine';
 import { getFactsForProfile } from '../../data/personalityFacts';
@@ -190,7 +191,7 @@ const ADDITIONAL_ASSESSMENTS = [
 ];
 
 export function PersonalityInsights() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { error: showError } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -419,7 +420,7 @@ export function PersonalityInsights() {
   // Personality facts
   const personalityFacts = getFactsForProfile(scores, 4);
 
-  // Archetype name for tagline
+  // Archetype name for header
   const primaryArchetype = personalityData?.top_traits?.[0] || 'The Explorer';
   // Generate tagline
   const taglineMap: Record<string, string> = {
@@ -439,7 +440,14 @@ export function PersonalityInsights() {
         <PageBanner
           title={primaryArchetype}
           subtitle={tagline}
-          icon={Sparkles}
+          iconNode={
+            <Avatar
+              src={profile?.avatar_url}
+              fallback={profile?.full_name || user?.email || undefined}
+              size="lg"
+              className="!rounded-xl"
+            />
+          }
           rightContent={
             <div className="flex items-center gap-3 flex-wrap">
               <ProfileCompleteness completedCount={completionCount} variant="ring" size="sm" showLabel={false} />
@@ -482,19 +490,17 @@ export function PersonalityInsights() {
         {/* 2. OCEAN Radar Chart + Dimension Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           <motion.div
-            className="lg:col-span-3 p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="lg:col-span-3 bento-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               OCEAN Profile
             </h2>
             {completionCount > 1 && (
-              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: 'var(--color-accent)' }}>
-                <Sparkles className="w-3 h-3" />
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mt-1 mb-3" style={{ color: 'var(--color-accent)' }}>
                 Enhanced with {completionCount - 1} supplementary assessment{completionCount > 2 ? 's' : ''}
               </p>
             )}
@@ -507,15 +513,14 @@ export function PersonalityInsights() {
               onDimensionClick={(key) => setSelectedDimension(selectedDimension === key ? null : key as keyof typeof OCEAN_INFO)}
               selectedDimension={selectedDimension}
             />
-            <p className="text-xs text-center mt-2" style={{ color: 'var(--color-textMuted)' }}>
-              Click a dimension to explore details
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-center mt-2" style={{ color: 'var(--color-textMuted)' }}>
+              Click a dimension to explore
             </p>
           </motion.div>
 
           {/* 3. Dimension Breakdown */}
           <motion.div
-            className="lg:col-span-2 p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="lg:col-span-2 bento-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
@@ -529,7 +534,7 @@ export function PersonalityInsights() {
               />
             ) : (
               <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                   <Layers className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                   Dimension Breakdown
                 </h2>
@@ -593,18 +598,17 @@ export function PersonalityInsights() {
         {/* 4. Your Archetypes */}
         {personalityData?.top_traits && personalityData.top_traits.length > 0 && (
           <motion.div
-            className="p-6 rounded-2xl border mb-6"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="bento-card mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Your Personality Archetypes
             </h2>
-            <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-              Your unique combination shapes how you work, lead, and collaborate
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+              Work, Lead, Collaborate //
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {personalityData.top_traits.slice(0, 3).map((trait, index) => {
@@ -628,13 +632,12 @@ export function PersonalityInsights() {
 
         {/* 5. Thinking & Operating Style */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Puzzle className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Thinking & Operating Style
           </h2>
@@ -657,13 +660,12 @@ export function PersonalityInsights() {
 
         {/* 6. Energy Map */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Battery className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Your Energy Map
           </h2>
@@ -699,18 +701,17 @@ export function PersonalityInsights() {
 
         {/* 7. Environments You Thrive In */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Environments You Thrive In
           </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Based on your profile, these are the work environments where you'll do your best work
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+            Ideal Work Settings //
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -752,18 +753,17 @@ export function PersonalityInsights() {
 
         {/* 8. Growth Edges */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Leaf className="w-5 h-5" style={{ color: '#10B981' }} />
             Growth Edges
           </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Areas where stretching could unlock new opportunities — framed as growth, not weakness
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+            Room to Grow //
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {sortedScores.slice(-2).map(([key, value]) => {
@@ -794,34 +794,33 @@ export function PersonalityInsights() {
 
         {/* 9. Compatibility Signals */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Compatibility Signals
           </h2>
-          <p className="text-sm mb-4" style={{ color: 'var(--color-textMuted)' }}>
-            What types of teams and companies you'll mesh with best
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--color-textMuted)' }}>
+            Team & Culture Fit //
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-textMuted)' }}>Company Size</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Company Size</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
                 {scores.conscientiousness > 65 ? 'Mid-size to Enterprise' : scores.openness > 65 ? 'Startups to Mid-size' : 'Flexible across sizes'}
               </p>
             </div>
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-textMuted)' }}>Team Dynamic</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Team Dynamic</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
                 {scores.extraversion > 65 ? 'Collaborative & Social' : scores.extraversion < 35 ? 'Small & Focused' : 'Balanced Teams'}
               </p>
             </div>
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-textMuted)' }}>Management Style</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Management Style</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
                 {scores.conscientiousness > 65 ? 'Structured & Clear' : scores.openness > 65 ? 'Autonomous & Trust-based' : 'Supportive & Flexible'}
               </p>
@@ -836,18 +835,17 @@ export function PersonalityInsights() {
 
         {/* 10. Supplementary Assessments */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Enhance Your Profile
           </h2>
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: 'var(--color-textMuted)' }}>
               Complete more assessments for a more accurate personality picture
             </p>
             <ProfileCompleteness completedCount={completionCount} variant="ring" size="sm" showLabel={false} />
@@ -935,13 +933,13 @@ export function PersonalityInsights() {
 
         {/* CTA */}
         <motion.div
-          className="p-6 rounded-2xl border text-center"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card text-center"
+          style={{ borderLeft: '3px solid var(--color-accent)' }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Ready to Find Your Match?</h3>
+          <h3 className="text-base font-bold tracking-tight mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ready to Find Your Match?</h3>
           <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
             Discover companies whose culture aligns with your personality profile
           </p>
@@ -973,7 +971,7 @@ function DimensionDetail({
             <info.icon className="w-6 h-6" style={{ color: info.color }} />
           </div>
           <div>
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{info.fullLabel}</h2>
+            <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{info.fullLabel}</h2>
             <p className="text-sm" style={{ color: info.color }}>Score: {score}/100</p>
           </div>
         </div>
