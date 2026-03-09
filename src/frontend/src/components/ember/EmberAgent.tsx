@@ -244,6 +244,7 @@ export function EmberAgent() {
   const handleDeepDive = useCallback((emp: EmployerResult) => {
     setSelectedEmployer(emp);
     setView('deepdive');
+    window.scrollTo({ top: 0 });
   }, []);
 
   const handleBackToGallery = useCallback(() => {
@@ -402,55 +403,59 @@ export function EmberAgent() {
       <div className="max-w-7xl mx-auto px-6 py-6">
 
         {/* Header — matches dashboard DashboardHeader bento-card style */}
-        <motion.div
-          className="bento-card p-6 mb-5"
-          variants={emberFadeUp}
-          initial="hidden"
-          animate="show"
-        >
-          <div className="flex items-center gap-3">
-            <EmberFirefly size="sm" mood="happy" animated />
-            <div>
-              <h1
-                className="text-3xl font-bold tracking-tight"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
-              >
-                Ember
-              </h1>
-              <p
-                className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
-                style={{ color: 'var(--color-textMuted)' }}
-              >
-                {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
-                {employers.length > 0 ? ` · ${employers.length} companies` : ''}
-              </p>
+        {view !== 'deepdive' && (
+          <motion.div
+            className="bento-card p-6 mb-5"
+            variants={emberFadeUp}
+            initial="hidden"
+            animate="show"
+          >
+            <div className="flex items-center gap-3">
+              <EmberFirefly size="sm" mood="happy" animated />
+              <div>
+                <h1
+                  className="text-3xl font-bold tracking-tight"
+                  style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                >
+                  Ember
+                </h1>
+                <p
+                  className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
+                  style={{ color: 'var(--color-textMuted)' }}
+                >
+                  {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
+                  {employers.length > 0 ? ` · ${employers.length} companies` : ''}
+                </p>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Three-column layout */}
         <div className="flex gap-4">
 
           {/* ── Left Sidebar (260px, sticky) ── */}
-          <motion.aside
-            className="hidden xl:block w-[260px] flex-shrink-0"
-            variants={emberStagger}
-            initial="hidden"
-            animate="show"
-          >
-            <div className="sticky top-6 space-y-4">
-              <motion.div variants={emberFadeUp}>
-                <EmberIdentityCard archetype={archetype} ocean={candidateOcean} />
-              </motion.div>
-
-              {/* Overview carousel */}
-              {dashboardStats && (
+          {view !== 'deepdive' && (
+            <motion.aside
+              className="hidden xl:block w-[260px] flex-shrink-0"
+              variants={emberStagger}
+              initial="hidden"
+              animate="show"
+            >
+              <div className="sticky top-6 space-y-4">
                 <motion.div variants={emberFadeUp}>
-                  <OverviewCarousel stats={dashboardStats} />
+                  <EmberIdentityCard archetype={archetype} ocean={candidateOcean} />
                 </motion.div>
-              )}
-            </div>
-          </motion.aside>
+
+                {/* Overview carousel */}
+                {dashboardStats && (
+                  <motion.div variants={emberFadeUp}>
+                    <OverviewCarousel stats={dashboardStats} />
+                  </motion.div>
+                )}
+              </div>
+            </motion.aside>
+          )}
 
           {/* ── Center Content (flex) ── */}
           <main className="flex-1 min-w-0 space-y-4">
@@ -472,9 +477,8 @@ export function EmberAgent() {
                   key="gallery"
                   className="space-y-4"
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
+                  animate={{ opacity: 1, transition: { duration: 0.2 } }}
+                  exit={{ opacity: 0, transition: { duration: 0.05 } }}
                 >
                   <GalleryFilterBar
                     mode="candidate"
@@ -546,103 +550,105 @@ export function EmberAgent() {
           </main>
 
           {/* ── Right Sidebar (320px, sticky) ── */}
-          <motion.aside
-            className="hidden lg:block w-[320px] flex-shrink-0"
-            variants={emberStagger}
-            initial="hidden"
-            animate="show"
-          >
-            <div className="sticky top-6 space-y-4">
-              {featuredMatch && (
+          {view !== 'deepdive' && (
+            <motion.aside
+              className="hidden lg:block w-[320px] flex-shrink-0"
+              variants={emberStagger}
+              initial="hidden"
+              animate="show"
+            >
+              <div className="sticky top-6 space-y-4">
+                {featuredMatch && (
+                  <motion.div variants={emberFadeUp}>
+                    <TopMatchCard
+                      name={featuredMatch.companyName}
+                      subtitle={featuredMatch.industry}
+                      score={featuredMatch.overallScore}
+                      avatarUrl={featuredMatch.logoUrl}
+                      onDeepDive={() => handleDeepDive(featuredMatch)}
+                    />
+                  </motion.div>
+                )}
+
                 <motion.div variants={emberFadeUp}>
-                  <TopMatchCard
-                    name={featuredMatch.companyName}
-                    subtitle={featuredMatch.industry}
-                    score={featuredMatch.overallScore}
-                    avatarUrl={featuredMatch.logoUrl}
-                    onDeepDive={() => handleDeepDive(featuredMatch)}
+                  <MatchActivityFeed
+                    matches={employers}
+                    savedMatches={savedMatches}
+                    pendingSent={pendingSent}
+                    acceptedConnections={accepted}
                   />
                 </motion.div>
-              )}
 
-              <motion.div variants={emberFadeUp}>
-                <MatchActivityFeed
-                  matches={employers}
-                  savedMatches={savedMatches}
-                  pendingSent={pendingSent}
-                  acceptedConnections={accepted}
-                />
-              </motion.div>
-
-              {/* Bookmarked Jobs — not in a card, raw section */}
-              <motion.div variants={emberFadeUp}>
-                <p
-                  className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3 mt-1"
-                  style={{ color: 'var(--color-textMuted)' }}
-                >
-                  <Bookmark className="w-3 h-3 inline-block mr-1.5 -mt-px" />
-                  Saved Jobs //
-                </p>
-
-                {bookmarkedEmployers.length === 0 ? (
-                  <p className="text-xs py-3" style={{ color: 'var(--color-textMuted)' }}>
-                    Bookmark A Match To Save It Here.
+                {/* Bookmarked Jobs — not in a card, raw section */}
+                <motion.div variants={emberFadeUp}>
+                  <p
+                    className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3 mt-1"
+                    style={{ color: 'var(--color-textMuted)' }}
+                  >
+                    <Bookmark className="w-3 h-3 inline-block mr-1.5 -mt-px" />
+                    Saved Jobs //
                   </p>
-                ) : (
-                  <div className="space-y-0">
-                    {bookmarkedEmployers.map((emp, i) => (
-                      <div
-                        key={emp.employerId}
-                        className="flex items-center gap-2.5 py-2.5 group"
-                        style={{
-                          borderBottom: i < bookmarkedEmployers.length - 1
-                            ? '1px solid var(--color-border)'
-                            : undefined,
-                        }}
-                      >
-                        {/* Avatar */}
+
+                  {bookmarkedEmployers.length === 0 ? (
+                    <p className="text-xs py-3" style={{ color: 'var(--color-textMuted)' }}>
+                      Bookmark A Match To Save It Here.
+                    </p>
+                  ) : (
+                    <div className="space-y-0">
+                      {bookmarkedEmployers.map((emp, i) => (
                         <div
-                          className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
-                          style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
+                          key={emp.employerId}
+                          className="flex items-center gap-2.5 py-2.5 group"
+                          style={{
+                            borderBottom: i < bookmarkedEmployers.length - 1
+                              ? '1px solid var(--color-border)'
+                              : undefined,
+                          }}
                         >
-                          {emp.companyName.charAt(0)}
-                        </div>
-
-                        {/* Info — clickable to deep dive */}
-                        <button
-                          className="flex-1 min-w-0 text-left"
-                          onClick={() => handleDeepDive(emp)}
-                        >
-                          <p
-                            className="text-xs font-medium truncate"
-                            style={{ color: 'var(--color-text)' }}
+                          {/* Avatar */}
+                          <div
+                            className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                            style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
                           >
-                            {emp.companyName}
-                          </p>
-                          <p
-                            className="text-[10px] truncate"
+                            {emp.companyName.charAt(0)}
+                          </div>
+
+                          {/* Info — clickable to deep dive */}
+                          <button
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => handleDeepDive(emp)}
+                          >
+                            <p
+                              className="text-xs font-medium truncate"
+                              style={{ color: 'var(--color-text)' }}
+                            >
+                              {emp.companyName}
+                            </p>
+                            <p
+                              className="text-[10px] truncate"
+                              style={{ color: 'var(--color-textMuted)' }}
+                            >
+                              {emp.industry} · {emp.overallScore}%
+                            </p>
+                          </button>
+
+                          {/* Remove bookmark */}
+                          <button
+                            onClick={() => handleToggleSave(emp)}
+                            className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                             style={{ color: 'var(--color-textMuted)' }}
+                            title="Remove bookmark"
                           >
-                            {emp.industry} · {emp.overallScore}%
-                          </p>
-                        </button>
-
-                        {/* Remove bookmark */}
-                        <button
-                          onClick={() => handleToggleSave(emp)}
-                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ color: 'var(--color-textMuted)' }}
-                          title="Remove bookmark"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            </div>
-          </motion.aside>
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            </motion.aside>
+          )}
         </div>
       </div>
 
