@@ -1,7 +1,5 @@
-import { Eye, Coffee, Bookmark, BookmarkCheck, Sparkles, UserPlus, Clock } from 'lucide-react';
+import { Eye, Coffee, Bookmark, BookmarkCheck, UserPlus, Clock } from 'lucide-react';
 import { Button } from '../../ui/Button';
-import { ScoreRing } from '../../ui/ScoreRing';
-import { avatarGradient } from '../../../utils/matchHelpers';
 import type { ConnectionStatus } from '../../../types/connections.types';
 
 interface PlayerCardProps {
@@ -55,31 +53,33 @@ export function PlayerCard({
       )}
 
       {/* Card content */}
-      <div className="p-6 flex flex-col gap-5" onClick={onDeepDive}>
-        {/* Top row: Avatar + Info + Bookmark */}
-        <div className="flex items-center gap-3">
+      <div className="p-5" onClick={onDeepDive}>
+        {/* Top row: Avatar + Name/Subtitle + Badge + Bookmark */}
+        <div className="flex items-start gap-3 mb-4">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0"
-            style={{ background: avatarUrl ? undefined : avatarGradient(name) }}
+            className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+            style={{
+              backgroundColor: avatarUrl ? undefined : 'var(--color-surfaceHover)',
+            }}
           >
             {avatarUrl ? (
               <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-lg font-bold text-white">{initial}</span>
+              <span className="text-sm font-bold" style={{ color: 'var(--color-accent)' }}>{initial}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm line-clamp-1" style={{ color: 'var(--color-text)' }}>
+            <h3 className="font-bold text-sm" style={{ color: 'var(--color-text)' }}>
               {name}
             </h3>
-            <p className="text-xs line-clamp-1" style={{ color: 'var(--color-textMuted)' }}>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-textMuted)' }}>
               {subtitle}
             </p>
             <span
-              className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium"
-              style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-accent)' }}
+              className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold mt-1.5 -ml-2"
+              style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
             >
-              <Sparkles className="w-2.5 h-2.5" />{archetype.name}
+              {archetype.name}
             </span>
           </div>
           <button
@@ -94,30 +94,43 @@ export function PlayerCard({
           </button>
         </div>
 
-        {/* Score Ring — centered hero */}
-        <div className="flex justify-center">
-          <ScoreRing score={overallScore} size={72} strokeWidth={4} fontSize="text-lg" />
+        {/* Metric bars — matching dashboard streak bar style */}
+        <div className="space-y-2 mb-4">
+          {[
+            { label: 'Culture', score: cultureScore },
+            { label: 'Traits', score: traitScore },
+            { label: 'Style', score: workStyleScore },
+          ].map(({ label, score }) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className="text-xs w-12 flex-shrink-0" style={{ color: 'var(--color-textSecondary)' }}>
+                {label}
+              </span>
+              <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
+                <div
+                  className="h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${score}%`, backgroundColor: 'var(--color-accent)' }}
+                />
+              </div>
+              <span className="text-xs font-semibold w-8 text-right tabular-nums" style={{ color: 'var(--color-textSecondary)' }}>
+                {score}%
+              </span>
+            </div>
+          ))}
         </div>
 
-        {/* Compact metric row */}
-        <div className="flex items-center justify-center gap-0 text-xs font-medium">
-          <span style={{ color: 'var(--color-textSecondary)' }}>
-            Culture <span className="font-bold" style={{ color: 'var(--color-text)' }}>{cultureScore}%</span>
+        {/* Score divider */}
+        <div className="flex items-center gap-3 mb-0">
+          <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
+          <span className="font-mono text-lg font-bold tabular-nums" style={{ color: 'var(--color-accent)' }}>
+            {overallScore}
           </span>
-          <div className="w-px h-3 mx-3" style={{ backgroundColor: 'var(--color-border)' }} />
-          <span style={{ color: 'var(--color-textSecondary)' }}>
-            Style <span className="font-bold" style={{ color: 'var(--color-text)' }}>{workStyleScore}%</span>
-          </span>
-          <div className="w-px h-3 mx-3" style={{ backgroundColor: 'var(--color-border)' }} />
-          <span style={{ color: 'var(--color-textSecondary)' }}>
-            Traits <span className="font-bold" style={{ color: 'var(--color-text)' }}>{traitScore}%</span>
-          </span>
+          <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
         </div>
       </div>
 
       {/* Action row */}
       <div
-        className="flex items-center gap-2 px-6 py-3"
+        className="flex items-center gap-2 px-5 py-3"
         style={{ borderTop: '1px solid var(--color-border)' }}
       >
         <Button size="xs" variant="ghost" className="flex-1" onClick={onDeepDive}>
@@ -130,7 +143,7 @@ export function PlayerCard({
         ) : connectionStatus === 'pending_sent' ? (
           <span
             className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium"
-            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)' }}
+            style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
           >
             <Clock className="w-3 h-3" />Pending
           </span>

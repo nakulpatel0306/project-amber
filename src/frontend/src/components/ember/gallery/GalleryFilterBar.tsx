@@ -94,19 +94,18 @@ export function GalleryFilterBar({
         style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          backdropFilter: 'blur(12px)',
         }}
       >
-        {/* Quick filters */}
-        <div className="flex items-center gap-1">
+        {/* Quick filters — pill tabs matching dashboard nav style */}
+        <div className="flex items-center gap-1.5">
           {quickFilters.map(f => (
             <button
               key={f.value}
               onClick={() => onQuickFilterChange(f.value)}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
               style={{
                 backgroundColor: quickFilter === f.value ? 'var(--color-accent)' : 'transparent',
-                color: quickFilter === f.value ? 'var(--color-accentText)' : 'var(--color-textSecondary)',
+                color: quickFilter === f.value ? 'white' : 'var(--color-textMuted)',
               }}
             >
               {f.label}

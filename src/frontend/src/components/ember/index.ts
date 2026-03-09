@@ -1,6 +1,10 @@
 export { EmberAgent } from './EmberAgent';
 export { EmberEmployerPage } from './EmberEmployerPage';
 export { EmberFirefly } from './EmberFirefly';
+export { EmberBrain } from './EmberBrain';
+export { EmberIdentityCard } from './EmberIdentityCard';
+export { TopMatchCard } from './TopMatchCard';
+export { MatchActivityFeed } from './MatchActivityFeed';
 export { PlayerCard } from './gallery/PlayerCard';
 export { PlayerCardGrid } from './gallery/PlayerCardGrid';
 export { GalleryFilterBar } from './gallery/GalleryFilterBar';

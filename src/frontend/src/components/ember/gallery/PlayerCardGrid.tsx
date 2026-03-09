@@ -36,22 +36,24 @@ type PlayerCardGridProps = CandidateGridProps | EmployerGridProps;
 function SkeletonCard() {
   return (
     <div
-      className="rounded-2xl overflow-hidden animate-pulse"
+      className="rounded-xl overflow-hidden animate-pulse"
       style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
     >
-      <div className="p-5 flex flex-col items-center">
-        <div className="w-16 h-16 rounded-2xl mb-3" style={{ backgroundColor: 'var(--color-border)' }} />
-        <div className="w-24 h-4 rounded mb-1" style={{ backgroundColor: 'var(--color-border)' }} />
-        <div className="w-32 h-3 rounded mb-2" style={{ backgroundColor: 'var(--color-border)' }} />
-        <div className="w-20 h-4 rounded-full mb-3" style={{ backgroundColor: 'var(--color-border)' }} />
-        <div className="w-16 h-16 rounded-full mb-3" style={{ backgroundColor: 'var(--color-border)' }} />
-        <div className="flex gap-3 mb-3">
-          <div className="w-12 h-6 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
-          <div className="w-12 h-6 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
-          <div className="w-12 h-6 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
+      <div className="p-5 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ backgroundColor: 'var(--color-border)' }} />
+          <div className="flex-1 space-y-1.5">
+            <div className="w-28 h-4 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
+            <div className="w-20 h-3 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-border)' }} />
+          <div className="h-1.5 rounded-full w-3/4" style={{ backgroundColor: 'var(--color-border)' }} />
+          <div className="h-1.5 rounded-full w-5/6" style={{ backgroundColor: 'var(--color-border)' }} />
         </div>
       </div>
-      <div className="px-4 py-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+      <div className="px-5 py-3" style={{ borderTop: '1px solid var(--color-border)' }}>
         <div className="flex gap-2">
           <div className="flex-1 h-7 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
           <div className="flex-1 h-7 rounded" style={{ backgroundColor: 'var(--color-border)' }} />
@@ -66,7 +68,7 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
       </div>
     );
@@ -85,9 +87,13 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
       );
     }
 
+    // Key changes when the list changes so Framer re-triggers stagger
+    const gridKey = employers.map(e => e.employerId).join(',');
+
     return (
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        key={gridKey}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-3"
         variants={cardGridContainer}
         initial="hidden"
         animate="show"
@@ -134,9 +140,12 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
     );
   }
 
+  const gridKey = candidates.map(c => c.candidateId).join(',');
+
   return (
     <motion.div
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+      key={gridKey}
+      className="grid grid-cols-1 lg:grid-cols-2 gap-3"
       variants={cardGridContainer}
       initial="hidden"
       animate="show"

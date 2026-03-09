@@ -9,6 +9,8 @@ export interface ModalProps {
   description?: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  maxWidth?: string;
+  dialogClassName?: string;
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
@@ -29,6 +31,8 @@ export function Modal({
   description,
   children,
   size = 'md',
+  maxWidth,
+  dialogClassName,
   showCloseButton = true,
   closeOnOverlayClick = true,
   closeOnEscape = true,
@@ -97,11 +101,13 @@ export function Modal({
           className={cn(
             'relative w-full rounded-2xl p-6 [box-shadow:var(--shadow-lg)]',
             'animate-scale-in',
-            sizeMap[size]
+            !maxWidth && sizeMap[size],
+            dialogClassName
           )}
           style={{
             backgroundColor: 'var(--color-backgroundSecondary)',
             border: '1px solid var(--color-border)',
+            ...(maxWidth ? { maxWidth } : {}),
           }}
           onClick={e => e.stopPropagation()}
         >

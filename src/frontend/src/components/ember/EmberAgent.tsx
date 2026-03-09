@@ -1,40 +1,132 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Eye, Coffee, TrendingUp, Target, Award, BarChart3, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, X } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { useConnections } from '../../contexts/ConnectionsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useCandidateMatchData } from '../../hooks/useMatchData';
 import { useSavedMatches } from '../../hooks/useSavedMatches';
-import { EmberFirefly } from './EmberFirefly';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
-import { ScoreRing } from '../ui/ScoreRing';
 import { PlayerCardGrid } from './gallery/PlayerCardGrid';
 import { GalleryFilterBar } from './gallery/GalleryFilterBar';
 import { DeepDive } from './gallery/DeepDive';
 import { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
 import { ConnectModal } from '../connections/ConnectModal';
 import { Button } from '../ui/Button';
-import { PageBanner } from '../ui/PageBanner';
-import { bentoContainer, bentoItem, counterReveal } from '../../utils/motion';
-import { getMatchColor, avatarGradient } from '../../utils/matchHelpers';
+import { EmberBrain } from './EmberBrain';
+import { EmberFirefly } from './EmberFirefly';
+import { EmberIdentityCard } from './EmberIdentityCard';
+import { TopMatchCard } from './TopMatchCard';
+import { MatchActivityFeed } from './MatchActivityFeed';
+import { emberFadeUp, emberStagger } from '../../utils/motion';
 import type { EmployerResult, PageView, SortOption } from '../../types/matching.types';
 import type { OCEANScores } from '../../lib/compatibilityScoring';
+
+/* ── Overview Carousel ── */
+interface OverviewSlide {
+  value: string;
+  label: string;
+}
+
+function OverviewCarousel({ stats }: { stats: { totalMatches: number; strongMatches: number; avgScore: number } }) {
+  const slides: OverviewSlide[] = [
+    { value: String(stats.totalMatches), label: 'Matches' },
+    { value: String(stats.strongMatches), label: 'Strong (80+)' },
+    { value: `${stats.avgScore}%`, label: 'Avg Score' },
+  ];
+
+  const [active, setActive] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => setActive(i => (i + 1) % slides.length), 4000);
+    return () => clearInterval(timerRef.current);
+  }, [slides.length]);
+
+  const go = (dir: -1 | 1) => {
+    setActive(i => (i + dir + slides.length) % slides.length);
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setActive(i => (i + 1) % slides.length), 4000);
+  };
+
+  const slide = slides[active];
+
+  return (
+    <div className="bento-card overflow-hidden" style={{ padding: '20px 16px 16px' }}>
+      <p
+        className="font-mono text-[10px] uppercase tracking-[0.25em] mb-1"
+        style={{ color: 'var(--color-textMuted)' }}
+      >
+        Overview //
+      </p>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center justify-center text-center"
+          style={{ minHeight: 120 }}
+        >
+          <span
+            className="font-extrabold tracking-tighter leading-none"
+            style={{
+              fontSize: '4.5rem',
+              color: 'var(--color-accent)',
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            {slide.value}
+          </span>
+          <span
+            className="text-sm font-semibold mt-1 uppercase tracking-widest"
+            style={{ color: 'var(--color-textSecondary)' }}
+          >
+            {slide.label}
+          </span>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Dots only — tap to navigate */}
+      <div className="flex items-center justify-center gap-2 mt-2">
+        <button onClick={() => go(-1)} className="p-0.5" style={{ color: 'var(--color-textMuted)' }}>
+          <ChevronLeft className="w-3 h-3" />
+        </button>
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setActive(i); clearInterval(timerRef.current); timerRef.current = setInterval(() => setActive(j => (j + 1) % slides.length), 4000); }}
+            className="w-1.5 h-1.5 rounded-full transition-all"
+            style={{
+              backgroundColor: i === active ? 'var(--color-accent)' : 'var(--color-border)',
+              transform: i === active ? 'scale(1.4)' : 'scale(1)',
+            }}
+          />
+        ))}
+        <button onClick={() => go(1)} className="p-0.5" style={{ color: 'var(--color-textMuted)' }}>
+          <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function EmberAgent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { success: showSuccess, error: showError } = useToast();
   const { profile } = useAuth();
-  const { getConnectionStatus, sendConnectionRequest } = useConnections();
+  const { getConnectionStatus, sendConnectionRequest, pendingSent, accepted } = useConnections();
 
   // Data hooks
   const {
     candidate, employers, archetype, isLoading, error: dataError, setPendingChats,
   } = useCandidateMatchData();
-  const { isSaved, save, unsave, getSavedMatch } = useSavedMatches();
+  const { savedMatches, save, unsave } = useSavedMatches();
   const showLoader = useMinLoader(isLoading, 3500);
 
   // View state
@@ -91,17 +183,18 @@ export function EmberAgent() {
   const filteredEmployers = useMemo(() => {
     let result = [...employers];
 
-    // Quick filter
-    if (quickFilter === 'top5') result = result.slice(0, 5);
-    else if (quickFilter === 'top10') result = result.slice(0, 10);
-
-    // Search
+    // Search — when a search query is active, skip quick-filter slicing
+    // so the user can search across ALL employers, not just the top N.
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(e =>
         e.companyName.toLowerCase().includes(q) ||
         e.industry.toLowerCase().includes(q)
       );
+    } else {
+      // Quick filter (only when not searching)
+      if (quickFilter === 'top5') result = result.slice(0, 5);
+      else if (quickFilter === 'top10') result = result.slice(0, 10);
     }
 
     // Filters
@@ -136,10 +229,16 @@ export function EmberAgent() {
     setQuickFilter('all');
   }, []);
 
-  // Saved match IDs (using employer_id now)
+  // Saved match IDs — match on employer_id directly since isSaved checks candidate_id
   const savedIds = useMemo(() => {
-    return new Set(employers.filter(e => isSaved('candidate', e.employerId)).map(e => e.employerId));
-  }, [employers, isSaved]);
+    const savedEmployerIds = new Set(savedMatches.map(m => m.employer_id).filter(Boolean));
+    return new Set(employers.filter(e => savedEmployerIds.has(e.employerId)).map(e => e.employerId));
+  }, [employers, savedMatches]);
+
+  // Bookmarked employers — full objects for the sidebar list
+  const bookmarkedEmployers = useMemo(() => {
+    return employers.filter(e => savedIds.has(e.employerId));
+  }, [employers, savedIds]);
 
   // Handlers
   const handleDeepDive = useCallback((emp: EmployerResult) => {
@@ -154,13 +253,14 @@ export function EmberAgent() {
 
   const handleToggleSave = useCallback(async (emp: EmployerResult) => {
     try {
-      const existing = getSavedMatch('candidate', emp.employerId);
+      // Look up by employer_id directly since getSavedMatch checks candidate_id
+      const existing = savedMatches.find(m => m.employer_id === emp.employerId);
       if (existing) {
         await unsave(existing.id);
         showSuccess('Removed', 'Match removed from saved');
       } else {
         await save({
-          target_type: 'candidate', // Reusing this type for employer saves from candidate side
+          target_type: 'candidate',
           role_id: null,
           employer_id: emp.employerId,
           candidate_id: candidate?.id || null,
@@ -174,7 +274,7 @@ export function EmberAgent() {
     } catch {
       showError('Error', 'Failed to update saved matches');
     }
-  }, [candidate, getSavedMatch, save, unsave, showSuccess, showError]);
+  }, [candidate, savedMatches, save, unsave, showSuccess, showError]);
 
   const handleBrew = useCallback(async (note: string, preferredDates: Date[]) => {
     if (!candidate || !brewTarget) return;
@@ -194,8 +294,7 @@ export function EmberAgent() {
       showSuccess('Sent!', 'Coffee chat request sent — view it in your Chats');
       setPendingChats(prev => prev + 1);
 
-      // Also update saved match status to pending if saved
-      const existing = getSavedMatch('candidate', brewTarget.employerId);
+      const existing = savedMatches.find(m => m.employer_id === brewTarget.employerId);
       if (existing) {
         await supabase.from('saved_matches').update({ status: 'pending' }).eq('id', existing.id);
       }
@@ -203,7 +302,7 @@ export function EmberAgent() {
       showError('Error', 'Failed to send request');
       throw new Error('Failed to send');
     }
-  }, [candidate, brewTarget, getSavedMatch, showSuccess, showError, setPendingChats]);
+  }, [candidate, brewTarget, savedMatches, showSuccess, showError, setPendingChats]);
 
   const handleConnect = useCallback(async (message: string, meetInvite?: { proposed_times: string[]; duration_minutes: number }) => {
     if (!candidate || !connectTarget) return;
@@ -240,17 +339,9 @@ export function EmberAgent() {
   const dashboardStats = useMemo(() => {
     if (employers.length === 0) return null;
     const scores = employers.map(e => e.overallScore);
-    const sortedScores = [...scores].sort((a, b) => b - a);
-    const topScores = sortedScores.slice(0, 3);
     const strongMatches = employers.filter(e => e.overallScore >= 80).length;
     const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const buckets = [0, 0, 0, 0, 0];
-    scores.forEach(s => {
-      const idx = Math.min(Math.floor(s / 20), 4);
-      buckets[idx]++;
-    });
-    const maxBucket = Math.max(...buckets, 1);
-    return { totalMatches: employers.length, topScores, strongMatches, avgScore, buckets, maxBucket };
+    return { totalMatches: employers.length, strongMatches, avgScore };
   }, [employers]);
 
   // Featured match (top employer)
@@ -267,10 +358,9 @@ export function EmberAgent() {
   // Error state
   if (dataError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="ember-page min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
-          <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
+          <h2 className="font-bold text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             Something went wrong
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -285,10 +375,9 @@ export function EmberAgent() {
   // No assessment
   if (!candidate) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="ember-page min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
-          <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
+          <h2 className="font-bold text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             Complete Your Assessment First
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -309,293 +398,252 @@ export function EmberAgent() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div className="ember-page min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="max-w-7xl mx-auto px-6 py-6">
 
-        {/* Header */}
-        <PageBanner
-          title="Ember"
-          subtitle={
-            (archetype ? `${archetype.name} archetype` : 'Your personalized match gallery') +
-            (employers.length > 0 ? ` · ${employers.length} companies` : '')
-          }
-          icon={Flame}
-          className="mb-0"
-        />
+        {/* Header — matches dashboard DashboardHeader bento-card style */}
+        <motion.div
+          className="bento-card p-6 mb-5"
+          variants={emberFadeUp}
+          initial="hidden"
+          animate="show"
+        >
+          <div className="flex items-center gap-3">
+            <EmberFirefly size="sm" mood="happy" animated />
+            <div>
+              <h1
+                className="text-3xl font-bold tracking-tight"
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              >
+                Ember
+              </h1>
+              <p
+                className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
+                style={{ color: 'var(--color-textMuted)' }}
+              >
+                {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
+                {employers.length > 0 ? ` · ${employers.length} companies` : ''}
+              </p>
+            </div>
+          </div>
+        </motion.div>
 
-        {/* ── Dashboard Stats Row ── */}
-        {dashboardStats && view === 'gallery' && (
-          <motion.div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-            variants={bentoContainer}
+        {/* Three-column layout */}
+        <div className="flex gap-4">
+
+          {/* ── Left Sidebar (260px, sticky) ── */}
+          <motion.aside
+            className="hidden xl:block w-[260px] flex-shrink-0"
+            variants={emberStagger}
             initial="hidden"
             animate="show"
           >
-            {/* Total Matches */}
-            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                  <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Total Matches</span>
-                </div>
-              </div>
-              <div className="text-4xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-                {dashboardStats.totalMatches}
-              </div>
-              {/* Mini bar chart */}
-              <div className="flex items-end gap-0.5 mt-2 h-6">
-                {dashboardStats.buckets.map((count, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-sm transition-all"
-                    style={{
-                      height: `${Math.max((count / dashboardStats.maxBucket) * 100, 8)}%`,
-                      backgroundColor: i >= 3 ? 'var(--color-accent)' : 'var(--color-border)',
-                      opacity: i >= 3 ? 1 : 0.6,
+            <div className="sticky top-6 space-y-4">
+              <motion.div variants={emberFadeUp}>
+                <EmberIdentityCard archetype={archetype} ocean={candidateOcean} />
+              </motion.div>
+
+              {/* Overview carousel */}
+              {dashboardStats && (
+                <motion.div variants={emberFadeUp}>
+                  <OverviewCarousel stats={dashboardStats} />
+                </motion.div>
+              )}
+            </div>
+          </motion.aside>
+
+          {/* ── Center Content (flex) ── */}
+          <main className="flex-1 min-w-0 space-y-4">
+            {/* Brain hero — no card wrapper, breathes freely */}
+            {view === 'gallery' && (
+              <motion.div
+                className="h-64 overflow-hidden"
+                variants={emberFadeUp}
+                initial="hidden"
+                animate="show"
+              >
+                <EmberBrain employers={employers} />
+              </motion.div>
+            )}
+
+            <AnimatePresence mode="wait">
+              {view === 'gallery' ? (
+                <motion.div
+                  key="gallery"
+                  className="space-y-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <GalleryFilterBar
+                    mode="candidate"
+                    matchCount={filteredEmployers.length}
+                    searchQuery={searchQuery}
+                    onSearchChange={(q) => {
+                      setSearchQuery(q);
+                      if (q) setQuickFilter('all');
                     }}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    quickFilter={quickFilter}
+                    onQuickFilterChange={setQuickFilter}
+                    activeFilterCount={activeFilterCount}
+                    onToggleFilters={() => setShowFilters(!showFilters)}
+                    showFilters={showFilters}
+                    industries={industries}
+                    selectedIndustry={selectedIndustry}
+                    onIndustryChange={setSelectedIndustry}
+                    selectedWorkStyle={selectedWorkStyle}
+                    onWorkStyleChange={setSelectedWorkStyle}
+                    locations={locations}
+                    selectedLocation={selectedLocation}
+                    onLocationChange={setSelectedLocation}
+                    minScore={minScore}
+                    maxScore={maxScore}
+                    onMinScoreChange={setMinScore}
+                    onMaxScoreChange={setMaxScore}
+                    onClearFilters={clearFilters}
                   />
-                ))}
-              </div>
-            </motion.div>
 
-            {/* Top Scores */}
-            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Top Scores</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="rank-medal rank-medal-gold text-[10px]">1st</span>
-                  <span className="text-3xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.topScores[0]) }}>
-                    {dashboardStats.topScores[0]}
-                  </span>
-                </div>
-                {dashboardStats.topScores[1] && (
-                  <div className="flex items-center gap-2">
-                    <span className="rank-medal rank-medal-silver text-[8px]">2nd</span>
-                    <span className="text-sm font-bold" style={{ color: getMatchColor(dashboardStats.topScores[1]) }}>
-                      {dashboardStats.topScores[1]}
-                    </span>
-                  </div>
-                )}
-                {dashboardStats.topScores[2] && (
-                  <div className="flex items-center gap-2">
-                    <span className="rank-medal rank-medal-bronze text-[8px]">3rd</span>
-                    <span className="text-sm font-bold" style={{ color: getMatchColor(dashboardStats.topScores[2]) }}>
-                      {dashboardStats.topScores[2]}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+                  <PlayerCardGrid
+                    mode="candidate"
+                    employers={filteredEmployers}
+                    savedIds={savedIds}
+                    getConnectionStatus={getConnectionStatus}
+                    onDeepDive={handleDeepDive}
+                    onBrew={(emp) => setBrewTarget(emp)}
+                    onToggleSave={handleToggleSave}
+                    onConnect={(emp) => setConnectTarget(emp)}
+                  />
+                </motion.div>
+              ) : view === 'deepdive' && selectedEmployer ? (
+                <DeepDive
+                  key="deepdive"
+                  mode="candidate"
+                  name={selectedEmployer.companyName}
+                  subtitle={selectedEmployer.industry}
+                  archetype={selectedEmployer.archetype}
+                  overallScore={selectedEmployer.overallScore}
+                  traitScore={selectedEmployer.traitScore}
+                  cultureScore={selectedEmployer.cultureScore}
+                  workStyleScore={selectedEmployer.workStyleFit}
+                  communicationScore={Math.round((selectedEmployer.breakdown.extraversionFit + selectedEmployer.breakdown.agreeablenessFit) / 2)}
+                  dimensions={deepDiveDimensions}
+                  candidateOcean={candidateOcean}
+                  employerOcean={selectedEmployer.employerOcean}
+                  candidateId={candidate.id}
+                  employerId={selectedEmployer.employerId}
+                  isSaved={savedIds.has(selectedEmployer.employerId)}
+                  connectionStatus={getConnectionStatus(selectedEmployer.employerId)}
+                  onBack={handleBackToGallery}
+                  onBrew={() => setBrewTarget(selectedEmployer)}
+                  onToggleSave={() => handleToggleSave(selectedEmployer)}
+                  onConnect={() => setConnectTarget(selectedEmployer)}
+                />
+              ) : null}
+            </AnimatePresence>
+          </main>
 
-            {/* Strong Matches */}
-            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Strong (80+)</span>
-              </div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-4xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-                  {dashboardStats.strongMatches}
-                </span>
-                {dashboardStats.totalMatches > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#22C55E' }}>
-                    {Math.round((dashboardStats.strongMatches / dashboardStats.totalMatches) * 100)}%
-                  </span>
-                )}
-              </div>
-              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>of total matches</span>
-            </motion.div>
-
-            {/* Avg Compatibility */}
-            <motion.div variants={counterReveal} className="bento-card bento-card-accent p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-textMuted)' }}>Avg Score</span>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-4xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(dashboardStats.avgScore) }}>
-                  {dashboardStats.avgScore}
-                </span>
-                <span className="text-sm" style={{ color: 'var(--color-textMuted)' }}>%</span>
-              </div>
-              <div className="metric-bar">
-                <div className="metric-bar-fill" style={{ width: `${dashboardStats.avgScore}%`, backgroundColor: getMatchColor(dashboardStats.avgScore) }} />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* ── Featured Match Hero (bento) ── */}
-        {featuredMatch && view === 'gallery' && (
-          <motion.div
-            className="grid grid-cols-1 lg:grid-cols-3 gap-4"
-            variants={bentoContainer}
+          {/* ── Right Sidebar (320px, sticky) ── */}
+          <motion.aside
+            className="hidden lg:block w-[320px] flex-shrink-0"
+            variants={emberStagger}
             initial="hidden"
             animate="show"
           >
-            {/* Left 2/3: Hero card */}
-            <motion.div variants={bentoItem} className="lg:col-span-2 bento-card bento-card-accent">
-              <div className="flex items-start gap-5">
-                {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                  <div
-                    className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden"
-                    style={{ background: featuredMatch.logoUrl ? undefined : avatarGradient(featuredMatch.companyName) }}
-                  >
-                    {featuredMatch.logoUrl ? (
-                      <img src={featuredMatch.logoUrl} alt={featuredMatch.companyName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl font-bold text-white">{featuredMatch.companyName.charAt(0)}</span>
-                    )}
-                  </div>
-                  <span className="rank-medal rank-medal-gold absolute -top-1 -right-1 text-[9px]">#1</span>
-                </div>
+            <div className="sticky top-6 space-y-4">
+              {featuredMatch && (
+                <motion.div variants={emberFadeUp}>
+                  <TopMatchCard
+                    name={featuredMatch.companyName}
+                    subtitle={featuredMatch.industry}
+                    score={featuredMatch.overallScore}
+                    avatarUrl={featuredMatch.logoUrl}
+                    onDeepDive={() => handleDeepDive(featuredMatch)}
+                  />
+                </motion.div>
+              )}
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-bold truncate" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-                      {featuredMatch.companyName}
-                    </h3>
-                    <span className="stat-badge">{featuredMatch.archetype.name}</span>
-                  </div>
-                  <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
-                    {featuredMatch.industry}{featuredMatch.location ? ` · ${featuredMatch.location}` : ''}
+              <motion.div variants={emberFadeUp}>
+                <MatchActivityFeed
+                  matches={employers}
+                  savedMatches={savedMatches}
+                  pendingSent={pendingSent}
+                  acceptedConnections={accepted}
+                />
+              </motion.div>
+
+              {/* Bookmarked Jobs — not in a card, raw section */}
+              <motion.div variants={emberFadeUp}>
+                <p
+                  className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3 mt-1"
+                  style={{ color: 'var(--color-textMuted)' }}
+                >
+                  <Bookmark className="w-3 h-3 inline-block mr-1.5 -mt-px" />
+                  Saved Jobs //
+                </p>
+
+                {bookmarkedEmployers.length === 0 ? (
+                  <p className="text-xs py-3" style={{ color: 'var(--color-textMuted)' }}>
+                    Bookmark A Match To Save It Here.
                   </p>
-
-                  {/* Metric bars */}
-                  <div className="space-y-2">
-                    {[
-                      { label: 'Culture', score: featuredMatch.cultureScore },
-                      { label: 'Work Style', score: featuredMatch.workStyleFit },
-                      { label: 'Traits', score: featuredMatch.traitScore },
-                    ].map(({ label, score }) => (
-                      <div key={label} className="flex items-center gap-3">
-                        <span className="text-xs w-16 text-right" style={{ color: 'var(--color-textMuted)' }}>{label}</span>
-                        <div className="metric-bar flex-1">
-                          <div className="metric-bar-fill" style={{ width: `${score}%`, backgroundColor: getMatchColor(score) }} />
+                ) : (
+                  <div className="space-y-0">
+                    {bookmarkedEmployers.map((emp, i) => (
+                      <div
+                        key={emp.employerId}
+                        className="flex items-center gap-2.5 py-2.5 group"
+                        style={{
+                          borderBottom: i < bookmarkedEmployers.length - 1
+                            ? '1px solid var(--color-border)'
+                            : undefined,
+                        }}
+                      >
+                        {/* Avatar */}
+                        <div
+                          className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                          style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
+                        >
+                          {emp.companyName.charAt(0)}
                         </div>
-                        <span className="text-xs font-semibold w-8" style={{ color: getMatchColor(score) }}>{score}%</span>
+
+                        {/* Info — clickable to deep dive */}
+                        <button
+                          className="flex-1 min-w-0 text-left"
+                          onClick={() => handleDeepDive(emp)}
+                        >
+                          <p
+                            className="text-xs font-medium truncate"
+                            style={{ color: 'var(--color-text)' }}
+                          >
+                            {emp.companyName}
+                          </p>
+                          <p
+                            className="text-[10px] truncate"
+                            style={{ color: 'var(--color-textMuted)' }}
+                          >
+                            {emp.industry} · {emp.overallScore}%
+                          </p>
+                        </button>
+
+                        {/* Remove bookmark */}
+                        <button
+                          onClick={() => handleToggleSave(emp)}
+                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ color: 'var(--color-textMuted)' }}
+                          title="Remove bookmark"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       </div>
                     ))}
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 mt-4">
-                    <Button size="sm" variant="ghost" onClick={() => handleDeepDive(featuredMatch)}>
-                      <Eye className="w-3.5 h-3.5 mr-1" /> Deep Dive
-                    </Button>
-                    {getConnectionStatus(featuredMatch.employerId) === 'accepted' ? (
-                      <Button size="sm" onClick={() => setBrewTarget(featuredMatch)}>
-                        <Coffee className="w-3.5 h-3.5 mr-1" /> Let's Brew
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="outline" onClick={() => setConnectTarget(featuredMatch)}>
-                        Connect
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Score ring */}
-                <div className="hidden sm:flex flex-shrink-0">
-                  <ScoreRing score={featuredMatch.overallScore} size={80} strokeWidth={5} fontSize="text-lg" />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right 1/3: Score breakdown */}
-            <motion.div variants={bentoItem} className="lg:col-span-1 bento-card p-5">
-              <h4 className="text-xs font-medium mb-4" style={{ color: 'var(--color-textMuted)' }}>Score Breakdown</h4>
-              <div className="flex justify-around mb-4">
-                <ScoreRing score={featuredMatch.traitScore} size={56} strokeWidth={3} label="Traits" />
-                <ScoreRing score={featuredMatch.cultureScore} size={56} strokeWidth={3} label="Culture" />
-                <ScoreRing score={featuredMatch.workStyleFit} size={56} strokeWidth={3} label="Work Style" />
-              </div>
-              <div className="text-center">
-                <span className="stat-badge">{featuredMatch.archetype.name}</span>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        <AnimatePresence mode="wait">
-          {view === 'gallery' ? (
-            <motion.div
-              key="gallery"
-              className="space-y-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <GalleryFilterBar
-                mode="candidate"
-                matchCount={filteredEmployers.length}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                quickFilter={quickFilter}
-                onQuickFilterChange={setQuickFilter}
-                activeFilterCount={activeFilterCount}
-                onToggleFilters={() => setShowFilters(!showFilters)}
-                showFilters={showFilters}
-                industries={industries}
-                selectedIndustry={selectedIndustry}
-                onIndustryChange={setSelectedIndustry}
-                selectedWorkStyle={selectedWorkStyle}
-                onWorkStyleChange={setSelectedWorkStyle}
-                locations={locations}
-                selectedLocation={selectedLocation}
-                onLocationChange={setSelectedLocation}
-                minScore={minScore}
-                maxScore={maxScore}
-                onMinScoreChange={setMinScore}
-                onMaxScoreChange={setMaxScore}
-                onClearFilters={clearFilters}
-              />
-
-              <PlayerCardGrid
-                mode="candidate"
-                employers={filteredEmployers}
-                savedIds={savedIds}
-                getConnectionStatus={getConnectionStatus}
-                onDeepDive={handleDeepDive}
-                onBrew={(emp) => setBrewTarget(emp)}
-                onToggleSave={handleToggleSave}
-                onConnect={(emp) => setConnectTarget(emp)}
-              />
-            </motion.div>
-          ) : view === 'deepdive' && selectedEmployer ? (
-            <DeepDive
-              key="deepdive"
-              mode="candidate"
-              name={selectedEmployer.companyName}
-              subtitle={selectedEmployer.industry}
-              archetype={selectedEmployer.archetype}
-              overallScore={selectedEmployer.overallScore}
-              traitScore={selectedEmployer.traitScore}
-              cultureScore={selectedEmployer.cultureScore}
-              workStyleScore={selectedEmployer.workStyleFit}
-              communicationScore={Math.round((selectedEmployer.breakdown.extraversionFit + selectedEmployer.breakdown.agreeablenessFit) / 2)}
-              dimensions={deepDiveDimensions}
-              candidateOcean={candidateOcean}
-              employerOcean={selectedEmployer.employerOcean}
-              candidateId={candidate.id}
-              employerId={selectedEmployer.employerId}
-              isSaved={savedIds.has(selectedEmployer.employerId)}
-              connectionStatus={getConnectionStatus(selectedEmployer.employerId)}
-              onBack={handleBackToGallery}
-              onBrew={() => setBrewTarget(selectedEmployer)}
-              onToggleSave={() => handleToggleSave(selectedEmployer)}
-              onConnect={() => setConnectTarget(selectedEmployer)}
-            />
-          ) : null}
-        </AnimatePresence>
+                )}
+              </motion.div>
+            </div>
+          </motion.aside>
+        </div>
       </div>
 
       {/* Coffee Brew Modal */}
@@ -626,3 +674,4 @@ export function EmberAgent() {
     </div>
   );
 }
+
