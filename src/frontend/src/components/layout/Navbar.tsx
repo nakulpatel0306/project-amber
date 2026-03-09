@@ -6,13 +6,13 @@ import {
   Settings,
   LogOut,
   User,
+  Users,
   Crown,
   ChevronDown,
   LayoutDashboard,
   Coffee,
   Sparkles,
   Flame,
-  Globe,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -46,7 +46,7 @@ export function Navbar() {
     { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/app/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/ember', label: 'Ember', icon: Flame },
-    { path: '/app/network', label: 'Network', icon: Globe },
+    { path: '/app/network', label: 'Community', icon: Users },
     { path: '/app/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 
@@ -54,7 +54,7 @@ export function Navbar() {
     { path: '/app/employer', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/app/employer/insights', label: 'Insights', icon: Sparkles },
     { path: '/app/employer/ember', label: 'Ember', icon: Flame },
-    { path: '/app/network', label: 'Network', icon: Globe },
+    { path: '/app/network', label: 'Community', icon: Users },
     { path: '/app/employer/chats', label: 'Coffee Chats', icon: Coffee },
   ];
 
