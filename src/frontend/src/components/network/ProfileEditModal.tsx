@@ -8,8 +8,6 @@ import {
   Loader2,
   Trash2,
   Pencil,
-  Eye,
-  EyeOff,
   Image,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,6 +45,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   const [photos, setPhotos] = useState<PhotoWithCaption[]>([]);
   const [editingCaption, setEditingCaption] = useState<number | null>(null);
   const [captionText, setCaptionText] = useState('');
+  const [newPhotoIndex, setNewPhotoIndex] = useState<number | null>(null); // Track newly uploaded photo requiring caption
 
   const [showHobbyPicker, setShowHobbyPicker] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<HobbyCategory>('content');
@@ -56,17 +55,12 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Visibility toggle
-  const [profileVisible, setProfileVisible] = useState(true);
-  const [savingVisibility, setSavingVisibility] = useState(false);
-
   // My Posts
   const [myPosts, setMyPosts] = useState<ActivityPost[]>([]);
 
   useEffect(() => {
     if (isOpen && user) {
       loadData();
-      loadVisibility();
       loadMyPosts();
     }
   }, [isOpen, user]);
@@ -117,43 +111,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       console.error('Error loading data:', err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadVisibility = async () => {
-    if (!user) return;
-    try {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('profile_visible')
-        .eq('user_id', user.id)
-        .single();
-      if (data) {
-        setProfileVisible(data.profile_visible);
-      }
-    } catch {
-      // No settings row yet — default to visible
-    }
-  };
-
-  const toggleVisibility = async () => {
-    if (!user) return;
-    setSavingVisibility(true);
-    const newValue = !profileVisible;
-    try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert(
-          { user_id: user.id, profile_visible: newValue },
-          { onConflict: 'user_id' }
-        );
-      if (error) throw error;
-      setProfileVisible(newValue);
-      showSuccess('Updated', newValue ? 'Profile visible in feed' : 'Profile hidden from feed');
-    } catch {
-      showError('Error', 'Failed to update visibility');
-    } finally {
-      setSavingVisibility(false);
     }
   };
 
@@ -317,8 +274,10 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       const success = await savePhotos(newPhotos);
 
       if (success) {
-        showSuccess('Photo Uploaded', 'Add a caption to describe your photo!');
-        setEditingCaption(newPhotos.length - 1);
+        showSuccess('Photo Uploaded', 'Please add a caption (required)');
+        const newIndex = newPhotos.length - 1;
+        setEditingCaption(newIndex);
+        setNewPhotoIndex(newIndex); // Mark as new photo requiring caption
         setCaptionText('');
       }
     } catch (err) {
@@ -341,12 +300,17 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   };
 
   const saveCaption = async (index: number) => {
+    if (!captionText.trim()) {
+      showError('Caption Required', 'Please add a caption for your photo');
+      return;
+    }
     const newPhotos = [...photos];
-    newPhotos[index] = { ...newPhotos[index], caption: captionText };
+    newPhotos[index] = { ...newPhotos[index], caption: captionText.trim() };
     const success = await savePhotos(newPhotos);
     if (success) {
       showSuccess('Caption Saved', 'Your caption has been updated');
       setEditingCaption(null);
+      setNewPhotoIndex(null); // Clear new photo marker
       setCaptionText('');
     }
   };
@@ -368,43 +332,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
           </div>
         ) : (
           <>
-            {/* Visibility Toggle */}
-            <div
-              className="flex items-center justify-between p-3 rounded-xl"
-              style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-            >
-              <div className="flex items-center gap-2">
-                {profileVisible ? (
-                  <Eye className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                ) : (
-                  <EyeOff className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
-                )}
-                <div>
-                  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                    Show my profile in community feed
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    {profileVisible ? 'Your catalog photos appear in the feed' : 'Your photos are hidden from the feed'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={toggleVisibility}
-                disabled={savingVisibility}
-                className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
-                style={{
-                  backgroundColor: profileVisible ? 'var(--color-accent)' : 'var(--color-border)',
-                }}
-              >
-                <span
-                  className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
-                  style={{
-                    left: profileVisible ? '22px' : '2px',
-                  }}
-                />
-              </button>
-            </div>
-
             {/* Photos Section */}
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -461,11 +388,11 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
                             <textarea
                               value={captionText}
                               onChange={(e) => setCaptionText(e.target.value)}
-                              placeholder="Add a caption..."
+                              placeholder="Add a caption (required)..."
                               className="w-full px-3 py-2 text-sm rounded-lg resize-none"
                               style={{
                                 backgroundColor: 'var(--color-surface)',
-                                border: '1px solid var(--color-border)',
+                                border: `1px solid ${!captionText.trim() ? '#ef4444' : 'var(--color-border)'}`,
                                 color: 'var(--color-text)',
                               }}
                               rows={2}
@@ -473,21 +400,41 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
                               autoFocus
                             />
                             <div className="flex items-center justify-between">
-                              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                                {captionText.length}/150
+                              <span className="text-xs" style={{ color: !captionText.trim() ? '#ef4444' : 'var(--color-textMuted)' }}>
+                                {captionText.length}/150 {!captionText.trim() && '• Required'}
                               </span>
                               <div className="flex gap-2">
+                                {newPhotoIndex === index ? (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={async () => {
+                                      // Remove photo if canceling without caption
+                                      await removePhoto(index);
+                                      setEditingCaption(null);
+                                      setNewPhotoIndex(null);
+                                      setCaptionText('');
+                                    }}
+                                  >
+                                    Remove
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setEditingCaption(null);
+                                      setCaptionText('');
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setEditingCaption(null);
-                                    setCaptionText('');
-                                  }}
+                                  onClick={() => saveCaption(index)}
+                                  disabled={!captionText.trim()}
                                 >
-                                  Cancel
-                                </Button>
-                                <Button size="sm" onClick={() => saveCaption(index)}>
                                   Save
                                 </Button>
                               </div>
@@ -506,9 +453,9 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
                                 {photo.caption}
                               </p>
                             ) : (
-                              <p className="text-sm flex items-center gap-1" style={{ color: 'var(--color-textMuted)' }}>
+                              <p className="text-sm flex items-center gap-1" style={{ color: '#ef4444' }}>
                                 <Plus className="w-3 h-3" />
-                                Add caption...
+                                Add caption (required)
                               </p>
                             )}
                           </div>
@@ -633,7 +580,17 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
 
             {/* Close button */}
             <div className="flex justify-end pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-              <Button onClick={onClose}>Done</Button>
+              {photos.some(p => !p.caption.trim()) && (
+                <p className="text-xs mr-auto flex items-center" style={{ color: '#ef4444' }}>
+                  All photos require captions
+                </p>
+              )}
+              <Button
+                onClick={onClose}
+                disabled={photos.some(p => !p.caption.trim())}
+              >
+                Done
+              </Button>
             </div>
           </>
         )}
