@@ -99,7 +99,7 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
         animate="show"
       >
           {employers.map((employer, i) => {
-            const connStatus = getConnectionStatus?.(employer.employerId) || 'none';
+            const connStatus = getConnectionStatus?.(employer.userId) || 'none';
             return (
               <motion.div key={employer.employerId} variants={cardItem}>
                 <PlayerCard
@@ -151,7 +151,7 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
       animate="show"
     >
         {candidates.map((candidate, i) => {
-          const connStatus = getConnectionStatus?.(candidate.candidateId) || 'none';
+          const connStatus = getConnectionStatus?.(candidate.userId) || 'none';
           return (
             <motion.div key={candidate.candidateId} variants={cardItem}>
               <PlayerCard

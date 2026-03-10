@@ -152,6 +152,7 @@ export function useCandidateMatchData(): UseCandidateMatchDataReturn {
 
             return {
               employerId: emp.id,
+              userId: emp.user_id,
               profileName: empProfile?.full_name || emp.company_name,
               companyName: emp.company_name,
               description: emp.description || '',
@@ -282,6 +283,7 @@ export function useEmployerMatchData(): UseEmployerMatchDataReturn {
 
       return {
         candidateId: c.id,
+        userId: c.user_id,
         name: c._profileName || 'Unknown',
         headline: c.headline || arch.name,
         location: c.location || '',

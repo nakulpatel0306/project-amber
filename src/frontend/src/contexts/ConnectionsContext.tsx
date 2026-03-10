@@ -17,6 +17,9 @@ interface SendConnectionData {
     proposed_times: string[];
     duration_minutes?: number;
   };
+  matchScore?: number;
+  roleId?: string;
+  roleTitle?: string;
 }
 
 interface ConnectionsContextValue {
@@ -133,6 +136,9 @@ export function ConnectionsProvider({ children }: { children: React.ReactNode })
           proposed_times: data.meetInvite.proposed_times,
           duration_minutes: data.meetInvite.duration_minutes || 30,
         } : null,
+        match_score: data.matchScore ?? null,
+        role_id: data.roleId ?? null,
+        role_title: data.roleTitle ?? null,
       }),
     });
     if (!res.ok) {

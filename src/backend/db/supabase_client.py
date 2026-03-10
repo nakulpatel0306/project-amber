@@ -44,14 +44,19 @@ def get_supabase():
     return _client
 
 
+def _first_or_none(result) -> Optional[dict]:
+    """Extract the first row from a Supabase query result, or None."""
+    return result.data[0] if result.data else None
+
+
 def get_candidate_by_id(candidate_id: str) -> Optional[dict]:
     """Get candidate data by candidate ID."""
     client = get_supabase()
     if not client:
         return None
     try:
-        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('id', candidate_id).single().execute()
-        return result.data
+        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('id', candidate_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching candidate: {e}")
         return None
@@ -63,8 +68,8 @@ def get_candidate_by_user_id(user_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('user_id', user_id).single().execute()
-        return result.data
+        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('user_id', user_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching candidate: {e}")
         return None
@@ -76,8 +81,8 @@ def get_employer_by_id(employer_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('employers').select('*').eq('id', employer_id).single().execute()
-        return result.data
+        result = client.table('employers').select('*').eq('id', employer_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching employer: {e}")
         return None
@@ -89,8 +94,8 @@ def get_employer_by_user_id(user_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('employers').select('*').eq('user_id', user_id).single().execute()
-        return result.data
+        result = client.table('employers').select('*').eq('user_id', user_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching employer: {e}")
         return None
@@ -102,8 +107,8 @@ def get_role(role_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('roles').select('*, employers!inner(*)').eq('id', role_id).single().execute()
-        return result.data
+        result = client.table('roles').select('*, employers!inner(*)').eq('id', role_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching role: {e}")
         return None
@@ -176,8 +181,8 @@ def get_application(candidate_id: str, role_id: str) -> Optional[dict]:
     try:
         result = client.table('applications').select('*').eq(
             'candidate_id', candidate_id
-        ).eq('role_id', role_id).single().execute()
-        return result.data
+        ).eq('role_id', role_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         return None
 
@@ -218,12 +223,15 @@ def create_coffee_chat(data: dict) -> Optional[dict]:
     """Create a new coffee chat request."""
     client = get_supabase()
     if not client:
+        print("Error creating coffee chat: Supabase client not available")
         return None
     try:
+        print(f"[create_coffee_chat] inserting: {list(data.keys())}")
         result = client.table('coffee_chats').insert(data).execute()
+        print(f"[create_coffee_chat] success: {result.data[0]['id'] if result.data else 'no data'}")
         return result.data[0] if result.data else None
     except Exception as e:
-        print(f"Error creating coffee chat: {e}")
+        print(f"Error creating coffee chat: {type(e).__name__}: {e}")
         return None
 
 
@@ -276,8 +284,8 @@ def get_coffee_chat_by_id(chat_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('coffee_chats').select('*').eq('id', chat_id).single().execute()
-        return result.data
+        result = client.table('coffee_chats').select('*').eq('id', chat_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching coffee chat: {e}")
         return None
@@ -289,12 +297,15 @@ def create_connection(data: dict) -> Optional[dict]:
     """Create a new connection request."""
     client = get_supabase()
     if not client:
+        print("Error creating connection: Supabase client not available")
         return None
     try:
+        print(f"[create_connection] inserting: sender_id={data.get('sender_id')}, receiver_id={data.get('receiver_id')}, sender_role={data.get('sender_role')}")
         result = client.table('connections').insert(data).execute()
+        print(f"[create_connection] success: {result.data[0]['id'] if result.data else 'no data'}")
         return result.data[0] if result.data else None
     except Exception as e:
-        print(f"Error creating connection: {e}")
+        print(f"Error creating connection: {type(e).__name__}: {e}")
         return None
 
 
@@ -318,8 +329,8 @@ def get_connection_by_id(connection_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('connections').select('*').eq('id', connection_id).single().execute()
-        return result.data
+        result = client.table('connections').select('*').eq('id', connection_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching connection: {e}")
         return None
@@ -385,6 +396,21 @@ def update_meet_invite(invite_id: str, data: dict) -> Optional[dict]:
         return result.data[0] if result.data else None
     except Exception as e:
         print(f"Error updating meet invite: {e}")
+        return None
+
+
+def get_coffee_chat_by_connection(connection_id: str) -> Optional[dict]:
+    """Get the coffee chat linked to a connection."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('coffee_chats').select('*').eq(
+            'connection_id', connection_id
+        ).order('created_at', desc=True).limit(1).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error fetching coffee chat by connection: {e}")
         return None
 
 

@@ -318,18 +318,19 @@ export function EmberAgent() {
     if (!candidate || !connectTarget) return;
     try {
       await sendConnectionRequest({
-        receiverId: connectTarget.employerId,
+        receiverId: connectTarget.userId,
         senderRole: 'candidate',
         message,
         senderName: profile?.full_name || undefined,
         receiverName: connectTarget.companyName,
         receiverCompany: connectTarget.companyName,
         meetInvite,
+        matchScore: connectTarget.overallScore,
       });
       showSuccess('Sent!', `Connection request sent to ${connectTarget.companyName}`);
-    } catch {
-      showError('Error', 'Failed to send connection request');
-      throw new Error('Failed');
+    } catch (err: any) {
+      showError('Error', err?.message || 'Failed to send connection request');
+      throw err;
     }
   }, [candidate, connectTarget, profile, sendConnectionRequest, showSuccess, showError]);
 
@@ -548,7 +549,7 @@ export function EmberAgent() {
                   candidateId={candidate.id}
                   employerId={selectedEmployer.employerId}
                   isSaved={savedIds.has(selectedEmployer.employerId)}
-                  connectionStatus={getConnectionStatus(selectedEmployer.employerId)}
+                  connectionStatus={getConnectionStatus(selectedEmployer.userId)}
                   onBack={handleBackToGallery}
                   onBrew={() => setBrewTarget(selectedEmployer)}
                   onToggleSave={() => handleToggleSave(selectedEmployer)}

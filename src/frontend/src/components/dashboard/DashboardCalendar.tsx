@@ -11,6 +11,8 @@ import {
 import {
   isToday,
   isTomorrow,
+  isPast,
+  startOfDay,
   format,
   parseISO,
   startOfMonth,
@@ -29,6 +31,8 @@ import {
 } from 'date-fns';
 import { Badge } from '../ui/Badge';
 import { DayDetailPopup } from './DayDetailPopup';
+import { deriveDisplayStatus, sortChatsForDateView, type DisplayStatus } from '../../utils/coffeeChatStatus';
+import type { ChatStatus } from '../coffee-chats/CoffeeChatCard';
 
 export interface UpcomingChat {
   id?: string;
@@ -40,6 +44,7 @@ export interface UpcomingChat {
   meetingLink?: string | null;
   status: string;
   type?: 'coffee_chat' | 'connection_meet';
+  preferredDates?: string[] | null;
 }
 
 interface DashboardCalendarProps {
@@ -50,6 +55,8 @@ interface DashboardCalendarProps {
   allAcceptedChats?: UpcomingChat[];
   mode?: 'schedule' | 'navigate';
   onScheduleChat?: (chatId: string, prefilledDate: string) => void;
+  /** 'candidate' shows pending dots (grey), 'employer' hides them */
+  viewerRole?: 'candidate' | 'employer';
 }
 
 function getDateLabel(dateStr: string): string {
@@ -64,18 +71,30 @@ function getTimeLabel(dateStr: string): string {
   return format(date, 'h:mm a');
 }
 
-function getStatusVariant(status: string): 'success' | 'warning' | 'default' {
-  switch (status) {
-    case 'accepted':
-    case 'completed':
-    case 'scheduled':
-      return 'success';
-    case 'pending':
-      return 'warning';
-    default:
-      return 'default';
+function getDisplayStatusVariant(ds: DisplayStatus): 'success' | 'warning' | 'default' {
+  switch (ds) {
+    case 'upcoming': return 'success';
+    case 'pending': return 'warning';
+    default: return 'default';
   }
 }
+
+function getDisplayStatusLabel(ds: DisplayStatus): string {
+  switch (ds) {
+    case 'upcoming': return 'Upcoming';
+    case 'pending': return 'Pending';
+    case 'completed': return 'Completed';
+    case 'cancelled': return 'Cancelled';
+    default: return ds;
+  }
+}
+
+// Dot colors for calendar indicators
+const DOT_COLORS = {
+  pending: '#9CA3AF',           // grey
+  upcoming: '#D97706',          // orange (amber-600)
+  completed: 'rgba(217, 119, 6, 0.4)', // lighter orange
+};
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -87,21 +106,38 @@ export function DashboardCalendar({
   allAcceptedChats,
   mode = 'navigate',
   onScheduleChat,
+  viewerRole = 'candidate',
 }: DashboardCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
-  // Dates that have scheduled chats, with status info for dot color
+  // Compute display status for each chat and build date → dot info map
   const chatDateInfo = useMemo(() => {
-    const info: Record<string, { hasPending: boolean; hasConfirmed: boolean }> = {};
+    const info: Record<string, { hasPending: boolean; hasUpcoming: boolean; hasCompleted: boolean }> = {};
+
+    const addToDate = (dateKey: string, displayStatus: DisplayStatus) => {
+      if (!info[dateKey]) info[dateKey] = { hasPending: false, hasUpcoming: false, hasCompleted: false };
+      if (displayStatus === 'pending') info[dateKey].hasPending = true;
+      else if (displayStatus === 'upcoming') info[dateKey].hasUpcoming = true;
+      else if (displayStatus === 'completed') info[dateKey].hasCompleted = true;
+    };
+
     for (const chat of upcomingChats) {
+      const ds = deriveDisplayStatus(chat.status as ChatStatus, chat.scheduledAt);
+
+      // Use scheduledAt if available
       if (chat.scheduledAt) {
         const key = format(parseISO(chat.scheduledAt), 'yyyy-MM-dd');
-        if (!info[key]) info[key] = { hasPending: false, hasConfirmed: false };
-        if (chat.status === 'pending') info[key].hasPending = true;
-        else info[key].hasConfirmed = true;
+        addToDate(key, ds);
+      }
+      // For pending chats, also mark their preferred dates
+      if (ds === 'pending' && chat.preferredDates) {
+        for (const pd of chat.preferredDates) {
+          const key = format(parseISO(pd), 'yyyy-MM-dd');
+          addToDate(key, 'pending');
+        }
       }
     }
     return info;
@@ -124,18 +160,32 @@ export function DashboardCalendar({
     return days;
   }, [currentMonth]);
 
-  // Filter chats based on selected day or show all
+  // Filter chats based on selected day or show all, with proper sort order
   const displayChats = useMemo(() => {
-    if (!selectedDay) return upcomingChats;
-    const dayKey = format(selectedDay, 'yyyy-MM-dd');
-    return upcomingChats.filter(chat => {
-      if (!chat.scheduledAt) return false;
-      return format(parseISO(chat.scheduledAt), 'yyyy-MM-dd') === dayKey;
-    });
+    let chats = upcomingChats;
+    if (selectedDay) {
+      const dayKey = format(selectedDay, 'yyyy-MM-dd');
+      chats = upcomingChats.filter(chat => {
+        if (chat.scheduledAt && format(parseISO(chat.scheduledAt), 'yyyy-MM-dd') === dayKey) return true;
+        // Also match on preferred dates for pending chats
+        if (chat.preferredDates) {
+          return chat.preferredDates.some(pd => format(parseISO(pd), 'yyyy-MM-dd') === dayKey);
+        }
+        return false;
+      });
+    }
+
+    // Sort by display status: upcoming → pending → completed
+    return sortChatsForDateView(
+      chats.map(c => ({
+        ...c,
+        displayStatus: deriveDisplayStatus(c.status as ChatStatus, c.scheduledAt),
+      }))
+    );
   }, [upcomingChats, selectedDay]);
 
   // Group displayed chats by date
-  const grouped: Record<string, UpcomingChat[]> = {};
+  const grouped: Record<string, (UpcomingChat & { displayStatus: DisplayStatus })[]> = {};
   for (const chat of displayChats) {
     const key = chat.scheduledAt ? format(parseISO(chat.scheduledAt), 'yyyy-MM-dd') : 'tbd';
     if (!grouped[key]) grouped[key] = [];
@@ -243,10 +293,18 @@ export function DashboardCalendar({
             <div className="grid grid-cols-7 gap-px">
               {calendarDays.map((day, idx) => {
                 const dayKey = format(day, 'yyyy-MM-dd');
+                const dateInfo = chatDateInfo[dayKey];
                 const hasChats = chatDates.has(dayKey);
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDay ? isSameDay(day, selectedDay) : false;
                 const today = isToday(day);
+                const isPastDate = isPast(startOfDay(day)) && !today;
+
+                // Determine which dots to show
+                const showPendingDot = dateInfo?.hasPending && viewerRole === 'candidate';
+                const showUpcomingDot = dateInfo?.hasUpcoming;
+                const showCompletedDot = dateInfo?.hasCompleted;
+                const hasDots = showPendingDot || showUpcomingDot || showCompletedDot;
 
                 return (
                   <button
@@ -267,6 +325,8 @@ export function DashboardCalendar({
                         ? 'var(--color-accentText)'
                         : !isCurrentMonth
                         ? 'var(--color-textMuted)'
+                        : isPastDate
+                        ? 'var(--color-textMuted)'
                         : 'var(--color-text)',
                       backgroundColor: isSelected
                         ? 'var(--color-accent)'
@@ -274,17 +334,20 @@ export function DashboardCalendar({
                         ? 'var(--color-surfaceHover)'
                         : 'transparent',
                       fontWeight: today || isSelected ? 600 : 400,
-                      opacity: isCurrentMonth ? 1 : 0.4,
+                      opacity: isCurrentMonth ? (isPastDate ? 0.5 : 1) : 0.4,
                     }}
                   >
                     {format(day, 'd')}
-                    {hasChats && !isSelected && (
+                    {hasDots && !isSelected && (
                       <div className="absolute bottom-0.5 flex gap-0.5">
-                        {chatDateInfo[dayKey]?.hasConfirmed && (
-                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
+                        {showUpcomingDot && (
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.upcoming }} />
                         )}
-                        {chatDateInfo[dayKey]?.hasPending && (
-                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
+                        {showPendingDot && (
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.pending }} />
+                        )}
+                        {showCompletedDot && (
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.completed }} />
                         )}
                       </div>
                     )}
@@ -360,8 +423,8 @@ export function DashboardCalendar({
                           Join <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
-                      <Badge variant={getStatusVariant(chat.status)} size="sm">
-                        {chat.status}
+                      <Badge variant={getDisplayStatusVariant(chat.displayStatus)} size="sm">
+                        {getDisplayStatusLabel(chat.displayStatus)}
                       </Badge>
                     </div>
                   </div>
@@ -398,6 +461,7 @@ export function DashboardCalendar({
           isOpen={!!dayPopupDate}
           onClose={() => setDayPopupDate(null)}
           selectedDate={dayPopupDate}
+          allChats={upcomingChats}
           scheduledChats={upcomingChats.filter(c =>
             c.scheduledAt && format(parseISO(c.scheduledAt), 'yyyy-MM-dd') === format(dayPopupDate, 'yyyy-MM-dd')
           )}
@@ -405,6 +469,7 @@ export function DashboardCalendar({
           mode={mode}
           chatsPath={viewAllPath}
           onScheduleChat={onScheduleChat}
+          viewerRole={viewerRole}
         />
       )}
     </div>

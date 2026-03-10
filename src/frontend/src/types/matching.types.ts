@@ -119,6 +119,7 @@ export interface MatchResult {
 
 export interface CandidateResult {
   candidateId: string;
+  userId: string;
   name: string;
   headline: string;
   location: string;
@@ -140,6 +141,7 @@ export interface CandidateResult {
 
 export interface EmployerResult {
   employerId: string;
+  userId: string;
   profileName: string;
   companyName: string;
   description: string;

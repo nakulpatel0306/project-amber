@@ -9,6 +9,7 @@ import {
   Star,
   Sparkles,
   User,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -49,6 +50,7 @@ interface CoffeeChatCardProps {
   onViewMatch?: (chatId: string) => void;
   onMessage?: (chatId: string, partnerName: string) => void;
   onViewDetails?: (chat: CoffeeChatData) => void;
+  onReschedule?: (chatId: string) => void;
 }
 
 const statusConfig: Record<ChatStatus, { label: string; color: string; bg: string }> = {
@@ -70,6 +72,7 @@ export function CoffeeChatCard({
   onViewMatch,
   onMessage,
   onViewDetails,
+  onReschedule,
 }: CoffeeChatCardProps) {
   const status = statusConfig[chat.status];
   const isIncoming = chat.initiated_by !== userRole;
@@ -261,7 +264,7 @@ export function CoffeeChatCard({
           </Button>
         )}
 
-        {/* Scheduled: Join / Practice / Complete */}
+        {/* Scheduled: Join / Reschedule / Complete */}
         {chat.status === 'scheduled' && (
           <>
             {chat.meeting_link && (
@@ -270,6 +273,11 @@ export function CoffeeChatCard({
                   Join Meeting
                 </Button>
               </a>
+            )}
+            {onReschedule && (
+              <Button size="sm" variant="outline" leftIcon={<RefreshCw className="w-4 h-4" />} onClick={() => onReschedule(chat.id)}>
+                Reschedule
+              </Button>
             )}
             <Button size="sm" variant="outline" leftIcon={<CheckCircle2 className="w-4 h-4" />} onClick={() => onComplete?.(chat.id)}>
               Mark Complete

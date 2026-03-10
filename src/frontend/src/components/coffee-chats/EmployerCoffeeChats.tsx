@@ -17,6 +17,9 @@ import { InboxPanel } from '../connections/InboxPanel';
 import { DashboardCalendar, type UpcomingChat } from '../dashboard/DashboardCalendar';
 import { Coffee, UserPlus } from 'lucide-react';
 import { useConnections } from '../../contexts/ConnectionsContext';
+import { deriveDisplayStatus, type DisplayStatus } from '../../utils/coffeeChatStatus';
+
+const API_BASE = 'http://127.0.0.1:8000';
 
 type TabValue = 'calendar' | 'pending' | 'upcoming' | 'completed';
 
@@ -41,6 +44,11 @@ const emptyStates: Partial<Record<TabValue, { mood: 'happy' | 'neutral' | 'think
     message: 'No completed chats yet. Your chat history will appear here.',
   },
 };
+
+/** Derive display status for a chat */
+function getDisplayStatus(chat: CoffeeChatData): DisplayStatus {
+  return deriveDisplayStatus(chat.status, chat.scheduled_at);
+}
 
 export function EmployerCoffeeChats() {
   const { user } = useAuth();
@@ -86,6 +94,20 @@ export function EmployerCoffeeChats() {
     loadChats();
   }, [user]);
 
+  // Real-time subscription for coffee chat changes
+  useEffect(() => {
+    if (!_employerId) return;
+    const channel = supabase
+      .channel('employer-coffee-chats')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'coffee_chats', filter: `employer_id=eq.${_employerId}` },
+        () => loadChats()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [_employerId]);
+
   const loadChats = async () => {
     if (!user) return;
     setIsLoading(true);
@@ -117,6 +139,7 @@ export function EmployerCoffeeChats() {
           candidate_id: c.candidate_id,
           employer_id: c.employer_id,
           role_id: c.role_id,
+          connection_id: c.connection_id,
           status: c.status as ChatStatus,
           message: c.message,
           initiated_by: c.initiated_by,
@@ -139,9 +162,21 @@ export function EmployerCoffeeChats() {
     }
   };
 
+  const getAuthHeaders = async () => {
+    const session = (await supabase.auth.getSession()).data.session;
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+    };
+  };
+
   const updateChatStatus = async (chatId: string, status: string) => {
     try {
-      await supabase.from('coffee_chats').update({ status }).eq('id', chatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${chatId}/status?status=${status}`, {
+        method: 'PATCH', headers,
+      });
+      if (!res.ok) throw new Error('Failed to update');
       setChats(prev =>
         prev.map(c => (c.id === chatId ? { ...c, status: status as ChatStatus } : c))
       );
@@ -154,10 +189,12 @@ export function EmployerCoffeeChats() {
   const handleSchedule = async (scheduledAt: string, meetingLink?: string) => {
     if (!activeChatId) return;
     try {
-      await supabase
-        .from('coffee_chats')
-        .update({ scheduled_at: scheduledAt, meeting_link: meetingLink, status: 'scheduled' })
-        .eq('id', activeChatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${activeChatId}/schedule`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ scheduled_at: scheduledAt, meeting_link: meetingLink || null }),
+      });
+      if (!res.ok) throw new Error('Failed to schedule');
       setChats(prev =>
         prev.map(c =>
           c.id === activeChatId
@@ -165,6 +202,7 @@ export function EmployerCoffeeChats() {
             : c
         )
       );
+      setScheduleModalOpen(false);
       success('Scheduled', 'Coffee chat scheduled!');
     } catch {
       showError('Error', 'Failed to schedule');
@@ -174,10 +212,12 @@ export function EmployerCoffeeChats() {
   const handleFeedback = async (rating: number, feedback?: string) => {
     if (!activeChatId) return;
     try {
-      await supabase
-        .from('coffee_chats')
-        .update({ rating, feedback, status: 'completed' })
-        .eq('id', activeChatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${activeChatId}/feedback`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ rating, feedback: feedback || null }),
+      });
+      if (!res.ok) throw new Error('Failed to submit');
       setChats(prev =>
         prev.map(c =>
           c.id === activeChatId
@@ -194,10 +234,10 @@ export function EmployerCoffeeChats() {
   // Prefilled date for ScheduleModal (set from DayDetailPopup)
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>(undefined);
 
-  // Calendar chats — accepted/scheduled with dates
+  // Calendar chats — all non-cancelled chats with dates or preferred dates
   const calendarChats = useMemo<UpcomingChat[]>(() => {
     return chats
-      .filter(c => c.status === 'accepted' || c.status === 'scheduled' || c.status === 'pending')
+      .filter(c => c.status !== 'cancelled')
       .map(c => ({
         id: c.id,
         company: c.partner_name,
@@ -207,6 +247,7 @@ export function EmployerCoffeeChats() {
         scheduledAt: c.scheduled_at || null,
         meetingLink: c.meeting_link || null,
         status: c.status,
+        preferredDates: c.preferred_dates,
       }));
   }, [chats]);
 
@@ -232,19 +273,19 @@ export function EmployerCoffeeChats() {
     setScheduleModalOpen(true);
   };
 
-  // Tab-based filtering
+  // Tab-based filtering using derived display status
   const tabCounts = useMemo(() => ({
-    calendar: calendarChats.length,
-    pending: chats.filter(c => c.status === 'pending').length,
-    upcoming: chats.filter(c => c.status === 'accepted' || c.status === 'scheduled').length,
-    completed: chats.filter(c => c.status === 'completed').length,
-  }), [chats, calendarChats]);
+    calendar: chats.filter(c => c.status !== 'cancelled').length,
+    pending: chats.filter(c => getDisplayStatus(c) === 'pending').length,
+    upcoming: chats.filter(c => getDisplayStatus(c) === 'upcoming').length,
+    completed: chats.filter(c => getDisplayStatus(c) === 'completed').length,
+  }), [chats]);
 
   const filteredChats = useMemo(() => {
     switch (activeTab) {
-      case 'pending': return chats.filter(c => c.status === 'pending');
-      case 'upcoming': return chats.filter(c => c.status === 'accepted' || c.status === 'scheduled');
-      case 'completed': return chats.filter(c => c.status === 'completed');
+      case 'pending': return chats.filter(c => getDisplayStatus(c) === 'pending');
+      case 'upcoming': return chats.filter(c => getDisplayStatus(c) === 'upcoming');
+      case 'completed': return chats.filter(c => getDisplayStatus(c) === 'completed');
       default: return chats;
     }
   }, [chats, activeTab]);
@@ -317,6 +358,7 @@ export function EmployerCoffeeChats() {
           allAcceptedChats={unscheduledAccepted}
           mode="schedule"
           onScheduleChat={handleCalendarSchedule}
+          viewerRole="employer"
         />
       ) : filteredChats.length === 0 ? (
         <div className="bento-card text-center py-16">
@@ -338,6 +380,10 @@ export function EmployerCoffeeChats() {
                 onAccept={id => updateChatStatus(id, 'accepted')}
                 onDecline={id => updateChatStatus(id, 'cancelled')}
                 onSchedule={id => {
+                  setActiveChatId(id);
+                  setScheduleModalOpen(true);
+                }}
+                onReschedule={id => {
                   setActiveChatId(id);
                   setScheduleModalOpen(true);
                 }}
