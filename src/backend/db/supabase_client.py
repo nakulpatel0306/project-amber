@@ -218,12 +218,15 @@ def create_coffee_chat(data: dict) -> Optional[dict]:
     """Create a new coffee chat request."""
     client = get_supabase()
     if not client:
+        print("Error creating coffee chat: Supabase client not available")
         return None
     try:
+        print(f"[create_coffee_chat] inserting: {list(data.keys())}")
         result = client.table('coffee_chats').insert(data).execute()
+        print(f"[create_coffee_chat] success: {result.data[0]['id'] if result.data else 'no data'}")
         return result.data[0] if result.data else None
     except Exception as e:
-        print(f"Error creating coffee chat: {e}")
+        print(f"Error creating coffee chat: {type(e).__name__}: {e}")
         return None
 
 
@@ -289,12 +292,15 @@ def create_connection(data: dict) -> Optional[dict]:
     """Create a new connection request."""
     client = get_supabase()
     if not client:
+        print("Error creating connection: Supabase client not available")
         return None
     try:
+        print(f"[create_connection] inserting: sender_id={data.get('sender_id')}, receiver_id={data.get('receiver_id')}, sender_role={data.get('sender_role')}")
         result = client.table('connections').insert(data).execute()
+        print(f"[create_connection] success: {result.data[0]['id'] if result.data else 'no data'}")
         return result.data[0] if result.data else None
     except Exception as e:
-        print(f"Error creating connection: {e}")
+        print(f"Error creating connection: {type(e).__name__}: {e}")
         return None
 
 
@@ -385,6 +391,21 @@ def update_meet_invite(invite_id: str, data: dict) -> Optional[dict]:
         return result.data[0] if result.data else None
     except Exception as e:
         print(f"Error updating meet invite: {e}")
+        return None
+
+
+def get_coffee_chat_by_connection(connection_id: str) -> Optional[dict]:
+    """Get the coffee chat linked to a connection."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('coffee_chats').select('*').eq(
+            'connection_id', connection_id
+        ).order('created_at', desc=True).limit(1).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error fetching coffee chat by connection: {e}")
         return None
 
 

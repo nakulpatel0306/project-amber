@@ -22,6 +22,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+import jwt as pyjwt
+
 from .supabase_auth import get_current_user, verify_token, AuthUser, is_auth_configured
 
 
@@ -114,7 +116,28 @@ async def get_current_user_dependency(
             return {"user_id": user.id}
     """
     if not is_auth_configured():
-        # Return None in development mode when auth is not configured
+        # Dev mode: decode token without verification to identify the user
+        if credentials:
+            try:
+                payload = pyjwt.decode(
+                    credentials.credentials,
+                    options={"verify_signature": False, "verify_aud": False, "verify_exp": False},
+                )
+                user_id = payload.get("sub")
+                email = payload.get("email", "")
+                app_metadata = payload.get("app_metadata", {})
+                user_metadata = payload.get("user_metadata", {})
+                role = app_metadata.get("role") or user_metadata.get("role")
+                if user_id:
+                    return AuthUser(
+                        id=user_id,
+                        email=email,
+                        role=role,
+                        app_metadata=app_metadata,
+                        user_metadata=user_metadata,
+                    )
+            except Exception as e:
+                print(f"[dev-mode] Could not decode token: {e}")
         return None
 
     if not credentials:

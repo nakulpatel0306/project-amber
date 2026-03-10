@@ -85,6 +85,7 @@ from db.supabase_client import (
     create_meet_invite,
     update_meet_invite,
     get_meet_invite_by_connection,
+    get_coffee_chat_by_connection,
 )
 from engine.questions import get_question, get_all_questions, get_total_questions
 from engine.scoring import calculate_scores, get_score_explanation
@@ -1327,6 +1328,10 @@ class CreateConnectionRequest(BaseModel):
     sender_company: Optional[str] = None
     receiver_company: Optional[str] = None
     meet_invite: Optional[MeetInviteData] = None
+    # Coffee chat context fields (passed when "Include A Coffee Chat Invite" is toggled)
+    match_score: Optional[float] = None
+    role_id: Optional[str] = None
+    role_title: Optional[str] = None
 
 
 class AcceptConnectionRequest(BaseModel):
@@ -1342,12 +1347,14 @@ async def create_connection_endpoint(
     user: Optional[AuthUser] = Depends(get_current_user_dependency)
 ):
     """Create a connection request, optionally with a bundled meet invite."""
+    print(f"\n[POST /api/connections] user={user.id if user else None}, receiver={request.receiver_id}, role={request.sender_role}, has_meet={request.meet_invite is not None}")
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
 
     # Check for existing connection
     existing = get_connection_between(user.id, request.receiver_id)
     if existing:
+        print(f"[POST /api/connections] existing connection found: {existing['id']}, status={existing['status']}")
         raise HTTPException(status_code=409, detail="Connection already exists")
 
     conn = create_connection({
@@ -1372,6 +1379,41 @@ async def create_connection_endpoint(
             'duration_minutes': request.meet_invite.duration_minutes,
             'status': 'pending',
         })
+
+        # Immediately create a coffee_chat record so it appears in both sides' Coffee Chats
+        try:
+            is_candidate_sender = request.sender_role == 'candidate'
+            candidate_id_val = user.id if is_candidate_sender else request.receiver_id
+            employer_id_val = request.receiver_id if is_candidate_sender else user.id
+
+            # Resolve candidate/employer entity IDs from user IDs
+            candidate_entity = get_candidate_by_user_id(candidate_id_val)
+            employer_entity = get_employer_by_user_id(employer_id_val)
+
+            if candidate_entity and employer_entity:
+                chat_data = {
+                    'candidate_id': candidate_entity['id'],
+                    'employer_id': employer_entity['id'],
+                    'connection_id': conn['id'],
+                    'initiated_by': request.sender_role,
+                    'status': 'pending',
+                    'message': request.message,
+                    'preferred_dates': request.meet_invite.proposed_times,
+                    'duration_minutes': request.meet_invite.duration_minutes,
+                    'candidate_name': request.sender_name if is_candidate_sender else request.receiver_name,
+                    'company_name': request.sender_company if not is_candidate_sender else request.receiver_company,
+                    'match_score': int(request.match_score) if request.match_score is not None else None,
+                    'role_id': request.role_id,
+                    'role_title': request.role_title,
+                }
+                result = create_coffee_chat(chat_data)
+                if not result:
+                    print(f"Warning: coffee_chat creation returned None for connection {conn['id']}")
+            else:
+                print(f"Warning: could not resolve entities — candidate={candidate_entity is not None}, employer={employer_entity is not None}")
+        except Exception as e:
+            # Log but don't fail the connection request
+            print(f"Error creating coffee chat for connection {conn.get('id')}: {e}")
 
     return conn
 
@@ -1406,21 +1448,30 @@ async def accept_connection_endpoint(
                 'status': 'accepted',
                 'confirmed_time': request.confirmed_time,
             })
-            # Auto-create a coffee chat from the accepted meet invite
-            chat_data = {
-                'candidate_id': conn['sender_id'] if conn['sender_role'] == 'candidate' else conn['receiver_id'],
-                'employer_id': conn['sender_id'] if conn['sender_role'] == 'employer' else conn['receiver_id'],
-                'connection_id': connection_id,
-                'initiated_by': conn['sender_role'],
-                'status': 'accepted',
-                'message': conn.get('message'),
-                'candidate_name': conn.get('sender_name') if conn['sender_role'] == 'candidate' else conn.get('receiver_name'),
-                'company_name': conn.get('sender_company') if conn['sender_role'] == 'employer' else conn.get('receiver_company'),
-            }
-            if request.confirmed_time:
-                chat_data['scheduled_at'] = request.confirmed_time
-                chat_data['status'] = 'scheduled'
-            create_coffee_chat(chat_data)
+            # Update the existing coffee_chat (created when connection was sent)
+            existing_chat = get_coffee_chat_by_connection(connection_id)
+            if existing_chat:
+                update_data = {'status': 'accepted'}
+                if request.confirmed_time:
+                    update_data['scheduled_at'] = request.confirmed_time
+                    update_data['status'] = 'scheduled'
+                update_coffee_chat(existing_chat['id'], update_data)
+            else:
+                # Fallback: create coffee_chat if it doesn't exist yet
+                chat_data = {
+                    'candidate_id': conn['sender_id'] if conn['sender_role'] == 'candidate' else conn['receiver_id'],
+                    'employer_id': conn['sender_id'] if conn['sender_role'] == 'employer' else conn['receiver_id'],
+                    'connection_id': connection_id,
+                    'initiated_by': conn['sender_role'],
+                    'status': 'accepted',
+                    'message': conn.get('message'),
+                    'candidate_name': conn.get('sender_name') if conn['sender_role'] == 'candidate' else conn.get('receiver_name'),
+                    'company_name': conn.get('sender_company') if conn['sender_role'] == 'employer' else conn.get('receiver_company'),
+                }
+                if request.confirmed_time:
+                    chat_data['scheduled_at'] = request.confirmed_time
+                    chat_data['status'] = 'scheduled'
+                create_coffee_chat(chat_data)
 
     return result
 

@@ -214,13 +214,14 @@ export function EmberEmployerPage() {
     if (!employer || !connectTarget) return;
     try {
       await sendConnectionRequest({
-        receiverId: connectTarget.candidateId,
+        receiverId: connectTarget.userId,
         senderRole: 'employer',
         message,
         senderName: profile?.full_name || undefined,
         senderCompany: employer.company_name,
         receiverName: connectTarget.name,
         meetInvite,
+        matchScore: connectTarget.overallScore,
       });
       showSuccess('Sent!', `Connection request sent to ${connectTarget.name}`);
     } catch {
@@ -374,7 +375,7 @@ export function EmberEmployerPage() {
               employerId={employer.id}
               roleId={selectedRoleId || undefined}
               isSaved={savedIds.has(selectedCandidate.candidateId)}
-              connectionStatus={getConnectionStatus(selectedCandidate.candidateId)}
+              connectionStatus={getConnectionStatus(selectedCandidate.userId)}
               onBack={handleBackToGallery}
               onBrew={() => setBrewTarget(selectedCandidate)}
               onToggleSave={() => handleToggleSave(selectedCandidate)}
