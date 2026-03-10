@@ -320,8 +320,8 @@ export function EmployerCoffeeChats() {
             <span
               className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px]"
               style={{
-                backgroundColor: activeTab === tab.value ? 'rgba(255,255,255,0.2)' : 'var(--color-background)',
-                color: activeTab === tab.value ? 'white' : 'var(--color-textMuted)',
+                backgroundColor: activeTab === tab.value ? 'var(--color-surfaceHover)' : 'var(--color-background)',
+                color: activeTab === tab.value ? 'var(--color-accentText)' : 'var(--color-textMuted)',
               }}
             >
               {tabCounts[tab.value]}

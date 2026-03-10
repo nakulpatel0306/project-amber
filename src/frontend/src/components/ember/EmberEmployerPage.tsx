@@ -130,6 +130,11 @@ export function EmberEmployerPage() {
   const handleDeepDive = useCallback((c: CandidateResult) => {
     setSelectedCandidate(c);
     setView('deepdive');
+    requestAnimationFrame(() => {
+      const el = document.getElementById('main-scroll-container');
+      if (el) el.scrollTop = 0;
+      window.scrollTo({ top: 0 });
+    });
   }, []);
 
   const handleBackToGallery = useCallback(() => {

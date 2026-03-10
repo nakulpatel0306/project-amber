@@ -123,7 +123,7 @@ export function MessagePanel({
         ) : (
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+            style={{ backgroundColor: 'var(--color-surfaceHover)' }}
           >
             <User className="w-3.5 h-3.5" />
           </div>

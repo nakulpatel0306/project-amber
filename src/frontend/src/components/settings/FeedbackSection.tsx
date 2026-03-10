@@ -260,7 +260,7 @@ export function FeedbackSection() {
                 <span
                   className="px-1.5 py-0.5 rounded text-xs"
                   style={{
-                    backgroundColor: statusFilter === status ? 'rgba(255,255,255,0.2)' : 'var(--color-background)',
+                    backgroundColor: statusFilter === status ? 'var(--color-surfaceHover)' : 'var(--color-background)',
                   }}
                 >
                   {statusCounts[status]}

@@ -117,7 +117,7 @@ function OverviewCarousel({ stats }: { stats: { totalMatches: number; strongMatc
 
 export function EmberAgent() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { success: showSuccess, error: showError } = useToast();
   const { profile } = useAuth();
   const { getConnectionStatus, sendConnectionRequest, pendingSent, accepted } = useConnections();
@@ -244,13 +244,22 @@ export function EmberAgent() {
   const handleDeepDive = useCallback((emp: EmployerResult) => {
     setSelectedEmployer(emp);
     setView('deepdive');
-    window.scrollTo({ top: 0 });
+    requestAnimationFrame(() => {
+      const el = document.getElementById('main-scroll-container');
+      if (el) el.scrollTop = 0;
+      window.scrollTo({ top: 0 });
+    });
   }, []);
 
   const handleBackToGallery = useCallback(() => {
     setSelectedEmployer(null);
     setView('gallery');
-  }, []);
+    // Clear deepdive param so the useEffect doesn't re-open it
+    if (searchParams.has('deepdive')) {
+      searchParams.delete('deepdive');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleToggleSave = useCallback(async (emp: EmployerResult) => {
     try {
@@ -527,7 +536,7 @@ export function EmberAgent() {
                   key="deepdive"
                   mode="candidate"
                   name={selectedEmployer.companyName}
-                  subtitle={selectedEmployer.industry}
+                  subtitle={selectedEmployer.profileName}
                   archetype={selectedEmployer.archetype}
                   overallScore={selectedEmployer.overallScore}
                   traitScore={selectedEmployer.traitScore}
