@@ -19,6 +19,8 @@ import { Coffee, UserPlus } from 'lucide-react';
 import { useConnections } from '../../contexts/ConnectionsContext';
 import { deriveDisplayStatus, type DisplayStatus } from '../../utils/coffeeChatStatus';
 
+const API_BASE = 'http://127.0.0.1:8000';
+
 type TabValue = 'calendar' | 'pending' | 'upcoming' | 'completed';
 
 const tabs: { value: TabValue; label: string }[] = [
@@ -160,9 +162,21 @@ export function EmployerCoffeeChats() {
     }
   };
 
+  const getAuthHeaders = async () => {
+    const session = (await supabase.auth.getSession()).data.session;
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+    };
+  };
+
   const updateChatStatus = async (chatId: string, status: string) => {
     try {
-      await supabase.from('coffee_chats').update({ status }).eq('id', chatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${chatId}/status?status=${status}`, {
+        method: 'PATCH', headers,
+      });
+      if (!res.ok) throw new Error('Failed to update');
       setChats(prev =>
         prev.map(c => (c.id === chatId ? { ...c, status: status as ChatStatus } : c))
       );
@@ -175,10 +189,12 @@ export function EmployerCoffeeChats() {
   const handleSchedule = async (scheduledAt: string, meetingLink?: string) => {
     if (!activeChatId) return;
     try {
-      await supabase
-        .from('coffee_chats')
-        .update({ scheduled_at: scheduledAt, meeting_link: meetingLink, status: 'scheduled' })
-        .eq('id', activeChatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${activeChatId}/schedule`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ scheduled_at: scheduledAt, meeting_link: meetingLink || null }),
+      });
+      if (!res.ok) throw new Error('Failed to schedule');
       setChats(prev =>
         prev.map(c =>
           c.id === activeChatId
@@ -186,6 +202,7 @@ export function EmployerCoffeeChats() {
             : c
         )
       );
+      setScheduleModalOpen(false);
       success('Scheduled', 'Coffee chat scheduled!');
     } catch {
       showError('Error', 'Failed to schedule');
@@ -195,10 +212,12 @@ export function EmployerCoffeeChats() {
   const handleFeedback = async (rating: number, feedback?: string) => {
     if (!activeChatId) return;
     try {
-      await supabase
-        .from('coffee_chats')
-        .update({ rating, feedback, status: 'completed' })
-        .eq('id', activeChatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${activeChatId}/feedback`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ rating, feedback: feedback || null }),
+      });
+      if (!res.ok) throw new Error('Failed to submit');
       setChats(prev =>
         prev.map(c =>
           c.id === activeChatId
@@ -361,6 +380,10 @@ export function EmployerCoffeeChats() {
                 onAccept={id => updateChatStatus(id, 'accepted')}
                 onDecline={id => updateChatStatus(id, 'cancelled')}
                 onSchedule={id => {
+                  setActiveChatId(id);
+                  setScheduleModalOpen(true);
+                }}
+                onReschedule={id => {
                   setActiveChatId(id);
                   setScheduleModalOpen(true);
                 }}

@@ -195,30 +195,29 @@ export function JobSeekerDashboard() {
         setAcceptedChats(connectionData?.filter(c => c.status === 'accepted').length || 0);
         setCompletedChats(connectionData?.filter(c => c.status === 'completed').length || 0);
 
-        // Get upcoming coffee chats (accepted/pending) with scheduledAt and status
+        // Get ALL non-cancelled coffee chats with full data (same as CandidateCoffeeChats)
         const { data: chats } = await supabase
           .from('coffee_chats')
-          .select('*, employers!inner(company_name, profiles:user_id(full_name))')
+          .select('*')
           .eq('candidate_id', candidate.id)
-          .in('status', ['accepted', 'pending'])
-          .order('scheduled_at', { ascending: true })
-          .limit(5);
+          .order('created_at', { ascending: false });
 
         if (chats) {
-          setUpcomingChats(chats.map(c => {
-            const emp = c.employers as Record<string, unknown> | null;
-            const empProfile = emp?.profiles as Record<string, unknown> | null;
-            return {
-              id: c.id,
-              company: (emp?.company_name as string) || 'Unknown',
-              person: (empProfile?.full_name as string) || 'Unknown',
-              role: 'Hiring Manager',
-              time: c.scheduled_at ? new Date(c.scheduled_at).toLocaleDateString() : 'TBD',
-              scheduledAt: c.scheduled_at || null,
-              meetingLink: c.meeting_link || null,
-              status: c.status || 'pending',
-            };
-          }));
+          setUpcomingChats(
+            chats
+              .filter((c: any) => c.status !== 'cancelled')
+              .map((c: any) => ({
+                id: c.id,
+                company: c.company_name || 'Unknown',
+                person: c.candidate_name || c.company_name || 'Unknown',
+                role: c.role_title || 'Coffee Chat',
+                time: c.scheduled_at ? new Date(c.scheduled_at).toLocaleDateString() : 'TBD',
+                scheduledAt: c.scheduled_at || null,
+                meetingLink: c.meeting_link || null,
+                status: c.status || 'pending',
+                preferredDates: c.preferred_dates || null,
+              }))
+          );
         }
       } catch (err) {
         console.error('Error loading chats:', err);

@@ -5,8 +5,6 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  ExternalLink,
 } from 'lucide-react';
 import {
   format,
@@ -21,65 +19,71 @@ import {
   isSameMonth,
   isSameDay,
   isToday,
+  isPast,
+  startOfDay,
   setMonth,
   setYear,
   getMonth,
   getYear,
 } from 'date-fns';
-import { Badge } from '../ui/Badge';
 import { DayDetailPopup } from './DayDetailPopup';
+import { deriveDisplayStatus, sortChatsForDateView, type DisplayStatus } from '../../utils/coffeeChatStatus';
+import type { ChatStatus } from '../coffee-chats/CoffeeChatCard';
 import type { UpcomingChat } from './DashboardCalendar';
+
+// Reuse exact same dot colors from DashboardCalendar
+const DOT_COLORS = {
+  pending: '#9CA3AF',
+  upcoming: '#D97706',
+  completed: 'rgba(217, 119, 6, 0.4)',
+};
 
 interface ScheduleWidgetProps {
   upcomingChats: UpcomingChat[];
   pendingChats: number;
   acceptedChats: number;
   allAcceptedChats?: UpcomingChat[];
+  viewerRole?: 'candidate' | 'employer';
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function getOptimalSlots(chats: UpcomingChat[]): string[] {
-  const hours = chats
-    .filter(c => c.scheduledAt)
-    .map(c => parseISO(c.scheduledAt!).getHours());
-  const slots: string[] = [];
-  if (!hours.some(h => h >= 9 && h < 12)) slots.push('Mornings (9-11 AM)');
-  if (!hours.some(h => h >= 13 && h < 16)) slots.push('Afternoons (1-3 PM)');
-  if (!hours.some(h => h >= 16 && h < 18)) slots.push('Late Afternoon (4-5 PM)');
-  if (slots.length === 0) slots.push('Early Morning (8-9 AM)', 'Evening (5-6 PM)');
-  return slots.slice(0, 3);
-}
-
-function getStatusVariant(status: string): 'success' | 'warning' | 'default' {
-  switch (status) {
-    case 'accepted':
-    case 'completed':
-    case 'scheduled':
-      return 'success';
-    case 'pending':
-      return 'warning';
-    default:
-      return 'default';
-  }
-}
-
-export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acceptedChats: _acceptedChats, allAcceptedChats }: ScheduleWidgetProps) {
+export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acceptedChats: _acceptedChats, allAcceptedChats, viewerRole = 'candidate' }: ScheduleWidgetProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
-  // Dates that have scheduled chats
-  const chatDates = useMemo(() => {
-    const dates = new Set<string>();
+  // Reuse same dot logic from DashboardCalendar
+  const chatDateInfo = useMemo(() => {
+    const info: Record<string, { hasPending: boolean; hasUpcoming: boolean; hasCompleted: boolean }> = {};
+
+    const addToDate = (dateKey: string, displayStatus: DisplayStatus) => {
+      if (!info[dateKey]) info[dateKey] = { hasPending: false, hasUpcoming: false, hasCompleted: false };
+      if (displayStatus === 'pending') info[dateKey].hasPending = true;
+      else if (displayStatus === 'upcoming') info[dateKey].hasUpcoming = true;
+      else if (displayStatus === 'completed') info[dateKey].hasCompleted = true;
+    };
+
     for (const chat of upcomingChats) {
+      const ds = deriveDisplayStatus(chat.status as ChatStatus, chat.scheduledAt);
       if (chat.scheduledAt) {
-        dates.add(format(parseISO(chat.scheduledAt), 'yyyy-MM-dd'));
+        const key = format(parseISO(chat.scheduledAt), 'yyyy-MM-dd');
+        addToDate(key, ds);
+      }
+      if (ds === 'pending' && chat.preferredDates) {
+        for (const pd of chat.preferredDates) {
+          try {
+            const key = format(parseISO(pd), 'yyyy-MM-dd');
+            addToDate(key, 'pending');
+          } catch { /* skip bad dates */ }
+        }
       }
     }
-    return dates;
+    return info;
   }, [upcomingChats]);
+
+  const chatDates = useMemo(() => new Set(Object.keys(chatDateInfo)), [chatDateInfo]);
 
   // Build calendar grid days
   const calendarDays = useMemo(() => {
@@ -96,18 +100,20 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
     return days;
   }, [currentMonth]);
 
-  // Filter chats based on selected day
-  const displayChats = useMemo(() => {
-    if (!selectedDay) return upcomingChats;
-    const dayKey = format(selectedDay, 'yyyy-MM-dd');
-    return upcomingChats.filter(chat => {
-      if (!chat.scheduledAt) return false;
-      return format(parseISO(chat.scheduledAt), 'yyyy-MM-dd') === dayKey;
-    });
-  }, [upcomingChats, selectedDay]);
-
-  const visibleChats = displayChats.slice(0, 3);
-  const optimalSlots = useMemo(() => getOptimalSlots(upcomingChats), [upcomingChats]);
+  // Compact upcoming list: next 3 upcoming/scheduled chats sorted by time
+  const upcomingList = useMemo(() => {
+    return sortChatsForDateView(
+      upcomingChats
+        .filter(c => {
+          const ds = deriveDisplayStatus(c.status as ChatStatus, c.scheduledAt);
+          return ds === 'upcoming' || ds === 'pending';
+        })
+        .map(c => ({
+          ...c,
+          displayStatus: deriveDisplayStatus(c.status as ChatStatus, c.scheduledAt),
+        }))
+    ).slice(0, 3);
+  }, [upcomingChats]);
 
   return (
     <div
@@ -170,7 +176,6 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
           </div>
 
           {showMonthPicker ? (
-            /* Month picker grid — replaces calendar */
             <div className="grid grid-cols-3 gap-1">
               {Array.from({ length: 12 }, (_, i) => (
                 <button
@@ -190,7 +195,6 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
               ))}
             </div>
           ) : (
-            /* Calendar grid */
             <>
               {/* Weekday headers */}
               <div className="grid grid-cols-7 mb-0.5">
@@ -205,14 +209,21 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
                 ))}
               </div>
 
-              {/* Day cells */}
+              {/* Day cells — same dot logic as DashboardCalendar */}
               <div className="grid grid-cols-7 gap-px">
                 {calendarDays.map((day, idx) => {
                   const dayKey = format(day, 'yyyy-MM-dd');
+                  const dateInfo = chatDateInfo[dayKey];
                   const hasChats = chatDates.has(dayKey);
                   const isCurrentMonth = isSameMonth(day, currentMonth);
                   const isSelected = selectedDay ? isSameDay(day, selectedDay) : false;
                   const today = isToday(day);
+                  const isPastDate = isPast(startOfDay(day)) && !today;
+
+                  const showPendingDot = dateInfo?.hasPending && viewerRole === 'candidate';
+                  const showUpcomingDot = dateInfo?.hasUpcoming;
+                  const showCompletedDot = dateInfo?.hasCompleted;
+                  const hasDots = showPendingDot || showUpcomingDot || showCompletedDot;
 
                   return (
                     <button
@@ -233,6 +244,8 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
                           ? 'var(--color-accentText)'
                           : !isCurrentMonth
                           ? 'var(--color-textMuted)'
+                          : isPastDate
+                          ? 'var(--color-textMuted)'
                           : 'var(--color-text)',
                         backgroundColor: isSelected
                           ? 'var(--color-accent)'
@@ -240,15 +253,22 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
                           ? 'var(--color-surfaceHover)'
                           : 'transparent',
                         fontWeight: today || isSelected ? 600 : 400,
-                        opacity: isCurrentMonth ? 1 : 0.4,
+                        opacity: isCurrentMonth ? (isPastDate ? 0.5 : 1) : 0.4,
                       }}
                     >
                       {format(day, 'd')}
-                      {hasChats && !isSelected && (
-                        <div
-                          className="absolute bottom-0 w-1 h-1 rounded-full"
-                          style={{ backgroundColor: 'var(--color-accent)' }}
-                        />
+                      {hasDots && !isSelected && (
+                        <div className="absolute bottom-0 flex gap-0.5">
+                          {showUpcomingDot && (
+                            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.upcoming }} />
+                          )}
+                          {showPendingDot && (
+                            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.pending }} />
+                          )}
+                          {showCompletedDot && (
+                            <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.completed }} />
+                          )}
+                        </div>
                       )}
                     </button>
                   );
@@ -271,102 +291,63 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
         {/* Divider */}
         <div className="w-px self-stretch" style={{ backgroundColor: 'var(--color-border)' }} />
 
-        {/* Right panel: Schedule info */}
+        {/* Right panel: Compact upcoming summary */}
         <div className="flex-1 min-w-0 flex flex-col">
-          {/* Upcoming & Pending list */}
-          <div className="flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-textMuted)' }}>
-              Upcoming
-            </p>
-            {visibleChats.length > 0 ? (
-              <div className="space-y-1.5">
-                {visibleChats.map((chat, i) => (
+          <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-textMuted)' }}>
+            Upcoming
+          </p>
+          {upcomingList.length > 0 ? (
+            <div className="space-y-2">
+              {upcomingList.map((chat, i) => (
+                <div key={chat.id || i} className="flex items-center gap-2">
                   <div
-                    key={i}
-                    className="flex items-center gap-2 p-1.5 rounded-lg"
-                    style={{ backgroundColor: 'var(--color-background)' }}
-                  >
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
-                      style={{
-                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
-                        color: 'var(--color-accent)',
-                      }}
-                    >
-                      {chat.person.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-[11px] truncate" style={{ color: 'var(--color-text)' }}>
-                        {chat.person}
-                      </p>
-                      <p className="text-[10px] truncate" style={{ color: 'var(--color-textMuted)' }}>
-                        {chat.company}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {chat.meetingLink && (
-                        <a
-                          href={chat.meetingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Join meeting"
-                        >
-                          <ExternalLink className="w-3 h-3" style={{ color: 'var(--color-accent)' }} />
-                        </a>
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: chat.displayStatus === 'upcoming' ? DOT_COLORS.upcoming : DOT_COLORS.pending }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                      {chat.person}
+                    </p>
+                    <p className="text-[10px] truncate" style={{ color: 'var(--color-textMuted)' }}>
+                      {chat.company}
+                      {chat.scheduledAt && (
+                        <> · {format(parseISO(chat.scheduledAt), 'MMM d, h:mm a')}</>
                       )}
-                      {chat.status === 'pending' ? (
-                        <Badge variant="warning" size="sm">Pending</Badge>
-                      ) : chat.scheduledAt ? (
-                        <span className="text-[10px]" style={{ color: 'var(--color-textSecondary)' }}>
-                          {format(parseISO(chat.scheduledAt), 'h:mm a')}
-                        </span>
-                      ) : (
-                        <Badge variant={getStatusVariant(chat.status)} size="sm">
-                          {chat.status}
-                        </Badge>
-                      )}
-                    </div>
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[11px] py-2" style={{ color: 'var(--color-textMuted)' }}>
-                {selectedDay ? 'No chats this day' : 'No upcoming chats'}
-              </p>
-            )}
-          </div>
-
-          {/* Optimal Time Slots */}
-          <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--color-textMuted)' }}>
-              Suggested Open Slots
-            </p>
-            <div className="space-y-1">
-              {optimalSlots.map((slot, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <Clock className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
-                  <span className="text-[11px]" style={{ color: 'var(--color-textSecondary)' }}>
-                    {slot}
-                  </span>
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="text-[11px]" style={{ color: 'var(--color-textMuted)' }}>
+              No upcoming chats
+            </p>
+          )}
+
+          {/* View all link at bottom */}
+          <div className="mt-auto pt-3">
+            <Link
+              to="/app/chats"
+              className="text-[10px] font-medium"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              View all chats
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Day Detail Popup */}
+      {/* Day Detail Popup — reuses same allChats pattern */}
       {dayPopupDate && (
         <DayDetailPopup
           isOpen={!!dayPopupDate}
           onClose={() => setDayPopupDate(null)}
           selectedDate={dayPopupDate}
-          scheduledChats={upcomingChats.filter(c =>
-            c.scheduledAt && format(parseISO(c.scheduledAt), 'yyyy-MM-dd') === format(dayPopupDate, 'yyyy-MM-dd')
-          )}
+          allChats={upcomingChats}
           unscheduledChats={(allAcceptedChats || []).filter(c => !c.scheduledAt)}
           mode="navigate"
           chatsPath="/app/chats"
+          viewerRole={viewerRole}
         />
       )}
     </div>

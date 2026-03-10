@@ -44,14 +44,19 @@ def get_supabase():
     return _client
 
 
+def _first_or_none(result) -> Optional[dict]:
+    """Extract the first row from a Supabase query result, or None."""
+    return result.data[0] if result.data else None
+
+
 def get_candidate_by_id(candidate_id: str) -> Optional[dict]:
     """Get candidate data by candidate ID."""
     client = get_supabase()
     if not client:
         return None
     try:
-        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('id', candidate_id).single().execute()
-        return result.data
+        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('id', candidate_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching candidate: {e}")
         return None
@@ -63,8 +68,8 @@ def get_candidate_by_user_id(user_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('user_id', user_id).single().execute()
-        return result.data
+        result = client.table('candidates').select('*, profiles!inner(full_name, email)').eq('user_id', user_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching candidate: {e}")
         return None
@@ -76,8 +81,8 @@ def get_employer_by_id(employer_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('employers').select('*').eq('id', employer_id).single().execute()
-        return result.data
+        result = client.table('employers').select('*').eq('id', employer_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching employer: {e}")
         return None
@@ -89,8 +94,8 @@ def get_employer_by_user_id(user_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('employers').select('*').eq('user_id', user_id).single().execute()
-        return result.data
+        result = client.table('employers').select('*').eq('user_id', user_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching employer: {e}")
         return None
@@ -102,8 +107,8 @@ def get_role(role_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('roles').select('*, employers!inner(*)').eq('id', role_id).single().execute()
-        return result.data
+        result = client.table('roles').select('*, employers!inner(*)').eq('id', role_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching role: {e}")
         return None
@@ -176,8 +181,8 @@ def get_application(candidate_id: str, role_id: str) -> Optional[dict]:
     try:
         result = client.table('applications').select('*').eq(
             'candidate_id', candidate_id
-        ).eq('role_id', role_id).single().execute()
-        return result.data
+        ).eq('role_id', role_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         return None
 
@@ -279,8 +284,8 @@ def get_coffee_chat_by_id(chat_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('coffee_chats').select('*').eq('id', chat_id).single().execute()
-        return result.data
+        result = client.table('coffee_chats').select('*').eq('id', chat_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching coffee chat: {e}")
         return None
@@ -324,8 +329,8 @@ def get_connection_by_id(connection_id: str) -> Optional[dict]:
     if not client:
         return None
     try:
-        result = client.table('connections').select('*').eq('id', connection_id).single().execute()
-        return result.data
+        result = client.table('connections').select('*').eq('id', connection_id).limit(1).execute()
+        return _first_or_none(result)
     except Exception as e:
         print(f"Error fetching connection: {e}")
         return None

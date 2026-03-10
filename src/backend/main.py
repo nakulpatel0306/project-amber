@@ -1500,6 +1500,11 @@ async def reject_connection_endpoint(
     if invite and invite['status'] == 'pending':
         update_meet_invite(invite['id'], {'status': 'declined'})
 
+    # Cancel the associated coffee chat so it disappears from both sides
+    existing_chat = get_coffee_chat_by_connection(connection_id)
+    if existing_chat and existing_chat['status'] not in ('completed', 'cancelled'):
+        update_coffee_chat(existing_chat['id'], {'status': 'cancelled'})
+
     return result
 
 
