@@ -268,7 +268,7 @@ export function PostCard({ post, isOwn, onLike, onBookmark, onDelete, onComment,
                   onClick={() => setCarouselIdx(i)}
                   className="w-1.5 h-1.5 rounded-full transition-all"
                   style={{
-                    backgroundColor: i === carouselIdx ? '#f59e0b' : 'rgba(255,255,255,0.5)',
+                    backgroundColor: i === carouselIdx ? 'var(--color-accent)' : 'var(--color-border)',
                     transform: i === carouselIdx ? 'scale(1.3)' : 'scale(1)',
                   }}
                 />

@@ -5,6 +5,7 @@ import {
   Bookmark, BookmarkCheck, GitCompareArrows, Share2, Lightbulb,
   AlertTriangle, CheckCircle2, HelpCircle, Target, ArrowUpRight,
   TrendingUp, ChevronRight, BarChart3, Users, Shield,
+  MapPin, Briefcase, DollarSign, X,
 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
@@ -16,6 +17,11 @@ import { calculateCompatibility, type OCEANScores } from '../../../lib/compatibi
 import type { ConnectionStatus } from '../../../types/connections.types';
 
 const API_BASE = 'http://127.0.0.1:8000';
+
+/* ── Title case helper ── */
+function titleCase(str: string): string {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
 
 /* ── Brew helpers ── */
 function getBrewLabel(score: number): string {
@@ -235,7 +241,8 @@ export function DeepDive({
   const [compositeModal, setCompositeModal] = useState<string | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
   const [deepDiveTab, setDeepDiveTab] = useState(0);
-  const [employerRoles, setEmployerRoles] = useState<{ id: string; title: string; score: number }[]>([]);
+  const [employerRoles, setEmployerRoles] = useState<{ id: string; title: string; score: number; description?: string; requirements?: string[]; nice_to_have?: string[]; location?: string; work_style?: string; salary_min?: number; salary_max?: number; employment_type?: string }[]>([]);
+  const [selectedRole, setSelectedRole] = useState<typeof employerRoles[number] | null>(null);
 
   const initial = name.charAt(0).toUpperCase();
 
@@ -276,7 +283,7 @@ export function DeepDive({
     const fetchRoles = async () => {
       const { data } = await supabase
         .from('roles')
-        .select('id, title, work_style, required_openness_min, required_openness_max, required_conscientiousness_min, required_conscientiousness_max, required_extraversion_min, required_extraversion_max, required_agreeableness_min, required_agreeableness_max, required_neuroticism_min, required_neuroticism_max')
+        .select('id, title, description, requirements, nice_to_have, location, work_style, salary_min, salary_max, employment_type, required_openness_min, required_openness_max, required_conscientiousness_min, required_conscientiousness_max, required_extraversion_min, required_extraversion_max, required_agreeableness_min, required_agreeableness_max, required_neuroticism_min, required_neuroticism_max')
         .eq('employer_id', employerId);
       if (!data || data.length === 0) return;
       const scored = data.map(role => {
@@ -298,7 +305,7 @@ export function DeepDive({
             work_style: role.work_style,
           },
         });
-        return { id: role.id, title: role.title, score: result.overallMatchScore };
+        return { id: role.id, title: role.title, score: result.overallMatchScore, description: role.description, requirements: role.requirements, nice_to_have: role.nice_to_have, location: role.location, work_style: role.work_style, salary_min: role.salary_min, salary_max: role.salary_max, employment_type: role.employment_type };
       });
       scored.sort((a, b) => b.score - a.score);
       setEmployerRoles(scored);
@@ -419,19 +426,25 @@ export function DeepDive({
             </div>
             {/* Available roles */}
             {employerRoles.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mt-2">
+              <div className="flex flex-wrap items-center gap-2 mt-2 relative">
                 <span className="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--color-textMuted)' }}>Roles</span>
                 {employerRoles.map(role => (
-                  <span
+                  <button
                     key={role.id}
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium"
-                    style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+                    onClick={() => setSelectedRole(selectedRole?.id === role.id ? null : role)}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium cursor-pointer transition-all hover:scale-105"
+                    style={{
+                      backgroundColor: selectedRole?.id === role.id ? 'var(--color-accent)' : 'var(--color-surface)',
+                      border: `1px solid ${selectedRole?.id === role.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      color: selectedRole?.id === role.id ? 'var(--color-accentText)' : 'var(--color-text)',
+                    }}
                   >
                     {role.title}
-                  </span>
+                  </button>
                 ))}
               </div>
             )}
+
           </div>
 
           {/* Actions */}
@@ -459,6 +472,127 @@ export function DeepDive({
           </div>
         </div>
       </div>
+
+      {/* ═══ Role Detail Card (in-flow, pushes content down) ═══ */}
+      <AnimatePresence>
+        {selectedRole && (
+          <motion.div
+            key={selectedRole.id}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div
+              className="rounded-2xl p-5 relative border"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                boxShadow: '0 0 0 1px color-mix(in srgb, var(--color-accent) 10%, transparent), 0 4px 24px color-mix(in srgb, var(--color-accent) 6%, transparent)',
+              }}
+            >
+              {/* Accent top bar */}
+              <div className="absolute top-0 left-5 right-5 h-[2px] rounded-full" style={{ background: 'linear-gradient(90deg, var(--color-accent), transparent)' }} />
+
+              {/* Close */}
+              <button
+                onClick={() => setSelectedRole(null)}
+                className="absolute top-3 right-3 p-1.5 rounded-lg transition-colors hover:bg-[var(--color-surfaceHover)]"
+                style={{ color: 'var(--color-textMuted)' }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Title + icon */}
+              <div className="flex items-center gap-2.5 pr-8">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' }}>
+                  <Briefcase className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                </div>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+                  {titleCase(selectedRole.title)}
+                </h3>
+              </div>
+
+              {/* Meta pills */}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {selectedRole.employment_type && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-text)' }}>
+                    <Briefcase className="w-3 h-3" style={{ color: 'var(--color-accent)' }} />
+                    {titleCase(selectedRole.employment_type.replace(/_/g, ' '))}
+                  </span>
+                )}
+                {selectedRole.location && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-text)' }}>
+                    <MapPin className="w-3 h-3" style={{ color: '#F59E0B' }} />
+                    {titleCase(selectedRole.location)}
+                  </span>
+                )}
+                {selectedRole.work_style && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-text)' }}>
+                    <Users className="w-3 h-3" style={{ color: '#8B5CF6' }} />
+                    {titleCase(selectedRole.work_style.replace(/_/g, ' '))}
+                  </span>
+                )}
+                {(selectedRole.salary_min || selectedRole.salary_max) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium" style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-text)' }}>
+                    <DollarSign className="w-3 h-3" style={{ color: '#10B981' }} />
+                    {selectedRole.salary_min && selectedRole.salary_max
+                      ? `${(selectedRole.salary_min / 1000).toFixed(0)}k – ${(selectedRole.salary_max / 1000).toFixed(0)}k`
+                      : selectedRole.salary_min
+                        ? `From ${(selectedRole.salary_min / 1000).toFixed(0)}k`
+                        : `Up to ${(selectedRole.salary_max! / 1000).toFixed(0)}k`}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              {selectedRole.description && (
+                <div className="mt-4 pt-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1.5" style={{ color: 'var(--color-textMuted)' }}>About This Role</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>
+                    {selectedRole.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Requirements + Nice to have side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {selectedRole.requirements && selectedRole.requirements.length > 0 && (
+                  <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--color-textMuted)' }}>Requirements</p>
+                    <ul className="space-y-1.5">
+                      {selectedRole.requirements.map((req, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs" style={{ color: 'var(--color-text)' }}>
+                          <CheckCircle2 className="w-3 h-3 mt-0.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
+                          {titleCase(req)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {selectedRole.nice_to_have && selectedRole.nice_to_have.length > 0 && (
+                  <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--color-surfaceHover)' }}>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--color-textMuted)' }}>Nice To Have</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedRole.nice_to_have.map((trait, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
+                          style={{ backgroundColor: 'color-mix(in srgb, var(--color-accent) 10%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)' }}
+                        >
+                          {titleCase(trait)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══ 2. Composite Score Cards ═══ */}
       <div>

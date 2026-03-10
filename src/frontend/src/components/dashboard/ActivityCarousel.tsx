@@ -179,8 +179,8 @@ export function ActivityCarousel() {
                           key={tag}
                           className="font-mono text-[10px] px-2 py-0.5 rounded-full"
                           style={{
-                            backgroundColor: 'rgba(255,255,255,0.15)',
-                            color: 'rgba(255,255,255,0.9)',
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            color: '#fff',
                           }}
                         >
                           #{tag}

@@ -79,7 +79,7 @@ export function StreakTracker() {
       style={{ minHeight: 200 }}
     >
       {/* Coffee cup — centered via viewBox that accounts for handle */}
-      <svg viewBox="0 0 72 68" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[72px] h-[68px] ml-4">
+      <svg viewBox="0 0 76 68" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[76px] h-[68px] ml-4">
         <defs>
           <linearGradient id="coffee-fill" x1="50%" y1="100%" x2="50%" y2="0%">
             <stop offset="0%" stopColor="#78350F" />
@@ -135,7 +135,7 @@ export function StreakTracker() {
 
         {/* Handle */}
         <path
-          d="M50 18 Q62 18 62 32 Q62 46 50 46"
+          d="M54 18 Q66 18 66 32 Q66 46 54 46"
           stroke="var(--color-border)"
           strokeWidth="2.5"
           fill="none"
