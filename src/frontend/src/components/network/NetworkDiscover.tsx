@@ -401,8 +401,8 @@ export function NetworkDiscover({ isCandidate }: Props) {
             className="p-6 rounded-xl text-center"
             style={{ backgroundColor: 'var(--color-accent)' }}
           >
-            <div className="w-11 h-11 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
-              <Mic className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--color-accentText) 20%, transparent)' }}>
+              <Mic className="w-5 h-5" style={{ color: 'var(--color-accentText)' }} />
             </div>
             <h3 className="text-sm font-bold text-white mb-1">Practice Your Pitch</h3>
             <p className="text-xs text-white/75 mb-4">Sharpen your intro with AI coaching</p>

@@ -49,6 +49,7 @@ export function AppLayout() {
           style={{ width: sidebarWidth }}
         />
         <div
+          id="main-scroll-container"
           className="flex-1 flex flex-col md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto"
           style={{
             left: sidebarWidth,

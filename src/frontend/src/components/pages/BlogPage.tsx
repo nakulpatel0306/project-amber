@@ -188,7 +188,7 @@ export function BlogPage() {
                     <span
                       className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
                       style={{
-                        background: activeCategory === null ? "rgba(255,255,255,0.2)" : "var(--color-border)",
+                        background: activeCategory === null ? "var(--color-surfaceHover)" : "var(--color-border)",
                         color: activeCategory === null ? "var(--color-accentText)" : "var(--color-textSecondary)",
                       }}
                     >

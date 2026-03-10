@@ -244,7 +244,11 @@ export function EmberAgent() {
   const handleDeepDive = useCallback((emp: EmployerResult) => {
     setSelectedEmployer(emp);
     setView('deepdive');
-    window.scrollTo({ top: 0 });
+    requestAnimationFrame(() => {
+      const el = document.getElementById('main-scroll-container');
+      if (el) el.scrollTop = 0;
+      window.scrollTo({ top: 0 });
+    });
   }, []);
 
   const handleBackToGallery = useCallback(() => {
@@ -531,7 +535,7 @@ export function EmberAgent() {
                   key="deepdive"
                   mode="candidate"
                   name={selectedEmployer.companyName}
-                  subtitle={selectedEmployer.industry}
+                  subtitle={selectedEmployer.profileName}
                   archetype={selectedEmployer.archetype}
                   overallScore={selectedEmployer.overallScore}
                   traitScore={selectedEmployer.traitScore}
