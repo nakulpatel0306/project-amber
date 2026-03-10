@@ -1,16 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Heart,
-  MessageCircle,
-  Bookmark,
-  Share2,
   MapPin,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
   Trash2,
   Flag,
-  Send,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '../ui/Avatar';
@@ -20,15 +16,6 @@ import { formatDistanceToNowStrict } from 'date-fns';
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-export interface PostComment {
-  id: string;
-  userId: string;
-  userName: string;
-  avatarUrl: string | null;
-  content: string;
-  createdAt: string;
-}
 
 export interface PostUser {
   user_id: string;
@@ -50,20 +37,14 @@ export interface FeedPost {
   activityPostId?: string;
   createdAt: string;
   likeCount: number;
-  commentCount: number;
   isLiked: boolean;
-  isBookmarked: boolean;
-  comments: PostComment[];
 }
 
 interface PostCardProps {
   post: FeedPost;
   isOwn: boolean;
   onLike: (postId: string) => void;
-  onBookmark: (postId: string) => void;
   onDelete: (postId: string) => void;
-  onComment: (postId: string, content: string) => void;
-  onShare: (postId: string) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -103,11 +84,9 @@ function timeAgo(dateStr: string): string {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function PostCard({ post, isOwn, onLike, onBookmark, onDelete, onComment, onShare }: PostCardProps) {
+export function PostCard({ post, isOwn, onLike, onDelete }: PostCardProps) {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [captionExpanded, setCaptionExpanded] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
   const [likeAnimating, setLikeAnimating] = useState(false);
@@ -133,13 +112,6 @@ export function PostCard({ post, isOwn, onLike, onBookmark, onDelete, onComment,
     onLike(post.id);
     setTimeout(() => setLikeAnimating(false), 400);
   }, [post.id, onLike]);
-
-  const submitComment = () => {
-    const trimmed = commentText.trim();
-    if (!trimmed) return;
-    onComment(post.id, trimmed);
-    setCommentText('');
-  };
 
   const prevImage = () => setCarouselIdx(i => Math.max(0, i - 1));
   const nextImage = () => setCarouselIdx(i => Math.min(post.images.length - 1, i + 1));
@@ -295,61 +267,20 @@ export function PostCard({ post, isOwn, onLike, onBookmark, onDelete, onComment,
 
       {/* ---- Action Bar ---- */}
       <div className="flex items-center px-4 py-2.5">
-        {/* Left actions */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleLike}
-            className="flex items-center gap-1.5 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
-          >
-            <Heart
-              className="w-[22px] h-[22px] transition-transform"
-              style={{
-                color: post.isLiked ? '#ef4444' : 'var(--color-textSecondary)',
-                fill: post.isLiked ? '#ef4444' : 'none',
-                transform: likeAnimating ? 'scale(1.3)' : 'scale(1)',
-              }}
-            />
-            {post.likeCount > 0 && (
-              <span className="text-xs font-medium" style={{ color: 'var(--color-textSecondary)' }}>
-                {post.likeCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            <MessageCircle className="w-[22px] h-[22px]" />
-            {post.commentCount > 0 && (
-              <span className="text-xs font-medium">{post.commentCount}</span>
-            )}
-          </button>
-
-          <button
-            onClick={() => onShare(post.id)}
-            className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            <Share2 className="w-[20px] h-[20px]" />
-          </button>
-        </div>
-
-        <div className="flex-1" />
-
-        {/* Bookmark */}
         <button
-          onClick={() => onBookmark(post.id)}
-          className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
+          onClick={handleLike}
+          className="flex items-center gap-1.5 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
         >
-          <Bookmark
-            className="w-[22px] h-[22px]"
-            style={{
-              color: post.isBookmarked ? '#f59e0b' : 'var(--color-textSecondary)',
-              fill: post.isBookmarked ? '#f59e0b' : 'none',
-            }}
+          <Heart
+            className={`w-[22px] h-[22px] transition-all duration-200 ${likeAnimating ? 'scale-125' : 'scale-100'}`}
+            color={post.isLiked ? '#ef4444' : 'var(--color-textSecondary)'}
+            fill={post.isLiked ? '#ef4444' : 'none'}
           />
+          {post.likeCount > 0 && (
+            <span className="text-xs font-medium" style={{ color: post.isLiked ? '#ef4444' : 'var(--color-textSecondary)' }}>
+              {post.likeCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -416,67 +347,6 @@ export function PostCard({ post, isOwn, onLike, onBookmark, onDelete, onComment,
         </div>
       )}
 
-      {/* ---- Comments Section ---- */}
-      <AnimatePresence>
-        {showComments && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
-              {/* Existing comments */}
-              {post.comments.length > 0 && (
-                <div className="pt-3 space-y-2.5">
-                  {post.comments.length > 2 && (
-                    <button
-                      className="text-xs font-medium"
-                      style={{ color: 'var(--color-textMuted)' }}
-                    >
-                      View all {post.comments.length} comments
-                    </button>
-                  )}
-                  {post.comments.slice(-2).map(c => (
-                    <div key={c.id} className="flex items-start gap-2">
-                      <Avatar src={c.avatarUrl} fallback={c.userName} size="xs" />
-                      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text)' }}>
-                        <span className="font-semibold mr-1">{c.userName.split(' ')[0]}</span>
-                        {c.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Comment Input */}
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') submitComment(); }}
-                  placeholder="Add a comment..."
-                  className="flex-1 text-sm px-3 py-2 rounded-lg bg-transparent outline-none"
-                  style={{
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-text)',
-                  }}
-                />
-                <button
-                  onClick={submitComment}
-                  disabled={!commentText.trim()}
-                  className="p-2 rounded-lg transition-colors disabled:opacity-30"
-                  style={{ color: 'var(--color-accent)' }}
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
