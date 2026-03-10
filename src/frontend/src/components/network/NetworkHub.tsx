@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Edit3, Plus, RefreshCw, AlertCircle, Link2, Camera, Sparkles } from 'lucide-react';
+import { Users, Edit3, Plus, RefreshCw, AlertCircle, Link2, Camera, Sparkles, Eye, EyeOff, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConnections } from '../../contexts/ConnectionsContext';
@@ -9,9 +9,9 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { ProfileEditModal } from './ProfileEditModal';
 import { NewPostModal } from './NewPostModal';
-import { PostCard, type FeedPost, type PostComment } from './PostCard';
+import { PostCard, type FeedPost } from './PostCard';
 import { PostSkeleton } from './PostSkeleton';
-import { FilterBar, type FeedFilter, type FeedSort, type LayoutMode } from './FilterBar';
+import { FilterBar, type FeedFilter, type LayoutMode } from './FilterBar';
 
 /* ------------------------------------------------------------------ */
 /*  Mock data — shown when the DB has no posts                         */
@@ -27,13 +27,7 @@ const MOCK_POSTS: FeedPost[] = [
     source: 'activity_post',
     createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
     likeCount: 24,
-    commentCount: 3,
     isLiked: false,
-    isBookmarked: false,
-    comments: [
-      { id: 'c1', userId: 'm2', userName: 'Marcus Johnson', avatarUrl: null, content: 'This looks incredible! Recipe?', createdAt: new Date().toISOString() },
-      { id: 'c2', userId: 'm3', userName: 'Anika Patel', avatarUrl: null, content: 'The kneading is the best part honestly', createdAt: new Date().toISOString() },
-    ],
   },
   {
     id: 'mock-2',
@@ -44,12 +38,7 @@ const MOCK_POSTS: FeedPost[] = [
     source: 'activity_post',
     createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
     likeCount: 42,
-    commentCount: 5,
-    isLiked: true,
-    isBookmarked: false,
-    comments: [
-      { id: 'c3', userId: 'm1', userName: 'Priya Sharma', avatarUrl: null, content: 'That view is unreal!', createdAt: new Date().toISOString() },
-    ],
+    isLiked: false,
   },
   {
     id: 'mock-3',
@@ -60,10 +49,7 @@ const MOCK_POSTS: FeedPost[] = [
     source: 'activity_post',
     createdAt: new Date(Date.now() - 8 * 3600000).toISOString(),
     likeCount: 31,
-    commentCount: 2,
     isLiked: false,
-    isBookmarked: true,
-    comments: [],
   },
   {
     id: 'mock-4',
@@ -74,10 +60,7 @@ const MOCK_POSTS: FeedPost[] = [
     source: 'activity_post',
     createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
     likeCount: 18,
-    commentCount: 1,
     isLiked: false,
-    isBookmarked: false,
-    comments: [],
   },
   {
     id: 'mock-5',
@@ -88,13 +71,7 @@ const MOCK_POSTS: FeedPost[] = [
     source: 'activity_post',
     createdAt: new Date(Date.now() - 18 * 3600000).toISOString(),
     likeCount: 56,
-    commentCount: 8,
     isLiked: false,
-    isBookmarked: false,
-    comments: [
-      { id: 'c4', userId: 'm4', userName: 'Elena Voss', avatarUrl: null, content: 'Your eye for composition is incredible', createdAt: new Date().toISOString() },
-      { id: 'c5', userId: 'm1', userName: 'Priya Sharma', avatarUrl: null, content: 'What camera do you shoot with?', createdAt: new Date().toISOString() },
-    ],
   },
   {
     id: 'mock-6',
@@ -105,10 +82,7 @@ const MOCK_POSTS: FeedPost[] = [
     source: 'activity_post',
     createdAt: new Date(Date.now() - 24 * 3600000).toISOString(),
     likeCount: 37,
-    commentCount: 4,
     isLiked: false,
-    isBookmarked: false,
-    comments: [],
   },
 ];
 
@@ -136,6 +110,7 @@ export function NetworkHub() {
   // Profile data
   const [myHobbies, setMyHobbies] = useState<string[]>([]);
   const [myPhotos, setMyPhotos] = useState<string[]>([]);
+  const [myLikes, setMyLikes] = useState(0);
 
   // Feed state
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -144,18 +119,19 @@ export function NetworkHub() {
 
   // UI state
   const [filter, setFilter] = useState<FeedFilter>('all');
-  const [sort, setSort] = useState<FeedSort>('latest');
   const [layout, setLayout] = useState<LayoutMode>('grid-3');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNewPost, setShowNewPost] = useState(false);
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set());
+
+  // Profile visibility
+  const [profileVisible, setProfileVisible] = useState(true);
+  const [savingVisibility, setSavingVisibility] = useState(false);
 
   // Load profile
   useEffect(() => { loadMyProfile(); }, [user]);
 
-  // Load feed when filter/sort changes
-  useEffect(() => { loadFeed(); }, [user, filter, sort]);
+  // Load feed when filter changes
+  useEffect(() => { loadFeed(); }, [user, filter]);
 
   const loadMyProfile = async () => {
     if (!user) return;
@@ -168,6 +144,58 @@ export function NetworkHub() {
       setMyHobbies(data.hobbies || []);
       setMyPhotos(data.catalog_photos || []);
     }
+
+    // Load visibility setting
+    try {
+      const { data: settings } = await supabase
+        .from('user_settings')
+        .select('profile_visible')
+        .eq('user_id', user.id)
+        .single();
+      if (settings) {
+        setProfileVisible(settings.profile_visible);
+      }
+    } catch {
+      // No settings row yet — default to visible
+    }
+
+    // Load total likes received on user's posts
+    try {
+      const { data: myPosts } = await supabase
+        .from('activity_posts')
+        .select('like_count')
+        .eq('user_id', user.id);
+      const totalLikes = (myPosts || []).reduce((sum, p) => sum + (p.like_count || 0), 0);
+      setMyLikes(totalLikes);
+    } catch {
+      // Table doesn't exist yet
+    }
+  };
+
+  const toggleVisibility = async () => {
+    if (!user) return;
+    setSavingVisibility(true);
+    const newValue = !profileVisible;
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(
+          { user_id: user.id, profile_visible: newValue },
+          { onConflict: 'user_id' }
+        );
+      if (error) {
+        // Table may not exist - just update local state
+        console.warn('user_settings table may not exist:', error);
+      }
+      setProfileVisible(newValue);
+      showSuccess('Updated', newValue ? 'Profile visible in feed' : 'Profile hidden from feed');
+    } catch {
+      // Still update local state even if DB fails
+      setProfileVisible(newValue);
+      showSuccess('Updated', newValue ? 'Profile visible in feed' : 'Profile hidden from feed');
+    } finally {
+      setSavingVisibility(false);
+    }
   };
 
   const loadFeed = useCallback(async () => {
@@ -176,14 +204,35 @@ export function NetworkHub() {
     setHasError(false);
 
     try {
-      // 1. activity_posts
-      const { data: activityData, error: apError } = await supabase
-        .from('activity_posts')
-        .select('id, user_id, image_url, caption, hobby_tags, created_at, profiles:user_id(full_name, avatar_url, role)')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      // 1. activity_posts with like_count (table may not exist)
+      let activityData: any[] = [];
+      try {
+        const { data, error: apError } = await supabase
+          .from('activity_posts')
+          .select('id, user_id, image_url, caption, hobby_tags, like_count, created_at, profiles:user_id(full_name, avatar_url, role)')
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (apError) throw apError;
+        if (!apError && data) {
+          activityData = data;
+        }
+      } catch {
+        // Table doesn't exist yet
+      }
+
+      // 1b. Load user's likes (table may not exist)
+      let userLikedIds = new Set<string>();
+      try {
+        const { data: likes } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+        if (likes) {
+          userLikedIds = new Set(likes.map((l: any) => l.post_id));
+        }
+      } catch {
+        // Table doesn't exist yet
+      }
 
       // 2. Employer company names
       let companyMap: Record<string, string> = {};
@@ -196,12 +245,17 @@ export function NetworkHub() {
         }
       } catch { /* table may not exist */ }
 
-      // 3. Hidden users
-      const { data: hiddenSettings } = await supabase
-        .from('user_settings')
-        .select('user_id')
-        .eq('profile_visible', false);
-      const hiddenIds = new Set((hiddenSettings || []).map((s: any) => s.user_id));
+      // 3. Hidden users (table may not exist)
+      let hiddenIds = new Set<string>();
+      try {
+        const { data: hiddenSettings } = await supabase
+          .from('user_settings')
+          .select('user_id')
+          .eq('profile_visible', false);
+        hiddenIds = new Set((hiddenSettings || []).map((s: any) => s.user_id));
+      } catch {
+        // Table doesn't exist yet
+      }
 
       // 4. Catalog candidates
       const { data: candidates } = await supabase
@@ -244,16 +298,13 @@ export function NetworkHub() {
             source: 'activity_post',
             activityPostId: ap.id,
             createdAt: ap.created_at,
-            likeCount: Math.floor(Math.random() * 30), // placeholder
-            commentCount: 0,
-            isLiked: likedPosts.has(`ap-${ap.id}`),
-            isBookmarked: bookmarkedPosts.has(`ap-${ap.id}`),
-            comments: [],
+            likeCount: ap.like_count || 0,
+            isLiked: userLikedIds.has(ap.id),
           });
         }
       }
 
-      // Catalog posts
+      // Catalog posts (no like functionality for catalog posts)
       candidates?.forEach((c: any) => {
         if (hiddenIds.has(c.user_id)) return;
         const photos: string[] = c.catalog_photos || [];
@@ -281,11 +332,8 @@ export function NetworkHub() {
             hobbyTags: hobbies,
             source: 'catalog',
             createdAt: new Date(Date.now() - Math.random() * 48 * 3600000).toISOString(),
-            likeCount: Math.floor(Math.random() * 15),
-            commentCount: 0,
-            isLiked: likedPosts.has(`cat-${c.user_id}`),
-            isBookmarked: bookmarkedPosts.has(`cat-${c.user_id}`),
-            comments: [],
+            likeCount: 0,
+            isLiked: false,
           });
         }
       });
@@ -313,21 +361,8 @@ export function NetworkHub() {
           break;
       }
 
-      // Sort
-      switch (sort) {
-        case 'latest':
-          filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          break;
-        case 'most_liked':
-          filtered.sort((a, b) => b.likeCount - a.likeCount);
-          break;
-        case 'most_commented':
-          filtered.sort((a, b) => b.commentCount - a.commentCount);
-          break;
-        case 'trending':
-          filtered.sort((a, b) => (b.likeCount + b.commentCount * 2) - (a.likeCount + a.commentCount * 2));
-          break;
-      }
+      // Sort by latest
+      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       setPosts(filtered);
     } catch (err) {
@@ -337,34 +372,52 @@ export function NetworkHub() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, filter, sort, accepted, likedPosts, bookmarkedPosts]);
+  }, [user, filter, accepted]);
 
   /* ---- Actions ---- */
 
-  const handleLike = useCallback((postId: string) => {
-    setLikedPosts(prev => {
-      const next = new Set(prev);
-      if (next.has(postId)) next.delete(postId); else next.add(postId);
-      return next;
-    });
+  const handleLike = useCallback(async (postId: string) => {
+    // Find the post
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    const isCurrentlyLiked = post.isLiked;
+
+    // Optimistic UI update - always update the UI immediately
     setPosts(prev => prev.map(p =>
       p.id === postId
-        ? { ...p, isLiked: !p.isLiked, likeCount: p.isLiked ? p.likeCount - 1 : p.likeCount + 1 }
+        ? { ...p, isLiked: !isCurrentlyLiked, likeCount: isCurrentlyLiked ? Math.max(0, p.likeCount - 1) : p.likeCount + 1 }
         : p
     ));
-    // TODO: POST /api/posts/{id}/like
-  }, []);
 
-  const handleBookmark = useCallback((postId: string) => {
-    setBookmarkedPosts(prev => {
-      const next = new Set(prev);
-      if (next.has(postId)) next.delete(postId); else next.add(postId);
-      return next;
-    });
-    setPosts(prev => prev.map(p =>
-      p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p
-    ));
-  }, []);
+    // Only persist to DB if this is a real activity post with a DB ID
+    if (user && post.source === 'activity_post' && post.activityPostId) {
+      const activityPostId = post.activityPostId;
+
+      // Persist to DB
+      try {
+        if (isCurrentlyLiked) {
+          await supabase
+            .from('post_likes')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('post_id', activityPostId);
+        } else {
+          await supabase
+            .from('post_likes')
+            .insert({ user_id: user.id, post_id: activityPostId });
+        }
+      } catch (err) {
+        // Revert on error
+        console.error('Failed to update like:', err);
+        setPosts(prev => prev.map(p =>
+          p.id === postId
+            ? { ...p, isLiked: isCurrentlyLiked, likeCount: isCurrentlyLiked ? p.likeCount + 1 : Math.max(0, p.likeCount - 1) }
+            : p
+        ));
+      }
+    }
+  }, [user, posts]);
 
   const handleDelete = useCallback(async (postId: string) => {
     if (!user) return;
@@ -383,29 +436,6 @@ export function NetworkHub() {
       showError('Error', 'Failed to delete post');
     }
   }, [user, posts, showSuccess, showError]);
-
-  const handleComment = useCallback((postId: string, content: string) => {
-    if (!user || !profile) return;
-    const newComment: PostComment = {
-      id: `local-${Date.now()}`,
-      userId: user.id,
-      userName: profile.full_name || 'You',
-      avatarUrl: profile.avatar_url || null,
-      content,
-      createdAt: new Date().toISOString(),
-    };
-    setPosts(prev => prev.map(p =>
-      p.id === postId
-        ? { ...p, comments: [...p.comments, newComment], commentCount: p.commentCount + 1 }
-        : p
-    ));
-    // TODO: POST /api/posts/{id}/comments
-  }, [user, profile]);
-
-  const handleShare = useCallback((postId: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/app/network/post/${postId}`);
-    showSuccess('Link Copied', 'Post link copied to clipboard');
-  }, [showSuccess]);
 
   /* ---- Layout class ---- */
 
@@ -442,7 +472,7 @@ export function NetworkHub() {
                 className="text-3xl font-bold tracking-tight"
                 style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
-                Welcome, {profile?.full_name?.split(' ')[0] || 'there'}
+                Hey {profile?.full_name?.split(' ')[0] || 'there'}, welcome to your network
               </h1>
               <p
                 className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
@@ -457,6 +487,7 @@ export function NetworkHub() {
                   { label: 'Connections', value: accepted.length, color: '#f59e0b', Icon: Link2 },
                   { label: 'Posts', value: myPhotos.length, color: '#8B5CF6', Icon: Camera },
                   { label: 'Hobbies', value: myHobbies.length, color: '#06B6D4', Icon: Sparkles },
+                  { label: 'Likes', value: myLikes, color: '#ef4444', Icon: Heart },
                 ] as const).map(stat => (
                   <span
                     key={stat.label}
@@ -496,8 +527,21 @@ export function NetworkHub() {
               variant="ghost"
               size="sm"
               onClick={() => setShowEditModal(true)}
+              title="Edit Profile"
             >
               <Edit3 className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleVisibility}
+              disabled={savingVisibility}
+              title={profileVisible ? 'Hide profile from feed' : 'Show profile in feed'}
+              style={{
+                color: profileVisible ? 'var(--color-accent)' : 'var(--color-textMuted)',
+              }}
+            >
+              {profileVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </Button>
           </div>
         </div>
@@ -506,10 +550,8 @@ export function NetworkHub() {
       {/* ======== FILTER BAR ======== */}
       <FilterBar
         filter={filter}
-        sort={sort}
         layout={layout}
         onFilterChange={setFilter}
-        onSortChange={setSort}
         onLayoutChange={setLayout}
       />
 
@@ -592,10 +634,7 @@ export function NetworkHub() {
                     post={post}
                     isOwn={post.user.user_id === user?.id}
                     onLike={handleLike}
-                    onBookmark={handleBookmark}
                     onDelete={handleDelete}
-                    onComment={handleComment}
-                    onShare={handleShare}
                   />
                 </motion.div>
               ))}

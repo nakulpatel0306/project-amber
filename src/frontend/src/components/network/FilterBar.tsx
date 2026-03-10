@@ -1,16 +1,12 @@
-import { useRef, useState, useEffect } from 'react';
-import { ChevronDown, LayoutGrid, Columns2, AlignJustify, LayoutDashboard } from 'lucide-react';
+import { LayoutGrid, Columns2, AlignJustify, LayoutDashboard } from 'lucide-react';
 
 export type FeedFilter = 'all' | 'job_seekers' | 'employers' | 'connections' | 'following';
-export type FeedSort = 'latest' | 'most_liked' | 'most_commented' | 'trending';
 export type LayoutMode = 'grid-3' | 'grid-2' | 'feed' | 'masonry';
 
 interface FilterBarProps {
   filter: FeedFilter;
-  sort: FeedSort;
   layout: LayoutMode;
   onFilterChange: (f: FeedFilter) => void;
-  onSortChange: (s: FeedSort) => void;
   onLayoutChange: (l: LayoutMode) => void;
 }
 
@@ -22,13 +18,6 @@ const FILTER_TABS: { value: FeedFilter; label: string }[] = [
   { value: 'following', label: 'Following' },
 ];
 
-const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
-  { value: 'latest', label: 'Latest' },
-  { value: 'most_liked', label: 'Most Liked' },
-  { value: 'most_commented', label: 'Most Commented' },
-  { value: 'trending', label: 'Trending' },
-];
-
 const LAYOUT_OPTIONS: { value: LayoutMode; icon: typeof LayoutGrid; label: string }[] = [
   { value: 'grid-3', icon: LayoutGrid, label: '3 columns' },
   { value: 'grid-2', icon: Columns2, label: '2 columns' },
@@ -38,25 +27,10 @@ const LAYOUT_OPTIONS: { value: LayoutMode; icon: typeof LayoutGrid; label: strin
 
 export function FilterBar({
   filter,
-  sort,
   layout,
   onFilterChange,
-  onSortChange,
   onLayoutChange,
 }: FilterBarProps) {
-  const [showSort, setShowSort] = useState(false);
-  const sortRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
-        setShowSort(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   return (
     <div
       className="sticky top-0 z-30 -mx-4 md:-mx-6 px-4 md:px-6 py-3 backdrop-blur-xl border-b"
@@ -88,48 +62,6 @@ export function FilterBar({
 
         {/* Spacer */}
         <div className="flex-1 min-w-4" />
-
-        {/* Sort Dropdown */}
-        <div className="relative flex-shrink-0" ref={sortRef}>
-          <button
-            onClick={() => setShowSort(!showSort)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
-            style={{
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-textSecondary)',
-              backgroundColor: 'var(--color-surface)',
-            }}
-          >
-            {SORT_OPTIONS.find(o => o.value === sort)?.label}
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-          {showSort && (
-            <div
-              className="absolute right-0 top-full mt-1 py-1 rounded-xl shadow-lg z-10 min-w-[160px] border"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-              }}
-            >
-              {SORT_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    onSortChange(option.value);
-                    setShowSort(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--color-surfaceHover)]"
-                  style={{
-                    color: sort === option.value ? 'var(--color-accent)' : 'var(--color-text)',
-                    fontWeight: sort === option.value ? 600 : 400,
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Layout Toggle */}
         <div
