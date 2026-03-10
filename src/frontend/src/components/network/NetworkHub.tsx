@@ -472,7 +472,7 @@ export function NetworkHub() {
                 className="text-3xl font-bold tracking-tight"
                 style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
-                Welcome, {profile?.full_name?.split(' ')[0] || 'there'}
+                Hey {profile?.full_name?.split(' ')[0] || 'there'}, welcome to your network
               </h1>
               <p
                 className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
