@@ -2,19 +2,12 @@ import { Sun, Moon, Sunrise, CloudSun, Sunset, MoonStar } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { NotificationDropdown } from '../layout/NotificationDropdown';
 
-const TIME_VARIANTS = [
-  { Icon: Sunrise,  label: 'Morning',   bg: '#F59E0B', glow: '#FBBF24' },  // Bright amber
-  { Icon: CloudSun, label: 'Afternoon', bg: '#D97706', glow: '#F59E0B' },  // Warm amber
-  { Icon: Sunset,   label: 'Evening',   bg: '#B45309', glow: '#D97706' },  // Deep amber
-  { Icon: MoonStar, label: 'Night',     bg: '#78350F', glow: '#92400E' },  // Dark ember
-];
-
-function getTimeVariant() {
+function getTimeIcon() {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return TIME_VARIANTS[0];
-  if (hour >= 12 && hour < 17) return TIME_VARIANTS[1];
-  if (hour >= 17 && hour < 21) return TIME_VARIANTS[2];
-  return TIME_VARIANTS[3];
+  if (hour >= 5 && hour < 12) return Sunrise;
+  if (hour >= 12 && hour < 17) return CloudSun;
+  if (hour >= 17 && hour < 21) return Sunset;
+  return MoonStar;
 }
 
 interface DashboardHeaderProps {
@@ -31,18 +24,18 @@ export function DashboardHeader({ greeting, firstName }: DashboardHeaderProps) {
     month: 'short',
     year: 'numeric',
   });
-  const { Icon: TimeIcon, bg, glow } = getTimeVariant();
+  const TimeIcon = getTimeIcon();
 
   return (
     <div className="bento-card rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between gap-4">
         {/* Left: Greeting */}
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-5 flex-1 min-w-0">
           <div
-            className="hidden sm:flex items-center justify-center w-11 h-11 rounded-2xl flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${bg}, ${glow})`, boxShadow: `0 2px 10px ${glow}30` }}
+            className="hidden sm:flex items-center justify-center w-14 h-14 rounded-xl flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #b45309, #d97706, #f59e0b)' }}
           >
-            <TimeIcon className="w-5 h-5 text-white" />
+            <TimeIcon className="w-7 h-7 text-white" />
           </div>
           <div className="min-w-0">
             <h1

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Bug, Lightbulb, Star, Send, CheckCircle2, Clock, Zap, ChevronUp } from 'lucide-react';
+import { Bug, Lightbulb, Star, Send, CheckCircle2, Clock, Zap, ChevronUp, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Textarea } from '../ui/Input';
+import { Input, Textarea } from '../ui/Input';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -119,6 +119,8 @@ export function FeedbackSection() {
 
   const [activeTab, setActiveTab] = useState<FeedbackType>('feature_request');
   const [message, setMessage] = useState('');
+  const [bugTitle, setBugTitle] = useState('');
+  const [bugSeverity, setBugSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [rating, setRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -126,13 +128,18 @@ export function FeedbackSection() {
   const [statusFilter, setStatusFilter] = useState<FeatureStatus | 'all'>('all');
 
   const handleSubmit = async () => {
+    if (activeTab === 'bug_report' && !bugTitle.trim()) {
+      showError('Title Required', 'Please enter a title for the bug report.');
+      return;
+    }
+
     if (!message.trim()) {
-      showError('Message required', 'Please enter your feedback before submitting.');
+      showError('Message Required', 'Please enter your feedback before submitting.');
       return;
     }
 
     if (activeTab === 'satisfaction' && !rating) {
-      showError('Rating required', 'Please select a rating before submitting.');
+      showError('Rating Required', 'Please select a rating before submitting.');
       return;
     }
 
@@ -142,21 +149,27 @@ export function FeedbackSection() {
       const { error } = await supabase.from('feedback').insert({
         user_id: user?.id,
         feedback_type: activeTab,
-        message: message.trim(),
+        message: activeTab === 'bug_report'
+          ? `[${bugSeverity.toUpperCase()}] ${bugTitle.trim()}\n\n${message.trim()}`
+          : message.trim(),
         rating: activeTab === 'satisfaction' ? rating : null,
-        page: 'settings',
+        page: activeTab === 'bug_report' ? `settings:bug:${bugSeverity}` : 'settings',
       });
 
       if (error) throw error;
 
-      success('Thank you!', 'Your feedback has been submitted successfully.');
+      success('Thank You!', activeTab === 'bug_report'
+        ? 'Bug report submitted. We\'ll investigate ASAP.'
+        : 'Your feedback has been submitted successfully.');
       setMessage('');
+      setBugTitle('');
+      setBugSeverity('medium');
       setRating(null);
       setSubmitted(true);
 
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err) {
-      showError('Failed to submit', 'Please try again later.');
+      showError('Failed To Submit', 'Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
@@ -189,14 +202,22 @@ export function FeedbackSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-lg font-medium mb-1"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Feedback & Features
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          Help shape the future of Amber
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <Lightbulb className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Feedback & Features
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
+          Help Shape The Future Of Amber
         </p>
       </div>
 
@@ -355,7 +376,7 @@ export function FeedbackSection() {
               style={{ color: 'var(--color-text)' }}
             >
               <Lightbulb className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              Suggest a Feature
+              Suggest A Feature
             </h4>
             <Textarea
               value={message}
@@ -398,7 +419,7 @@ export function FeedbackSection() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text)' }}
               >
-                Report a Bug
+                Report A Bug
               </h4>
             </div>
             <p
@@ -407,27 +428,69 @@ export function FeedbackSection() {
             >
               Found something that's not working? Let us know and we'll fix it ASAP.
             </p>
-            <Textarea
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              placeholder={currentTab.placeholder}
-              rows={5}
-              disabled={isSubmitting}
-            />
+
+            <div className="space-y-3">
+              <Input
+                label="Bug Title"
+                value={bugTitle}
+                onChange={e => setBugTitle(e.target.value)}
+                placeholder="Brief description of the issue"
+                leftIcon={<AlertCircle className="w-4 h-4" />}
+                disabled={isSubmitting}
+              />
+
+              {/* Severity */}
+              <div>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text)' }}>
+                  Severity
+                </p>
+                <div className="flex gap-2">
+                  {([
+                    { value: 'low' as const, label: 'Low', color: '#10B981' },
+                    { value: 'medium' as const, label: 'Medium', color: '#F59E0B' },
+                    { value: 'high' as const, label: 'High', color: '#EF4444' },
+                  ]).map(sev => (
+                    <button
+                      key={sev.value}
+                      onClick={() => setBugSeverity(sev.value)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        backgroundColor: bugSeverity === sev.value ? `${sev.color}20` : 'var(--color-background)',
+                        color: bugSeverity === sev.value ? sev.color : 'var(--color-textMuted)',
+                        border: `1px solid ${bugSeverity === sev.value ? `${sev.color}40` : 'var(--color-border)'}`,
+                      }}
+                    >
+                      {sev.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder={currentTab.placeholder}
+                rows={4}
+                disabled={isSubmitting}
+              />
+            </div>
+
             <div className="flex items-center justify-between mt-3">
               <p
                 className="text-xs"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                {submitted && (
+                {submitted ? (
                   <span style={{ color: 'var(--color-success)' }}>
                     Bug report submitted! We'll investigate.
                   </span>
+                ) : (
+                  `${message.length} / 2000 characters`
                 )}
               </p>
               <Button
                 onClick={handleSubmit}
-                disabled={!message.trim() || isSubmitting}
+                disabled={!bugTitle.trim() || !message.trim() || isSubmitting}
                 isLoading={isSubmitting}
                 leftIcon={<Send className="w-4 h-4" />}
               >
@@ -507,10 +570,12 @@ export function FeedbackSection() {
                 className="text-xs"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                {submitted && (
+                {submitted ? (
                   <span style={{ color: 'var(--color-success)' }}>
                     Thank you for your feedback!
                   </span>
+                ) : (
+                  `${message.length} / 2000 characters`
                 )}
               </p>
               <Button

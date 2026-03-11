@@ -104,7 +104,7 @@ export function PricingPage() {
               borderColor: 'var(--color-accent)',
             }}
           >
-            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               Welcome to Amber!
             </h2>
             <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
@@ -138,7 +138,7 @@ export function PricingPage() {
 
         <h1
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: 'var(--color-text)' }}
+          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
         >
           Find Your Perfect Plan
         </h1>
@@ -256,7 +256,7 @@ export function PricingPage() {
                   >
                     <Icon className="w-4 h-4" style={{ color: accent }} />
                   </div>
-                  <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                     {plan.name}
                   </h3>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--color-textMuted)' }}>

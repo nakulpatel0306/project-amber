@@ -8,6 +8,7 @@ interface PageBannerProps {
   icon?: LucideIcon;
   iconNode?: React.ReactNode;
   rightContent?: React.ReactNode;
+  belowSubtitle?: React.ReactNode;
   className?: string;
 }
 
@@ -36,7 +37,7 @@ const rightVariants = {
   },
 };
 
-export function PageBanner({ title, subtitle, icon: Icon, iconNode, rightContent, className }: PageBannerProps) {
+export function PageBanner({ title, subtitle, icon: Icon, iconNode, rightContent, belowSubtitle, className }: PageBannerProps) {
   return (
     <motion.div
       variants={containerVariants}
@@ -48,7 +49,7 @@ export function PageBanner({ title, subtitle, icon: Icon, iconNode, rightContent
       )}
     >
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-5 flex-1 min-w-0">
           {iconNode ? (
             <motion.div variants={childVariants} className="hidden sm:block flex-shrink-0">
               {iconNode}
@@ -78,6 +79,11 @@ export function PageBanner({ title, subtitle, icon: Icon, iconNode, rightContent
               >
                 {subtitle}
               </motion.p>
+            )}
+            {belowSubtitle && (
+              <motion.div variants={childVariants}>
+                {belowSubtitle}
+              </motion.div>
             )}
           </div>
         </div>

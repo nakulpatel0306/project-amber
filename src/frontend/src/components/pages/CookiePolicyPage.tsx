@@ -116,7 +116,7 @@ export function CookiePolicyPage() {
 
         <h1
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)" }}
+          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
         >
           Cookie Policy
         </h1>
@@ -160,7 +160,7 @@ export function CookiePolicyPage() {
             </div>
             <h2
               className="text-base font-semibold"
-              style={{ color: "var(--color-text)" }}
+              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
             >
               What Are Cookies
             </h2>
@@ -216,7 +216,7 @@ export function CookiePolicyPage() {
                     </div>
                     <h2
                       className="text-base font-semibold"
-                      style={{ color: "var(--color-text)" }}
+                      style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
                     >
                       {cat.title}
                     </h2>
@@ -294,7 +294,7 @@ export function CookiePolicyPage() {
             </div>
             <h2
               className="text-base font-semibold"
-              style={{ color: "var(--color-text)" }}
+              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
             >
               Cookie Duration
             </h2>
@@ -344,7 +344,7 @@ export function CookiePolicyPage() {
             </div>
             <h2
               className="text-base font-semibold"
-              style={{ color: "var(--color-text)" }}
+              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
             >
               Managing Your Cookie Preferences
             </h2>
@@ -398,7 +398,7 @@ export function CookiePolicyPage() {
             </div>
             <h2
               className="text-base font-semibold"
-              style={{ color: "var(--color-text)" }}
+              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
             >
               Do Not Track
             </h2>
@@ -432,7 +432,7 @@ export function CookiePolicyPage() {
             </div>
             <h2
               className="text-base font-semibold"
-              style={{ color: "var(--color-text)" }}
+              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
             >
               Changes To This Policy
             </h2>
@@ -466,7 +466,7 @@ export function CookiePolicyPage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             Questions About Cookies?
           </h3>

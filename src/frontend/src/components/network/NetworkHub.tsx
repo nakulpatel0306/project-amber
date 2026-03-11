@@ -472,13 +472,13 @@ export function NetworkHub() {
                 className="text-3xl font-bold tracking-tight"
                 style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
-                Hey {profile?.full_name?.split(' ')[0] || 'there'}, welcome to your network
+                Your Local Café
               </h1>
               <p
                 className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                Discover people through hobbies, interests & personality
+                Discover People Through Hobbies, Interests & Personality
               </p>
 
               {/* Stat pills */}
@@ -515,7 +515,7 @@ export function NetworkHub() {
           </div>
 
           {/* Right: actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-wrap flex-shrink-0">
             <Button
               size="sm"
               leftIcon={<Plus className="w-3.5 h-3.5" />}
@@ -526,22 +526,22 @@ export function NetworkHub() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowEditModal(true)}
-              title="Edit Profile"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+              leftIcon={profileVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               onClick={toggleVisibility}
               disabled={savingVisibility}
-              title={profileVisible ? 'Hide profile from feed' : 'Show profile in feed'}
               style={{
                 color: profileVisible ? 'var(--color-accent)' : 'var(--color-textMuted)',
               }}
             >
-              {profileVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {profileVisible ? 'Visible' : 'Hidden'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Edit3 className="w-3.5 h-3.5" />}
+              onClick={() => setShowEditModal(true)}
+            >
+              Edit
             </Button>
           </div>
         </div>

@@ -90,14 +90,22 @@ export function PrivacySection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-lg font-medium mb-1"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Privacy
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          Control who can see your information
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <Eye className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Privacy
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
+          Control Who Can See Your Information
         </p>
       </div>
 
@@ -110,10 +118,10 @@ export function PrivacySection() {
           <div className="flex gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: 'var(--color-surface)' }}
+              style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
             >
               {settings.profile_visible ? (
-                <Eye className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+                <Eye className="w-5 h-5" style={{ color: '#f59e0b' }} />
               ) : (
                 <EyeOff className="w-5 h-5" style={{ color: 'var(--color-textMuted)' }} />
               )}
@@ -164,7 +172,7 @@ export function PrivacySection() {
             <div className="flex gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: 'var(--color-surface)' }}
+                style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
               >
                 <DollarSign
                   className="w-5 h-5"

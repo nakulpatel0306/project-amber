@@ -47,7 +47,6 @@ import { ProfileCompleteness } from '../ui/ProfileCompleteness';
 import { PersonalitySnapshotCard } from '../ui/PersonalitySnapshotCard';
 import { DidYouKnowCard } from '../ui/DidYouKnowCard';
 import { PageBanner } from '../ui/PageBanner';
-import { Avatar } from '../ui/Avatar';
 import { getArchetypeByName } from '../../lib/archetypes';
 import { calculateCombinedOCEAN, type OCEANScores } from '../../lib/personalityEngine';
 import { getFactsForProfile } from '../../data/personalityFacts';
@@ -191,7 +190,7 @@ const ADDITIONAL_ASSESSMENTS = [
 ];
 
 export function PersonalityInsights() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { error: showError } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -441,12 +440,40 @@ export function PersonalityInsights() {
           title={primaryArchetype}
           subtitle={tagline}
           iconNode={
-            <Avatar
-              src={profile?.avatar_url}
-              fallback={profile?.full_name || user?.email || undefined}
-              size="lg"
-              className="!rounded-xl"
-            />
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #b45309, #d97706, #f59e0b)' }}
+            >
+              <Brain className="w-7 h-7 text-white" />
+            </div>
+          }
+          belowSubtitle={
+            <div className="flex flex-wrap items-center gap-2.5 mt-3">
+              {([
+                { label: 'Strongest', value: OCEAN_INFO[dominantDimension]?.label || 'Openness', color: '#8B5CF6', Icon: Brain },
+                { label: 'Style', value: decisionStyle, color: '#10B981', Icon: Compass },
+                { label: 'Top Score', value: `${sortedScores[0]?.[1] || 0}%`, color: '#f59e0b', Icon: TrendingUp },
+              ] as const).map(stat => (
+                <span
+                  key={stat.label}
+                  className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full text-[11px] font-semibold"
+                  style={{
+                    background: `linear-gradient(135deg, ${stat.color}18, ${stat.color}08)`,
+                    border: `1px solid ${stat.color}30`,
+                    color: 'var(--color-text)',
+                  }}
+                >
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: `${stat.color}20` }}
+                  >
+                    <stat.Icon className="w-3 h-3" style={{ color: stat.color }} />
+                  </span>
+                  <span className="font-extrabold" style={{ color: stat.color }}>{stat.value}</span>
+                  <span style={{ color: 'var(--color-textSecondary)' }}>{stat.label}</span>
+                </span>
+              ))}
+            </div>
           }
           rightContent={
             <div className="flex items-center gap-3 flex-wrap">

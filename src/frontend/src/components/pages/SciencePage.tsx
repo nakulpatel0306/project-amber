@@ -129,7 +129,7 @@ export function SciencePage() {
 
         <h1
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)" }}
+          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
         >
           The Science Behind Amber
         </h1>
@@ -199,7 +199,7 @@ export function SciencePage() {
           </div>
           <h2
             className="text-xl sm:text-2xl font-bold"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             The Big Five (OCEAN) Model
           </h2>
@@ -274,7 +274,7 @@ export function SciencePage() {
           </span>
           <h2
             className="text-xl sm:text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             From Questions To Compatibility
           </h2>
@@ -306,7 +306,7 @@ export function SciencePage() {
               <div>
                 <h3
                   className="text-sm font-semibold mb-1"
-                  style={{ color: "var(--color-text)" }}
+                  style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
                 >
                   {item.title}
                 </h3>
@@ -348,7 +348,7 @@ export function SciencePage() {
           </span>
           <h2
             className="text-xl sm:text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             Three Scores, One Clear Picture
           </h2>
@@ -388,7 +388,7 @@ export function SciencePage() {
               </div>
               <h3
                 className="text-sm font-semibold mb-1.5"
-                style={{ color: "var(--color-text)" }}
+                style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
               >
                 {score.label}
               </h3>
@@ -421,7 +421,7 @@ export function SciencePage() {
           <div>
             <h3
               className="text-sm font-semibold mb-1"
-              style={{ color: "var(--color-text)" }}
+              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
             >
               Ember AI Insights
             </h3>
@@ -454,7 +454,7 @@ export function SciencePage() {
           </div>
           <h2
             className="text-xl sm:text-2xl font-bold"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             Research And Validation
           </h2>
@@ -513,7 +513,7 @@ export function SciencePage() {
                   />
                   <h3
                     className="text-sm font-semibold"
-                    style={{ color: "var(--color-text)" }}
+                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
                   >
                     {item.title}
                   </h3>
@@ -553,7 +553,7 @@ export function SciencePage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             Your Data, Your Control
           </h3>

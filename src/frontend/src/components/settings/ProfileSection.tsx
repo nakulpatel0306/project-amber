@@ -123,14 +123,22 @@ export function ProfileSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-lg font-medium mb-1"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Profile
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          Manage your personal information
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <User className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Profile
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
+          Manage Your Personal Information
         </p>
       </div>
 
@@ -159,7 +167,7 @@ export function ProfileSection() {
             Profile Avatar
           </p>
           <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-            Click to choose a fun avatar
+            Click To Choose A Fun Avatar
           </p>
         </div>
       </div>

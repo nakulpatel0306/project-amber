@@ -19,7 +19,7 @@ import { StreakTracker } from './StreakTracker';
 import { CompatibilityInsights } from './CompatibilityInsights';
 import { ScheduleWidget } from './ScheduleWidget';
 import { ArchetypeStrip } from './ArchetypeStrip';
-import { ActivityCarousel } from './ActivityCarousel';
+
 import type { UpcomingChat } from './DashboardCalendar';
 
 interface PersonalityScores {
@@ -92,7 +92,7 @@ export function JobSeekerDashboard() {
     if (hour >= 5 && hour < 12) setGreeting('Good morning');
     else if (hour >= 12 && hour < 17) setGreeting('Good afternoon');
     else if (hour >= 17 && hour < 21) setGreeting('Good evening');
-    else setGreeting('Hey there');
+    else setGreeting('Hey There');
   }, []);
 
   // Check profile and assessment completion status from candidates table
@@ -159,7 +159,7 @@ export function JobSeekerDashboard() {
     sessionStorage.setItem('profile_setup_skipped', 'true');
   };
 
-  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const firstName = profile?.full_name?.split(' ')[0] || 'There';
 
   // Load chats, connections, and pending invites (independent of assessment)
   useEffect(() => {
@@ -609,9 +609,6 @@ export function JobSeekerDashboard() {
         onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
         onRefresh={handleRefreshMatches}
       />
-
-      {/* Activity Carousel */}
-      <ActivityCarousel />
 
       {/* Candidate Setup Modal */}
       <CandidateSetupModal

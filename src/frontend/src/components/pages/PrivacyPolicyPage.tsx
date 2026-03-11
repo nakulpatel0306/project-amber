@@ -178,7 +178,7 @@ export function PrivacyPolicyPage() {
 
         <h1
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)" }}
+          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
         >
           Privacy Policy
         </h1>
@@ -230,7 +230,7 @@ export function PrivacyPolicyPage() {
                   </div>
                   <h2
                     className="text-base font-semibold"
-                    style={{ color: "var(--color-text)" }}
+                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
                   >
                     {section.title}
                   </h2>
@@ -325,7 +325,7 @@ export function PrivacyPolicyPage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             Questions About Your Data?
           </h3>

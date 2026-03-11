@@ -657,7 +657,7 @@ function ValuePropTabs() {
           <div className="flex-1 p-10">
             <h3
               className="text-2xl sm:text-3xl font-bold mb-4"
-              style={{ color: 'var(--color-text)' }}
+              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
             >
               {prop.title}
             </h3>
@@ -786,7 +786,7 @@ function ValuesSection() {
               {/* Title */}
               <h3
                 className="flex-1 text-lg font-semibold transition-colors duration-300"
-                style={{ color: isOpen ? 'var(--color-text)' : 'var(--color-textSecondary)' }}
+                style={{ color: isOpen ? 'var(--color-text)' : 'var(--color-textSecondary)', fontFamily: 'var(--font-display)' }}
               >
                 {value.title}
               </h3>
@@ -930,7 +930,7 @@ export function WelcomeScreen() {
           {/* Main Heading */}
           <motion.h1
             className="text-6xl sm:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
@@ -999,7 +999,7 @@ export function WelcomeScreen() {
             <div className="text-center mb-12">
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 Why Amber Is Different
               </h2>
@@ -1023,7 +1023,7 @@ export function WelcomeScreen() {
             <div className="text-center mb-10">
               <h2
                 className="text-2xl sm:text-3xl font-bold mb-3"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 Land Coffee Chats With Recruiters From Top Companies
               </h2>
@@ -1081,7 +1081,7 @@ export function WelcomeScreen() {
             <div className="text-center mb-16">
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 From Assessment to Offer in 4 Steps
               </h2>
@@ -1120,7 +1120,7 @@ export function WelcomeScreen() {
                         </div>
                         <h3
                           className="text-xl font-semibold mb-2"
-                          style={{ color: 'var(--color-text)' }}
+                          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
                         >
                           {step.title}
                         </h3>
@@ -1147,7 +1147,7 @@ export function WelcomeScreen() {
             <div className="text-center mb-12">
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 Real People. Real Matches. Real Stories.
               </h2>
@@ -1174,7 +1174,7 @@ export function WelcomeScreen() {
             <div className="text-center mb-12">
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 Built For Both Sides
               </h2>
@@ -1206,7 +1206,7 @@ export function WelcomeScreen() {
                   </div>
                   <h3
                     className="text-xl font-bold mb-5"
-                    style={{ color: 'var(--color-text)' }}
+                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
                   >
                     For Job Seekers
                   </h3>
@@ -1260,7 +1260,7 @@ export function WelcomeScreen() {
                   </div>
                   <h3
                     className="text-xl font-bold mb-5"
-                    style={{ color: 'var(--color-text)' }}
+                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
                   >
                     For Employers
                   </h3>
@@ -1339,7 +1339,7 @@ export function WelcomeScreen() {
 
                 <h2
                   className="text-4xl sm:text-5xl font-bold tracking-tight mb-4"
-                  style={{ color: 'var(--color-text)' }}
+                  style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
                 >
                   Meet{' '}
                   <span className="animate-gradient-text">Ember</span>
@@ -1369,7 +1369,7 @@ export function WelcomeScreen() {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
                         <Brain className="w-5 h-5" style={{ color: '#8B5CF6' }} />
                       </div>
-                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Personality Matching</h3>
+                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Personality Matching</h3>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>Maps your Big Five traits to a unique archetype and scores compatibility from both sides.</p>
                     </div>
                   </div>
@@ -1379,7 +1379,7 @@ export function WelcomeScreen() {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
                         <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                       </div>
-                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Transparent Insights</h3>
+                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Transparent Insights</h3>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>No black box. Explains why you matched, highlights strengths and friction points in plain language.</p>
                     </div>
                   </div>
@@ -1389,7 +1389,7 @@ export function WelcomeScreen() {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
                         <Coffee className="w-5 h-5" style={{ color: '#10B981' }} />
                       </div>
-                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Coffee Chat Prep</h3>
+                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Coffee Chat Prep</h3>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>Briefs you on team culture, suggests talking points, and helps you show up authentically.</p>
                     </div>
                   </div>
@@ -1427,7 +1427,7 @@ export function WelcomeScreen() {
             <div className="text-center mb-10">
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 What We Believe
               </h2>
@@ -1471,7 +1471,7 @@ export function WelcomeScreen() {
               </div>
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)' }}
+                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 Everything You Need To Know
               </h2>
@@ -1575,7 +1575,7 @@ export function WelcomeScreen() {
 
             <h2
               className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-5"
-              style={{ color: 'var(--color-text)' }}
+              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
             >
               Your Personality Is Your{' '}
               <span className="animate-gradient-text">Superpower</span>
