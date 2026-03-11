@@ -8,10 +8,10 @@ import type { ChatStatus } from '../coffee-chats/CoffeeChatCard';
 
 const DOT_COLORS: Record<string, string> = {
   pending: '#9CA3AF',
-  upcoming: '#D97706',
-  completed: 'rgba(217, 119, 6, 0.4)',
-  cancelled: '#9CA3AF',
-  declined: '#9CA3AF',
+  upcoming: '#3B82F6',
+  completed: '#22C55E',
+  cancelled: '#EF4444',
+  declined: '#EF4444',
 };
 
 const STATUS_LABELS: Record<DisplayStatus, string> = {
