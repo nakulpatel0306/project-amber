@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
+import { PageBanner } from '../ui/PageBanner';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -191,89 +192,58 @@ export function ManageRoles() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1
-            className="text-2xl font-bold mb-2"
-            style={{ color: 'var(--color-text)' }}
+      <PageBanner
+        title="Manage Roles"
+        subtitle="View & Manage Your Job Postings"
+        iconNode={
+          <div
+            className="w-14 h-14 rounded-xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #b45309, #d97706, #f59e0b)' }}
           >
-            manage roles
-          </h1>
-          <p style={{ color: 'var(--color-textSecondary)' }}>
-            view and manage your job postings
-          </p>
-        </div>
-        <Link to="/app/employer/roles/new">
-          <Button leftIcon={<Plus className="w-4 h-4" />}>
-            create role
-          </Button>
-        </Link>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div
-          className="p-4 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-            {stats.active}
-          </p>
-          <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            active roles
-          </p>
-        </div>
-        <div
-          className="p-4 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-            {stats.paused}
-          </p>
-          <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            paused roles
-          </p>
-        </div>
-        <div
-          className="p-4 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-            {stats.totalApplicants}
-          </p>
-          <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            total applicants
-          </p>
-        </div>
-        <div
-          className="p-4 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-accent)' }}>
-            {stats.totalRoles}
-          </p>
-          <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-            total roles
-          </p>
-        </div>
-      </div>
+            <Briefcase className="w-7 h-7 text-white" />
+          </div>
+        }
+        belowSubtitle={
+          <div className="flex flex-wrap gap-2 mt-3">
+            {[
+              { label: 'Active', value: String(stats.active), color: '#10B981', Icon: Play },
+              { label: 'Paused', value: String(stats.paused), color: '#F59E0B', Icon: Pause },
+              { label: 'Applicants', value: String(stats.totalApplicants), color: '#8B5CF6', Icon: Users },
+              { label: 'Total', value: String(stats.totalRoles), color: '#D97706', Icon: Briefcase },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{
+                  background: `linear-gradient(135deg, ${stat.color}18, ${stat.color}08)`,
+                  border: `1px solid ${stat.color}30`,
+                }}
+              >
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: `${stat.color}20` }}
+                >
+                  <stat.Icon className="w-3 h-3" style={{ color: stat.color }} />
+                </div>
+                <span className="opacity-60">{stat.label}</span>
+                <span className="font-semibold" style={{ color: stat.color }}>{stat.value}</span>
+              </div>
+            ))}
+          </div>
+        }
+        rightContent={
+          <Link to="/app/employer/roles/new">
+            <Button leftIcon={<Plus className="w-4 h-4" />}>
+              Create Role
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -283,7 +253,7 @@ export function ManageRoles() {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="search roles..."
+            placeholder="Search roles..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
             style={{
               backgroundColor: 'var(--color-surface)',
@@ -297,7 +267,7 @@ export function ManageRoles() {
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className="px-4 py-2.5 rounded-xl border text-sm transition-all"
+              className="px-4 py-2.5 rounded-xl border text-sm transition-all capitalize"
               style={{
                 backgroundColor:
                   statusFilter === status
@@ -313,7 +283,7 @@ export function ManageRoles() {
                     : 'var(--color-textSecondary)',
               }}
             >
-              {status}
+              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
           ))}
         </div>
@@ -322,25 +292,19 @@ export function ManageRoles() {
       {/* Roles List */}
       <div className="space-y-4">
         {filteredRoles.length === 0 ? (
-          <div
-            className="text-center py-12 rounded-xl border"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
-          >
+          <div className="bento-card text-center py-12">
             <Briefcase
               className="w-12 h-12 mx-auto mb-4 opacity-40"
               style={{ color: 'var(--color-textMuted)' }}
             />
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               {searchQuery || statusFilter !== 'all'
-                ? 'no roles match your filters'
-                : 'no roles yet'}
+                ? 'No roles match your filters'
+                : 'No roles yet'}
             </p>
             {!searchQuery && statusFilter === 'all' && (
               <Link to="/app/employer/roles/new" className="inline-block mt-4">
-                <Button size="sm">create your first role</Button>
+                <Button size="sm">Create Your First Role</Button>
               </Link>
             )}
           </div>
@@ -350,11 +314,7 @@ export function ManageRoles() {
             return (
               <div
                 key={role.id}
-                className="p-5 rounded-xl border transition-all hover:shadow-md"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                }}
+                className="bento-card transition-all hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -412,7 +372,7 @@ export function ManageRoles() {
                   <div className="flex items-center gap-2">
                     <Link to={`/app/employer/candidates?role=${role.id}`}>
                       <Button variant="outline" size="sm">
-                        view candidates
+                        View Candidates
                       </Button>
                     </Link>
 
@@ -445,7 +405,7 @@ export function ManageRoles() {
                                 style={{ color: 'var(--color-accent)' }}
                               >
                                 <Pause className="w-4 h-4" />
-                                pause role
+                                Pause Role
                               </button>
                             ) : role.status === 'paused' ? (
                               <button
@@ -454,7 +414,7 @@ export function ManageRoles() {
                                 style={{ color: 'var(--color-success)' }}
                               >
                                 <Play className="w-4 h-4" />
-                                activate role
+                                Activate Role
                               </button>
                             ) : null}
                             {role.status !== 'closed' && (
@@ -464,7 +424,7 @@ export function ManageRoles() {
                                 style={{ color: 'var(--color-textMuted)' }}
                               >
                                 <Pause className="w-4 h-4" />
-                                close role
+                                Close Role
                               </button>
                             )}
                             <button
@@ -473,7 +433,7 @@ export function ManageRoles() {
                               style={{ color: 'var(--color-error)' }}
                             >
                               <Trash2 className="w-4 h-4" />
-                              delete role
+                              Delete Role
                             </button>
                           </div>
                         </>
@@ -491,14 +451,14 @@ export function ManageRoles() {
       {filteredRoles.length > 0 && (
         <Link
           to="/app/employer/roles/new"
-          className="mt-6 p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-colors hover:bg-[var(--color-surface)]"
+          className="p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-colors hover:bg-[var(--color-surface)]"
           style={{
             borderColor: 'var(--color-border)',
             color: 'var(--color-textMuted)',
           }}
         >
           <Plus className="w-4 h-4" />
-          <span className="text-sm">create another role</span>
+          <span className="text-sm">Create Another Role</span>
         </Link>
       )}
     </div>

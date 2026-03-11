@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight, Mic, MapPin, Users, Briefcase, Coffee,
-  Link2, TrendingUp, Zap, Crown, Medal, Award,
-  Heart, Brain, Sparkles, Building2, Trophy,
+  Link2, TrendingUp, Zap,
+  Heart, Brain, Sparkles, Building2,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
@@ -70,12 +70,6 @@ const ARCHETYPE_COLORS: Record<string, string> = {
   'The Catalyst': '#F59E0B', 'The Craftsperson': '#10B981', 'The Harmonizer': '#8B5CF6',
   'The Explorer': '#06B6D4', 'The Strategist': '#3B82F6',
 };
-
-const topConnectors = [
-  { rank: 1, name: 'Priya M.', avatar: 'PM', score: 980, archetype: 'Catalyst', color: '#EC4899' },
-  { rank: 2, name: 'Jordan L.', avatar: 'JL', score: 945, archetype: 'Harmonizer', color: '#8B5CF6' },
-  { rank: 3, name: 'Alex K.', avatar: 'AK', score: 910, archetype: 'Visionary', color: '#F59E0B' },
-];
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime();
@@ -529,59 +523,6 @@ export function NetworkDiscover({ isCandidate }: Props) {
         </div>
       )}
 
-      {/* Top Connectors Card */}
-      <div className="p-6 rounded-xl border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-            <Trophy className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-            Top Connectors
-          </h2>
-          <button
-            onClick={() => setSearchParams({ tab: 'leaderboard' })}
-            className="flex items-center gap-1 text-sm font-medium"
-            style={{ color: 'var(--color-accent)' }}
-          >
-            Full leaderboard <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[topConnectors[1], topConnectors[0], topConnectors[2]].map((entry, i) => {
-            const isFirst = [2, 1, 3][i] === 1;
-            return (
-              <div
-                key={entry.rank}
-                className="p-4 rounded-xl text-center border"
-                style={{
-                  backgroundColor: 'var(--color-background)',
-                  borderColor: isFirst ? 'var(--color-accent)' : 'var(--color-border)',
-                  boxShadow: isFirst ? '0 0 16px rgba(217, 119, 6, 0.08)' : undefined,
-                }}
-              >
-                <div className="flex justify-center mb-2">
-                  {entry.rank === 1 ? <Crown className="w-5 h-5" style={{ color: '#F59E0B' }} /> :
-                    entry.rank === 2 ? <Medal className="w-5 h-5" style={{ color: '#94A3B8' }} /> :
-                      <Award className="w-5 h-5" style={{ color: '#D97706' }} />}
-                </div>
-                <div
-                  className="w-11 h-11 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-bold text-white"
-                  style={{ backgroundColor: entry.color }}
-                >
-                  {entry.avatar}
-                </div>
-                <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-text)' }}>{entry.name}</p>
-                <span className="inline-block text-[11px] px-2 py-0.5 rounded-full mt-1"
-                  style={{ backgroundColor: `${entry.color}20`, color: entry.color }}>
-                  {entry.archetype}
-                </span>
-                <p className="text-lg font-bold mt-2" style={{ color: 'var(--color-accent)' }}>
-                  {entry.score}
-                  <span className="text-[10px] font-normal ml-0.5" style={{ color: 'var(--color-textMuted)' }}>pts</span>
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

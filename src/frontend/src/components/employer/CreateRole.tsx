@@ -37,18 +37,18 @@ interface RoleFormData {
 }
 
 const traitOptions = [
-  { value: 'collaborative', label: 'collaborative' },
-  { value: 'independent', label: 'independent' },
-  { value: 'creative', label: 'creative' },
-  { value: 'analytical', label: 'analytical' },
-  { value: 'detail-oriented', label: 'detail-oriented' },
-  { value: 'big-picture', label: 'big-picture thinker' },
-  { value: 'fast-paced', label: 'thrives in fast pace' },
-  { value: 'methodical', label: 'methodical' },
-  { value: 'empathetic', label: 'empathetic' },
-  { value: 'direct', label: 'direct communicator' },
-  { value: 'adaptable', label: 'adaptable' },
-  { value: 'structured', label: 'prefers structure' },
+  { value: 'collaborative', label: 'Collaborative' },
+  { value: 'independent', label: 'Independent' },
+  { value: 'creative', label: 'Creative' },
+  { value: 'analytical', label: 'Analytical' },
+  { value: 'detail-oriented', label: 'Detail-Oriented' },
+  { value: 'big-picture', label: 'Big-Picture Thinker' },
+  { value: 'fast-paced', label: 'Thrives In Fast Pace' },
+  { value: 'methodical', label: 'Methodical' },
+  { value: 'empathetic', label: 'Empathetic' },
+  { value: 'direct', label: 'Direct Communicator' },
+  { value: 'adaptable', label: 'Adaptable' },
+  { value: 'structured', label: 'Prefers Structure' },
 ];
 
 function parseSalary(value: string): number | null {
@@ -167,15 +167,15 @@ export function CreateRole() {
           />
           <h2
             className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            creating your role...
+            Creating Your Role...
           </h2>
           <p
             className="text-sm"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            setting up candidate matching
+            Setting Up Candidate Matching
           </p>
         </div>
       </div>
@@ -198,9 +198,9 @@ export function CreateRole() {
 
           <h2
             className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            role created!
+            Role Created!
           </h2>
           <p
             className="text-sm mb-2"
@@ -212,7 +212,7 @@ export function CreateRole() {
             className="text-sm mb-8"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            we'll start matching candidates based on your culture preferences
+            We'll start matching candidates based on your culture preferences
           </p>
 
           <div className="flex gap-3 justify-center">
@@ -220,13 +220,13 @@ export function CreateRole() {
               variant="outline"
               onClick={() => navigate('/app/employer/roles')}
             >
-              view all roles
+              View All Roles
             </Button>
             <Button
               onClick={() => navigate('/app/employer/candidates')}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              browse candidates
+              Browse Candidates
             </Button>
           </div>
         </div>
@@ -240,22 +240,22 @@ export function CreateRole() {
       <div className="mb-8">
         <h1
           className="text-2xl font-bold mb-2"
-          style={{ color: 'var(--color-text)' }}
+          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
         >
-          create a new role
+          Create A New Role
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
-          define the position and the type of person who'd thrive in it
+          Define The Position And The Type Of Person Who'd Thrive In It
         </p>
       </div>
 
       {/* Progress Steps */}
       <div className="flex items-center gap-2 mb-8">
         {[
-          { key: 'basics', label: 'basics' },
-          { key: 'details', label: 'details' },
-          { key: 'culture', label: 'culture fit' },
-          { key: 'review', label: 'review' },
+          { key: 'basics', label: 'Basics' },
+          { key: 'details', label: 'Details' },
+          { key: 'culture', label: 'Culture Fit' },
+          { key: 'review', label: 'Review' },
         ].map((s, i, arr) => (
           <div key={s.key} className="flex items-center gap-2 flex-1">
             <div
@@ -304,11 +304,7 @@ export function CreateRole() {
 
       {/* Form Content */}
       <div
-        className="p-6 rounded-2xl border mb-6"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-        }}
+        className="bento-card mb-6"
       >
         {step === 'basics' && (
           <div className="space-y-5">
@@ -317,7 +313,7 @@ export function CreateRole() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                job title
+                Job Title
               </label>
               <input
                 type="text"
@@ -340,7 +336,7 @@ export function CreateRole() {
               >
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                  sector / department
+                  Sector / Department
                 </div>
               </label>
               <div className="flex flex-wrap gap-2">
@@ -377,7 +373,7 @@ export function CreateRole() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                location
+                Location
               </label>
               <div className="flex gap-3 mb-3">
                 {(['remote', 'hybrid', 'onsite'] as const).map(type => (
@@ -400,7 +396,7 @@ export function CreateRole() {
                           : 'var(--color-textSecondary)',
                     }}
                   >
-                    {type}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
                 ))}
               </div>
@@ -428,7 +424,7 @@ export function CreateRole() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  employment type
+                  Employment Type
                 </label>
                 <select
                   value={formData.employmentType}
@@ -440,9 +436,9 @@ export function CreateRole() {
                     color: 'var(--color-text)',
                   }}
                 >
-                  <option value="full_time">full-time</option>
-                  <option value="part_time">part-time</option>
-                  <option value="contract">contract</option>
+                  <option value="full_time">Full-Time</option>
+                  <option value="part_time">Part-Time</option>
+                  <option value="contract">Contract</option>
                 </select>
               </div>
 
@@ -451,7 +447,7 @@ export function CreateRole() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  salary range
+                  Salary Range
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -492,7 +488,7 @@ export function CreateRole() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                role description
+                Role Description
               </label>
               <textarea
                 value={formData.description}
@@ -513,7 +509,7 @@ export function CreateRole() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                requirements (one per line)
+                Requirements (One Per Line)
               </label>
               <textarea
                 value={formData.requirements}
@@ -535,7 +531,7 @@ export function CreateRole() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  team size
+                  Team Size
                 </label>
                 <input
                   type="text"
@@ -556,7 +552,7 @@ export function CreateRole() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  reports to
+                  Reports To
                 </label>
                 <input
                   type="text"
@@ -584,14 +580,14 @@ export function CreateRole() {
                   className="text-sm font-medium"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  what traits would help someone thrive in this role?
+                  What Traits Would Help Someone Thrive In This Role?
                 </h3>
               </div>
               <p
                 className="text-sm mb-4"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                select at least 2 traits that describe the ideal candidate's personality
+                Select at least 2 traits that describe the ideal candidate's personality
               </p>
 
               <div className="flex flex-wrap gap-2">
@@ -630,7 +626,7 @@ export function CreateRole() {
                 className="text-xs"
                 style={{ color: 'var(--color-textMuted)' }}
               >
-                these traits will be combined with your company culture profile to find candidates who are the best cultural fit for this specific role
+                These traits will be combined with your company culture profile to find candidates who are the best cultural fit for this specific role
               </p>
             </div>
           </div>
@@ -701,7 +697,7 @@ export function CreateRole() {
                 className="text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                description
+                Description
               </h4>
               <p
                 className="text-sm whitespace-pre-wrap"
@@ -716,7 +712,7 @@ export function CreateRole() {
                 className="text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                requirements
+                Requirements
               </h4>
               <p
                 className="text-sm whitespace-pre-wrap"
@@ -731,7 +727,7 @@ export function CreateRole() {
                 className="text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                ideal candidate traits
+                Ideal Candidate Traits
               </h4>
               <div className="flex flex-wrap gap-2">
                 {formData.preferredTraits.map(trait => (
@@ -764,7 +760,7 @@ export function CreateRole() {
           }}
           leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          {step === 'basics' ? 'cancel' : 'back'}
+          {step === 'basics' ? 'Cancel' : 'Back'}
         </Button>
 
         <Button
@@ -781,7 +777,7 @@ export function CreateRole() {
           }
           rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          {step === 'review' ? 'publish role' : 'continue'}
+          {step === 'review' ? 'Publish Role' : 'Continue'}
         </Button>
       </div>
     </div>

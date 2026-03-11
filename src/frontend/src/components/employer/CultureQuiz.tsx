@@ -165,29 +165,25 @@ export function CultureQuiz() {
 
           <h1
             className="text-2xl font-semibold mb-3"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            define your company culture
+            Define Your Company Culture
           </h1>
           <p
             className="text-base mb-8"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            answer 8 questions to help us match you with candidates who'll thrive in your environment
+            Answer 8 questions to help us match you with candidates who'll thrive in your environment
           </p>
 
           <div
-            className="p-6 rounded-2xl border mb-8 text-left"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
+            className="bento-card p-6 mb-8 text-left"
           >
             <h3
               className="text-sm font-medium mb-4"
               style={{ color: 'var(--color-text)' }}
             >
-              what you'll define:
+              What You'll Define:
             </h3>
             <div className="space-y-3">
               {['work style', 'communication preferences', 'decision making', 'growth & learning', 'feedback culture', 'core values', 'work-life balance', 'team dynamics'].map((item, i) => (
@@ -211,14 +207,14 @@ export function CultureQuiz() {
             rightIcon={<ArrowRight className="w-4 h-4" />}
             size="lg"
           >
-            start quiz
+            Start Quiz
           </Button>
 
           <p
             className="text-xs mt-4"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            takes about 3 minutes
+            Takes about 3 minutes
           </p>
         </div>
       </div>
@@ -236,15 +232,15 @@ export function CultureQuiz() {
           />
           <h2
             className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            saving your culture profile...
+            Saving Your Culture Profile...
           </h2>
           <p
             className="text-sm"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            analyzing your preferences
+            Analyzing your preferences
           </p>
         </div>
       </div>
@@ -267,29 +263,25 @@ export function CultureQuiz() {
 
           <h2
             className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            culture profile complete!
+            Culture Profile Complete!
           </h2>
           <p
             className="text-sm mb-8"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            we'll now use this to match you with candidates who fit your culture
+            We'll now use this to match you with candidates who fit your culture
           </p>
 
           <div
-            className="p-6 rounded-2xl border mb-8"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
+            className="bento-card p-6 mb-8"
           >
             <h3
               className="text-sm font-medium mb-4"
               style={{ color: 'var(--color-text)' }}
             >
-              your culture highlights
+              Your Culture Highlights
             </h3>
             <div className="flex flex-wrap gap-2 justify-center">
               {Object.entries(answers).slice(0, 4).map(([key, value]) => (
@@ -312,13 +304,13 @@ export function CultureQuiz() {
               variant="outline"
               onClick={() => navigate('/app/employer')}
             >
-              back to dashboard
+              Back to Dashboard
             </Button>
             <Button
               onClick={() => navigate('/app/employer/roles/new')}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              create your first role
+              Create Your First Role
             </Button>
           </div>
         </div>
@@ -389,7 +381,7 @@ export function CultureQuiz() {
         <div className="w-full max-w-lg">
           <h2
             className="text-xl font-medium mb-8 text-center"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
             {currentQuestion.question}
           </h2>
@@ -459,7 +451,7 @@ export function CultureQuiz() {
             disabled={currentIndex === 0}
             leftIcon={<ArrowLeft className="w-4 h-4" />}
           >
-            back
+            Back
           </Button>
 
           <Button
@@ -467,7 +459,7 @@ export function CultureQuiz() {
             disabled={!answers[currentQuestion.id]}
             rightIcon={<ArrowRight className="w-4 h-4" />}
           >
-            {currentIndex === quizQuestions.length - 1 ? 'finish' : 'next'}
+            {currentIndex === quizQuestions.length - 1 ? 'Finish' : 'Next'}
           </Button>
         </div>
       </div>

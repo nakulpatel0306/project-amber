@@ -263,7 +263,7 @@ export function EmberEmployerPage() {
       <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             Complete Your Setup
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -292,7 +292,7 @@ export function EmberEmployerPage() {
           <div className="flex items-center gap-4">
             <EmberFirefly size="md" mood="happy" />
             <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Ember Candidates</h1>
+              <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ember Candidates</h1>
               <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
                 {archetype ? `${archetype.name} Culture` : 'Your personalized candidate gallery'}
               </p>

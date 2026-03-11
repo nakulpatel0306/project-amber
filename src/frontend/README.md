@@ -6,8 +6,8 @@ React web application for the Amber platform. Built with React 19, TypeScript, V
 
 - **Landing** — Public welcome screen with animated hero, product demo, FAQ, and marketing content.
 - **Authentication** — Signup, login, OAuth (Google/GitHub), password reset, email verification, role selection, and onboarding.
-- **Job Seeker App** — Dashboard, personality assessment, insights, top matches, Ember agent, coffee chats, and leaderboard (under `/app`).
-- **Employer App** — Dashboard, culture quiz, culture insights, role management, candidate browsing, Ember agent, coffee chats, and leaderboard (under `/app/employer`).
+- **Job Seeker App** — Dashboard, personality assessment, insights, top matches, Ember agent, and coffee chats (under `/app`).
+- **Employer App** — Dashboard, culture quiz, culture insights, role management, candidate browsing, Ember agent, and coffee chats (under `/app/employer`).
 - **Settings** — Profile management, appearance, notifications, privacy, account, subscription, and feedback.
 - **Public Pages** — Blog, about, careers, press, science, help center, changelog, status, and legal pages.
 
@@ -68,12 +68,12 @@ components/
 │
 ├── candidate/        # Job seeker features
 │                     # Assessment, AssessmentFlow, PersonalityInsights,
-│                     # MatchingAgent, TopMatches, Leaderboard
+│                     # MatchingAgent, TopMatches
 │
 ├── employer/         # Employer features
 │                     # CultureQuiz, CultureAssessment, CultureInsights,
 │                     # CreateRole, ManageRoles, BrowseCandidates,
-│                     # TopCandidates, Leaderboard
+│                     # TopCandidates
 │
 ├── dashboard/        # Role-specific dashboards
 │                     # JobSeekerDashboard, EmployerDashboard

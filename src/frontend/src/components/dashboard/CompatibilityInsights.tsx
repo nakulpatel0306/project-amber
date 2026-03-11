@@ -5,6 +5,7 @@ interface CompatibilityInsightsProps {
   strengths?: string[];
   growthAreas?: string[];
   tips?: string[];
+  viewerRole?: 'candidate' | 'employer';
 }
 
 const dailyInsights = [
@@ -80,6 +81,79 @@ const dailyInsights = [
   },
 ];
 
+const employerDailyInsights = [
+  {
+    short: 'Your culture is a magnet for self-starters.',
+    headline: 'Autonomous cultures attract candidates who ship without supervision.',
+    detail: 'Your preference for low micromanagement and high ownership signals to candidates that you trust your people. Self-directed builders see this and apply before you even post the role.',
+  },
+  {
+    short: 'Hire for curiosity, not just credentials.',
+    headline: 'Candidates with high openness outperform on ambiguous problems.',
+    detail: 'Credentials confirm what someone has done. Curiosity predicts what they will do next. Prioritize openness to experience when evaluating candidates for roles that require creative problem-solving.',
+  },
+  {
+    short: 'Your best hire is already on your shortlist.',
+    headline: 'Top matches often surface early — trust the compatibility signal.',
+    detail: 'Data shows that the strongest culture-fit candidates tend to appear in your first batch of applicants. Resist the urge to wait for a bigger pool. Review your top matches today.',
+  },
+  {
+    short: 'Retention starts before the offer letter.',
+    headline: 'Candidates who feel seen during hiring stay longer after they join.',
+    detail: 'The hiring experience is the first chapter of the employee experience. When candidates feel their personality and values are understood, they arrive on day one already invested in your mission.',
+  },
+  {
+    short: 'Diverse thinking styles build stronger teams.',
+    headline: 'Balanced personality profiles across your team reduce blind spots.',
+    detail: 'If every hire mirrors your own personality profile, you build an echo chamber. Look for complementary traits — pair high-conscientiousness operators with high-openness visionaries for maximum impact.',
+  },
+  {
+    short: 'Culture fit is not culture clone.',
+    headline: 'The best additions strengthen your culture by expanding it.',
+    detail: 'Culture fit does not mean hiring people who think exactly like your current team. The strongest hires add something new — a perspective, a working style, a strength your team currently lacks.',
+  },
+  {
+    short: 'Consistency in values beats consistency in skills.',
+    headline: 'Shared values predict long-term success better than shared skill sets.',
+    detail: 'Skills can be taught, but value alignment is intrinsic. When screening candidates, weigh their alignment on core values like ownership, collaboration, and transparency more heavily than technical checkboxes.',
+  },
+  {
+    short: 'Your team thrives on psychological safety.',
+    headline: 'High-agreeableness teams need leaders who protect open dialogue.',
+    detail: 'If your culture scores high on agreeableness, your people value harmony. That is a strength, but it can suppress dissent. Hire leaders who actively invite disagreement to keep innovation flowing.',
+  },
+  {
+    short: 'Speed of hiring signals strength of culture.',
+    headline: 'Fast, decisive hiring tells candidates your team knows what it wants.',
+    detail: 'Top candidates evaluate you as much as you evaluate them. A streamlined hiring process that communicates clear values and quick decisions signals a well-run organization they want to join.',
+  },
+  {
+    short: 'Look for the spark behind the resume.',
+    headline: 'Personality insights reveal what resumes cannot.',
+    detail: 'A resume shows experience. A personality profile shows drive, resilience, and collaboration style. Use both together to understand not just what a candidate has done, but how they will show up on your team.',
+  },
+  {
+    short: 'High-energy hires energize the whole team.',
+    headline: 'Extraverted candidates lift team morale and cross-functional momentum.',
+    detail: 'If your team has been running low on energy, a high-extraversion hire can shift the dynamic. They naturally rally people, break silos, and keep momentum alive through long projects.',
+  },
+  {
+    short: 'Calm operators anchor your fastest-moving teams.',
+    headline: 'Low-neuroticism candidates bring stability to high-pressure environments.',
+    detail: 'Every high-growth team needs an anchor. Candidates with low neuroticism stay composed through ambiguity, missed deadlines, and shifting priorities — exactly when your team needs steadiness most.',
+  },
+  {
+    short: 'Your values attract before your perks do.',
+    headline: 'Mission-driven candidates choose culture over compensation.',
+    detail: 'The candidates you want most are not choosing between offers based on salary alone. They are choosing based on values alignment. Make your culture visible and specific — it is your strongest recruiting advantage.',
+  },
+  {
+    short: 'Great teams are assembled, not just recruited.',
+    headline: 'Think in terms of team composition, not individual hires.',
+    detail: 'Each new hire changes the personality balance of the entire team. Before opening a role, map your current team composition and identify the trait gaps. Hire to complete the picture, not to duplicate it.',
+  },
+];
+
 function toTitleCase(str: string): string {
   return str.replace(/\./g, '').replace(/\b\w/g, c => c.toUpperCase());
 }
@@ -91,21 +165,22 @@ function getDayOfYear(): number {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
-function pickInsights(seed: number) {
+function pickInsights(seed: number, role: 'candidate' | 'employer' = 'candidate') {
+  const pool = role === 'employer' ? employerDailyInsights : dailyInsights;
   // Use prime-spaced offsets so each day gets a distinct combination
-  const a = seed % dailyInsights.length;
-  const b = (seed + 5) % dailyInsights.length;
-  const c = (seed + 11) % dailyInsights.length;
-  return [dailyInsights[a], dailyInsights[b], dailyInsights[c]];
+  const a = seed % pool.length;
+  const b = (seed + 5) % pool.length;
+  const c = (seed + 11) % pool.length;
+  return [pool[a], pool[b], pool[c]];
 }
 
-export function CompatibilityInsights(_props: CompatibilityInsightsProps) {
+export function CompatibilityInsights({ viewerRole = 'candidate' }: CompatibilityInsightsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalEntering, setModalEntering] = useState(false);
   const [seed, setSeed] = useState(getDayOfYear);
-  const [todaysInsights, setTodaysInsights] = useState(() => pickInsights(getDayOfYear()));
+  const [todaysInsights, setTodaysInsights] = useState(() => pickInsights(getDayOfYear(), viewerRole));
 
   const FADE_MS = 400;
 
@@ -135,7 +210,7 @@ export function CompatibilityInsights(_props: CompatibilityInsightsProps) {
     const newSeed = seed + 3;
     setSeed(newSeed);
     setTimeout(() => {
-      setTodaysInsights(pickInsights(newSeed));
+      setTodaysInsights(pickInsights(newSeed, viewerRole));
       setCurrentIndex(0);
       setIsTransitioning(false);
     }, FADE_MS);
@@ -279,7 +354,7 @@ export function CompatibilityInsights(_props: CompatibilityInsightsProps) {
                   className="text-[10px] font-semibold uppercase tracking-widest"
                   style={{ color: 'var(--color-textMuted)' }}
                 >
-                  Daily Personality Reading
+                  {viewerRole === 'employer' ? 'Daily Culture Reading' : 'Daily Personality Reading'}
                 </span>
               </div>
 

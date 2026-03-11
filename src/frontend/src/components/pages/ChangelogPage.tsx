@@ -90,7 +90,6 @@ const FALLBACK_CHANGELOG: ChangelogEntry[] = [
     type: "improvement",
     items: [
       "Redesigned candidate dashboard with real-time match updates",
-      "New leaderboard showing top personality-culture fits",
       "Employer dashboard now shows candidate engagement metrics",
       "Faster page loads with optimized data fetching",
     ],
