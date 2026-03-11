@@ -89,11 +89,22 @@ export function SubscriptionSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
-          Subscription
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          Manage your plan and billing
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <Crown className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Subscription
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
+          Manage Your Plan & Billing
         </p>
       </div>
 
@@ -106,9 +117,9 @@ export function SubscriptionSection() {
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: currentPlan.tier === 'free' ? 'var(--color-background)' : 'rgba(245, 158, 11, 0.1)' }}
+              style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
             >
-              <Icon className="w-5 h-5" style={{ color: currentPlan.tier === 'free' ? 'var(--color-textMuted)' : 'var(--color-accent)' }} />
+              <Icon className="w-5 h-5" style={{ color: '#f59e0b' }} />
             </div>
             <div>
               <h3 className="font-semibold" style={{ color: 'var(--color-text)' }}>
@@ -140,7 +151,7 @@ export function SubscriptionSection() {
 
         <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-textMuted)' }}>
-            Included in your plan:
+            Included In Your Plan:
           </p>
           <ul className="space-y-1.5">
             {currentPlan.features.slice(0, 4).map(feature => (
@@ -159,7 +170,7 @@ export function SubscriptionSection() {
           onClick={() => navigate('/app/pricing')}
           leftIcon={<Crown className="w-4 h-4" />}
         >
-          {currentPlan.tier === 'free' ? 'upgrade plan' : 'change plan'}
+          {currentPlan.tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}
         </Button>
         {subscription?.has_stripe_customer && (
           <Button
@@ -168,7 +179,7 @@ export function SubscriptionSection() {
             leftIcon={isLoadingPortal ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
             disabled={isLoadingPortal}
           >
-            manage billing
+            Manage Billing
           </Button>
         )}
       </div>
@@ -183,7 +194,7 @@ export function SubscriptionSection() {
           }}
         >
           <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>
-            Unlock more with {isEmployer ? 'Barista' : 'Smooth Talker'}
+            Unlock More With {isEmployer ? 'Barista' : 'Smooth Talker'}
           </p>
           <p className="text-xs mb-3" style={{ color: 'var(--color-textMuted)' }}>
             {isEmployer
@@ -191,7 +202,7 @@ export function SubscriptionSection() {
               : 'Get unlimited match browsing, priority visibility to employers, and detailed OCEAN breakdowns.'}
           </p>
           <Button size="sm" onClick={() => navigate('/app/pricing')}>
-            see plans
+            See Plans
           </Button>
         </div>
       )}

@@ -129,7 +129,7 @@ export function AccessibilityPage() {
 
         <h1
           className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)" }}
+          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
         >
           Accessibility
         </h1>
@@ -181,7 +181,7 @@ export function AccessibilityPage() {
                   </div>
                   <h2
                     className="text-base font-semibold"
-                    style={{ color: "var(--color-text)" }}
+                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
                   >
                     {section.title}
                   </h2>
@@ -250,7 +250,7 @@ export function AccessibilityPage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)" }}
+            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
           >
             Found A Barrier?
           </h3>

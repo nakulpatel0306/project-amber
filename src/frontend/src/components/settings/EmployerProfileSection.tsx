@@ -156,24 +156,32 @@ export function EmployerProfileSection() {
   return (
     <div className="space-y-8">
       <div>
-        <h2
-          className="text-lg font-medium mb-1"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Company Profile
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          Information visible to candidates when they view your job postings
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <Building2 className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Company Profile
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
+          Information Visible To Candidates When They View Your Job Postings
         </p>
       </div>
 
       {/* Company Info */}
       <div className="space-y-4">
         <h3
-          className="text-sm font-medium flex items-center gap-2"
-          style={{ color: 'var(--color-text)' }}
+          className="text-xs font-semibold uppercase tracking-widest flex items-center gap-2"
+          style={{ color: 'var(--color-textMuted)' }}
         >
-          <Building2 className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+          <Building2 className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
           Company Information
         </h3>
 
@@ -244,10 +252,10 @@ export function EmployerProfileSection() {
       {/* Company Size */}
       <div className="space-y-4">
         <h3
-          className="text-sm font-medium flex items-center gap-2"
-          style={{ color: 'var(--color-text)' }}
+          className="text-xs font-semibold uppercase tracking-widest flex items-center gap-2"
+          style={{ color: 'var(--color-textMuted)' }}
         >
-          <Users className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+          <Users className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
           Company Size
         </h3>
 
@@ -276,10 +284,10 @@ export function EmployerProfileSection() {
       {/* Links */}
       <div className="space-y-4">
         <h3
-          className="text-sm font-medium flex items-center gap-2"
-          style={{ color: 'var(--color-text)' }}
+          className="text-xs font-semibold uppercase tracking-widest flex items-center gap-2"
+          style={{ color: 'var(--color-textMuted)' }}
         >
-          <LinkIcon className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+          <LinkIcon className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
           Links
         </h3>
 

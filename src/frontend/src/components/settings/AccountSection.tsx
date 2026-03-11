@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Lock, Trash2, AlertTriangle, Eye, EyeOff, LogOut } from 'lucide-react';
+import { Lock, Trash2, AlertTriangle, Eye, EyeOff, LogOut, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal, ModalFooter } from '../ui/Modal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
 
 export function AccountSection() {
   const navigate = useNavigate();
@@ -59,16 +60,32 @@ export function AccountSection() {
       return;
     }
 
+    if (!user) return;
     setIsDeleting(true);
 
     try {
-      // Note: This requires server-side implementation to fully delete user data
-      // For now, we just sign out and redirect
+      // Delete user data from all related tables (RLS policies allow users to delete own data)
+      const deletions = [
+        supabase.from('feedback').delete().eq('user_id', user.id),
+        supabase.from('user_settings').delete().eq('user_id', user.id),
+        supabase.from('coffee_chats').delete().or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`),
+        supabase.from('personality_results').delete().eq('user_id', user.id),
+        supabase.from('match_scores').delete().or(`candidate_id.eq.${user.id},employer_id.eq.${user.id}`),
+        supabase.from('profiles').delete().eq('id', user.id),
+      ];
+
+      const results = await Promise.allSettled(deletions);
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn('Some deletions failed:', failures);
+      }
+
+      // Sign out after data cleanup
       await signOut();
       navigate('/');
-      success('Account deleted', 'Your account has been scheduled for deletion.');
+      success('Account Deleted', 'Your account and data have been removed.');
     } catch (err) {
-      showError('Delete failed', 'Please contact support to delete your account.');
+      showError('Delete Failed', 'Some data could not be removed. Please contact support at amberfounders@gmail.com.');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -80,17 +97,70 @@ export function AccountSection() {
     navigate('/');
   };
 
+  const handleExportData = async () => {
+    if (!user) return;
+
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      const { data: settingsData } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: personalityData } = await supabase
+        .from('personality_results')
+        .select('*')
+        .eq('user_id', user.id);
+
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        email: user.email,
+        profile: profileData,
+        settings: settingsData,
+        personality_results: personalityData,
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `amber-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      success('Data Exported', 'Your data has been downloaded as a JSON file.');
+    } catch (err) {
+      showError('Export Failed', 'Could not export your data. Please try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-lg font-medium mb-1"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Account
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-          Manage your account security and settings
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <Lock className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Account
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
+          Manage Your Account Security & Settings
         </p>
       </div>
 
@@ -102,9 +172,9 @@ export function AccountSection() {
         <div className="flex items-start gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: 'var(--color-surface)' }}
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
           >
-            <Lock className="w-5 h-5" style={{ color: 'var(--color-textSecondary)' }} />
+            <Lock className="w-5 h-5" style={{ color: '#f59e0b' }} />
           </div>
           <div className="flex-1">
             <p
@@ -192,9 +262,9 @@ export function AccountSection() {
         <div className="flex items-start gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: 'var(--color-surface)' }}
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
           >
-            <LogOut className="w-5 h-5" style={{ color: 'var(--color-textSecondary)' }} />
+            <LogOut className="w-5 h-5" style={{ color: '#d97706' }} />
           </div>
           <div className="flex-1">
             <p
@@ -216,6 +286,44 @@ export function AccountSection() {
               onClick={handleSignOut}
             >
               Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Export Data */}
+      <div
+        className="p-4 rounded-xl border"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+          >
+            <Download className="w-5 h-5" style={{ color: '#10B981' }} />
+          </div>
+          <div className="flex-1">
+            <p
+              className="text-sm font-medium"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Export Your Data
+            </p>
+            <p
+              className="text-xs mt-0.5"
+              style={{ color: 'var(--color-textMuted)' }}
+            >
+              Download a copy of your profile, settings, and assessment data
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={handleExportData}
+              leftIcon={<Download className="w-3.5 h-3.5" />}
+            >
+              Export Data
             </Button>
           </div>
         </div>

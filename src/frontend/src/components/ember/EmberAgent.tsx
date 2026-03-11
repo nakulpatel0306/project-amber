@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Bookmark, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, X, Users, Zap, TrendingUp } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { useConnections } from '../../contexts/ConnectionsContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -420,22 +420,54 @@ export function EmberAgent() {
             initial="hidden"
             animate="show"
           >
-            <div className="flex items-center gap-3">
-              <EmberFirefly size="sm" mood="happy" animated />
-              <div>
-                <h1
-                  className="text-3xl font-bold tracking-tight"
-                  style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
-                >
-                  Ember
-                </h1>
-                <p
-                  className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
-                  style={{ color: 'var(--color-textMuted)' }}
-                >
-                  {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
-                  {employers.length > 0 ? ` · ${employers.length} companies` : ''}
-                </p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-5 flex-1 min-w-0">
+                <div className="hidden sm:flex items-center justify-center w-14 h-14 flex-shrink-0">
+                  <EmberFirefly size="md" mood="happy" animated />
+                </div>
+                <div className="min-w-0">
+                  <h1
+                    className="text-3xl font-bold tracking-tight"
+                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                  >
+                    Ember
+                  </h1>
+                  <p
+                    className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
+                    style={{ color: 'var(--color-textMuted)' }}
+                  >
+                    {archetype ? `${archetype.name} archetype` : 'Your personalized match gallery'}
+                    {employers.length > 0 ? ` · ${employers.length} companies` : ''}
+                  </p>
+                  {dashboardStats && (
+                    <div className="flex flex-wrap items-center gap-2.5 mt-3">
+                      {([
+                        { label: 'Matches', value: dashboardStats.totalMatches, color: '#f59e0b', Icon: Users },
+                        { label: 'Strong (80+)', value: dashboardStats.strongMatches, color: '#8B5CF6', Icon: Zap },
+                        { label: 'Avg Score', value: `${dashboardStats.avgScore}%`, color: '#10B981', Icon: TrendingUp },
+                      ] as const).map(stat => (
+                        <span
+                          key={stat.label}
+                          className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full text-[11px] font-semibold"
+                          style={{
+                            background: `linear-gradient(135deg, ${stat.color}18, ${stat.color}08)`,
+                            border: `1px solid ${stat.color}30`,
+                            color: 'var(--color-text)',
+                          }}
+                        >
+                          <span
+                            className="w-6 h-6 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: `${stat.color}20` }}
+                          >
+                            <stat.Icon className="w-3 h-3" style={{ color: stat.color }} />
+                          </span>
+                          <span className="font-extrabold tabular-nums" style={{ color: stat.color }}>{stat.value}</span>
+                          <span style={{ color: 'var(--color-textSecondary)' }}>{stat.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

@@ -222,16 +222,24 @@ export function NotificationSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-lg font-medium mb-1"
-          style={{ color: 'var(--color-text)' }}
-        >
-          Notifications
-        </h2>
-        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
+        <div className="flex items-center gap-2.5 mb-1">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
+          >
+            <Bell className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          </div>
+          <h2
+            className="text-base font-semibold"
+            style={{ color: 'var(--color-text)' }}
+          >
+            Notifications
+          </h2>
+        </div>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-textMuted)' }}>
           {isEmployer
-            ? 'Choose how you want to be notified about candidates and hiring activity'
-            : 'Choose how you want to be notified about jobs and opportunities'}
+            ? 'Choose How You Want To Be Notified About Candidates & Hiring Activity'
+            : 'Choose How You Want To Be Notified About Jobs & Opportunities'}
         </p>
       </div>
 
@@ -310,10 +318,9 @@ export function NotificationSection() {
       {/* Email Preferences */}
       <div>
         <h3
-          className="text-sm font-medium mb-3 flex items-center gap-2"
-          style={{ color: 'var(--color-text)' }}
+          className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2"
+          style={{ color: 'var(--color-textMuted)' }}
         >
-          <Mail className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
           Email Preferences
         </h3>
 
