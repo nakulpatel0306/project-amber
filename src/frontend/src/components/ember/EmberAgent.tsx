@@ -127,7 +127,7 @@ export function EmberAgent() {
     candidate, employers, archetype, isLoading, error: dataError, setPendingChats,
   } = useCandidateMatchData();
   const { savedMatches, save, unsave } = useSavedMatches();
-  const showLoader = useMinLoader(isLoading, 3500);
+  const showLoader = useMinLoader(isLoading, 2500);
 
   // View state
   const deepdiveParam = searchParams.get('deepdive');
@@ -567,8 +567,8 @@ export function EmberAgent() {
                 <DeepDive
                   key="deepdive"
                   mode="candidate"
-                  name={selectedEmployer.companyName}
-                  subtitle={selectedEmployer.profileName}
+                  name={selectedEmployer.profileName}
+                  subtitle={selectedEmployer.companyName}
                   archetype={selectedEmployer.archetype}
                   overallScore={selectedEmployer.overallScore}
                   traitScore={selectedEmployer.traitScore}
@@ -581,6 +581,7 @@ export function EmberAgent() {
                   candidateId={candidate.id}
                   employerId={selectedEmployer.employerId}
                   isSaved={savedIds.has(selectedEmployer.employerId)}
+                  avatarUrl={selectedEmployer.logoUrl}
                   connectionStatus={getConnectionStatus(selectedEmployer.userId)}
                   onBack={handleBackToGallery}
                   onBrew={() => setBrewTarget(selectedEmployer)}
@@ -664,13 +665,13 @@ export function EmberAgent() {
                               className="text-xs font-medium truncate"
                               style={{ color: 'var(--color-text)' }}
                             >
-                              {emp.companyName}
+                              {emp.profileName}
                             </p>
                             <p
                               className="text-[10px] truncate"
                               style={{ color: 'var(--color-textMuted)' }}
                             >
-                              {emp.industry} · {emp.overallScore}%
+                              {emp.companyName} · {emp.overallScore}%
                             </p>
                           </button>
 
@@ -703,6 +704,7 @@ export function EmberAgent() {
           subtitle={brewTarget.industry}
           archetype={brewTarget.archetype}
           overallScore={brewTarget.overallScore}
+          avatarUrl={brewTarget.logoUrl}
           onBrew={handleBrew}
         />
       )}

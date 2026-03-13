@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Bookmark, X, Users, Zap, TrendingUp } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { useConnections } from '../../contexts/ConnectionsContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,25 +17,121 @@ import { CompareView } from './gallery/CompareView';
 import { CoffeeBrewModal } from './gallery/CoffeeBrewModal';
 import { ConnectModal } from '../connections/ConnectModal';
 import { Button } from '../ui/Button';
+import { EmberBrain } from './EmberBrain';
+import { EmberIdentityCard } from './EmberIdentityCard';
+import { TopMatchCard } from './TopMatchCard';
+import { MatchActivityFeed } from './MatchActivityFeed';
+import { emberFadeUp, emberStagger } from '../../utils/motion';
 import type { CandidateResult, PageView, SortOption } from '../../types/matching.types';
 import type { OCEANScores } from '../../lib/compatibilityScoring';
+import { useRef } from 'react';
 
 type EmployerView = PageView | 'compare';
+
+/* ── Overview Carousel ── */
+interface OverviewSlide {
+  value: string;
+  label: string;
+}
+
+function OverviewCarousel({ stats }: { stats: { totalCandidates: number; strongCandidates: number; avgScore: number } }) {
+  const slides: OverviewSlide[] = [
+    { value: String(stats.totalCandidates), label: 'Candidates' },
+    { value: String(stats.strongCandidates), label: 'Strong (80+)' },
+    { value: `${stats.avgScore}%`, label: 'Avg Score' },
+  ];
+
+  const [active, setActive] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => setActive(i => (i + 1) % slides.length), 4000);
+    return () => clearInterval(timerRef.current);
+  }, [slides.length]);
+
+  const go = (dir: -1 | 1) => {
+    setActive(i => (i + dir + slides.length) % slides.length);
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setActive(i => (i + 1) % slides.length), 4000);
+  };
+
+  const slide = slides[active];
+
+  return (
+    <div className="bento-card overflow-hidden" style={{ padding: '20px 16px 16px' }}>
+      <p
+        className="font-mono text-[10px] uppercase tracking-[0.25em] mb-1"
+        style={{ color: 'var(--color-textMuted)' }}
+      >
+        Overview //
+      </p>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center justify-center text-center"
+          style={{ minHeight: 120 }}
+        >
+          <span
+            className="font-extrabold tracking-tighter leading-none"
+            style={{
+              fontSize: '4.5rem',
+              color: 'var(--color-accent)',
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            {slide.value}
+          </span>
+          <span
+            className="text-sm font-semibold mt-1 uppercase tracking-widest"
+            style={{ color: 'var(--color-textSecondary)' }}
+          >
+            {slide.label}
+          </span>
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="flex items-center justify-center gap-2 mt-2">
+        <button onClick={() => go(-1)} className="p-0.5" style={{ color: 'var(--color-textMuted)' }}>
+          <ChevronLeft className="w-3 h-3" />
+        </button>
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setActive(i); clearInterval(timerRef.current); timerRef.current = setInterval(() => setActive(j => (j + 1) % slides.length), 4000); }}
+            className="w-1.5 h-1.5 rounded-full transition-all"
+            style={{
+              backgroundColor: i === active ? 'var(--color-accent)' : 'var(--color-border)',
+              transform: i === active ? 'scale(1.4)' : 'scale(1)',
+            }}
+          />
+        ))}
+        <button onClick={() => go(1)} className="p-0.5" style={{ color: 'var(--color-textMuted)' }}>
+          <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function EmberEmployerPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { success: showSuccess, error: showError } = useToast();
   const { profile } = useAuth();
-  const { getConnectionStatus, sendConnectionRequest } = useConnections();
+  const { getConnectionStatus, sendConnectionRequest, pendingSent, accepted } = useConnections();
 
   // Data hooks
   const {
     employer, candidates, roles, archetype, isLoading,
     selectedRoleId, handleRoleChange, setPendingChats,
   } = useEmployerMatchData();
-  const { isSaved, save, unsave, getSavedMatch } = useSavedMatches();
-  const showLoader = useMinLoader(isLoading, 3500);
+  const { savedMatches, isSaved, save, unsave, getSavedMatch } = useSavedMatches();
+  const showLoader = useMinLoader(isLoading, 2500);
 
   // View state
   const deepdiveParam = searchParams.get('deepdive');
@@ -82,17 +179,16 @@ export function EmberEmployerPage() {
   const filteredCandidates = useMemo(() => {
     let result = [...candidates];
 
-    // Quick filter
-    if (quickFilter === 'top5') result = result.slice(0, 5);
-    else if (quickFilter === 'top10') result = result.slice(0, 10);
-
-    // Search
+    // Search — when active, skip quick-filter slicing
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(c =>
         c.name.toLowerCase().includes(q) ||
         c.headline.toLowerCase().includes(q)
       );
+    } else {
+      if (quickFilter === 'top5') result = result.slice(0, 5);
+      else if (quickFilter === 'top10') result = result.slice(0, 10);
     }
 
     // Filters
@@ -125,6 +221,26 @@ export function EmberEmployerPage() {
   const savedIds = useMemo(() => {
     return new Set(candidates.filter(c => isSaved('candidate', c.candidateId)).map(c => c.candidateId));
   }, [candidates, isSaved]);
+
+  // Shortlisted candidates — full objects for sidebar
+  const shortlistedCandidates = useMemo(() => {
+    return candidates.filter(c => savedIds.has(c.candidateId));
+  }, [candidates, savedIds]);
+
+  // Dashboard stats
+  const dashboardStats = useMemo(() => {
+    if (candidates.length === 0) return null;
+    const scores = candidates.map(c => c.overallScore);
+    const strongCandidates = candidates.filter(c => c.overallScore >= 80).length;
+    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    return { totalCandidates: candidates.length, strongCandidates, avgScore };
+  }, [candidates]);
+
+  // Featured match (top candidate)
+  const featuredMatch = useMemo(() => {
+    if (candidates.length === 0) return null;
+    return [...candidates].sort((a, b) => b.overallScore - a.overallScore)[0];
+  }, [candidates]);
 
   // Handlers
   const handleDeepDive = useCallback((c: CandidateResult) => {
@@ -186,10 +302,8 @@ export function EmberEmployerPage() {
         status: 'pending',
         match_score: brewTarget.overallScore,
         message: note || undefined,
-        // Store names directly to avoid cross-table JOINs blocked by RLS
         candidate_name: brewTarget.name,
         company_name: employer.company_name,
-        // Store preferred dates as ISO strings
         preferred_dates: preferredDates.length > 0
           ? preferredDates.map(d => d.toISOString())
           : undefined,
@@ -260,7 +374,7 @@ export function EmberEmployerPage() {
   // No employer setup
   if (!employer) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="ember-page min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
           <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
@@ -284,125 +398,316 @@ export function EmberEmployerPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div className="ember-page min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="max-w-7xl mx-auto px-6 py-6">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <EmberFirefly size="md" mood="happy" />
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ember Candidates</h1>
-              <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                {archetype ? `${archetype.name} Culture` : 'Your personalized candidate gallery'}
-              </p>
+        {/* Header — matches EmberAgent bento-card style */}
+        {view !== 'deepdive' && (
+          <motion.div
+            className="bento-card p-6 mb-5"
+            variants={emberFadeUp}
+            initial="hidden"
+            animate="show"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-5 flex-1 min-w-0">
+                <div className="hidden sm:flex items-center justify-center w-14 h-14 flex-shrink-0">
+                  <EmberFirefly size="md" mood="happy" animated />
+                </div>
+                <div className="min-w-0">
+                  <h1
+                    className="text-3xl font-bold tracking-tight"
+                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                  >
+                    Ember
+                  </h1>
+                  <p
+                    className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
+                    style={{ color: 'var(--color-textMuted)' }}
+                  >
+                    {archetype ? `${archetype.name} culture` : 'Your personalized candidate gallery'}
+                    {candidates.length > 0 ? ` · ${candidates.length} candidates` : ''}
+                  </p>
+                  {dashboardStats && (
+                    <div className="flex flex-wrap items-center gap-2.5 mt-3">
+                      {([
+                        { label: 'Candidates', value: dashboardStats.totalCandidates, color: '#f59e0b', Icon: Users },
+                        { label: 'Strong (80+)', value: dashboardStats.strongCandidates, color: '#8B5CF6', Icon: Zap },
+                        { label: 'Avg Score', value: `${dashboardStats.avgScore}%`, color: '#10B981', Icon: TrendingUp },
+                      ] as const).map(stat => (
+                        <span
+                          key={stat.label}
+                          className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full text-[11px] font-semibold"
+                          style={{
+                            background: `linear-gradient(135deg, ${stat.color}18, ${stat.color}08)`,
+                            border: `1px solid ${stat.color}30`,
+                            color: 'var(--color-text)',
+                          }}
+                        >
+                          <span
+                            className="w-6 h-6 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: `${stat.color}20` }}
+                          >
+                            <stat.Icon className="w-3 h-3" style={{ color: stat.color }} />
+                          </span>
+                          <span className="font-extrabold tabular-nums" style={{ color: stat.color }}>{stat.value}</span>
+                          <span style={{ color: 'var(--color-textSecondary)' }}>{stat.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {compareIds.size >= 2 && view === 'gallery' && (
+                <Button size="sm" onClick={() => setView('compare')}>
+                  Compare ({compareIds.size})
+                </Button>
+              )}
             </div>
-          </div>
-          {compareIds.size >= 2 && view === 'gallery' && (
-            <Button size="sm" onClick={() => setView('compare')}>
-              Compare ({compareIds.size})
-            </Button>
+          </motion.div>
+        )}
+
+        {/* Three-column layout */}
+        <div className="flex gap-4">
+
+          {/* ── Left Sidebar (260px, sticky) ── */}
+          {view !== 'deepdive' && (
+            <motion.aside
+              className="hidden xl:block w-[260px] flex-shrink-0"
+              variants={emberStagger}
+              initial="hidden"
+              animate="show"
+            >
+              <div className="sticky top-6 space-y-4">
+                <motion.div variants={emberFadeUp}>
+                  <EmberIdentityCard archetype={archetype} ocean={employerOcean} />
+                </motion.div>
+
+                {/* Overview carousel */}
+                {dashboardStats && (
+                  <motion.div variants={emberFadeUp}>
+                    <OverviewCarousel stats={dashboardStats} />
+                  </motion.div>
+                )}
+              </div>
+            </motion.aside>
+          )}
+
+          {/* ── Center Content (flex) ── */}
+          <main className="flex-1 min-w-0 space-y-4">
+            {/* Brain hero */}
+            {view === 'gallery' && (
+              <motion.div
+                className="h-64 overflow-hidden"
+                variants={emberFadeUp}
+                initial="hidden"
+                animate="show"
+              >
+                <EmberBrain candidates={candidates} />
+              </motion.div>
+            )}
+
+            <AnimatePresence mode="wait">
+              {view === 'gallery' ? (
+                <motion.div
+                  key="gallery"
+                  className="space-y-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, transition: { duration: 0.2 } }}
+                  exit={{ opacity: 0, transition: { duration: 0.05 } }}
+                >
+                  <GalleryFilterBar
+                    mode="employer"
+                    matchCount={filteredCandidates.length}
+                    searchQuery={searchQuery}
+                    onSearchChange={(q) => {
+                      setSearchQuery(q);
+                      if (q) setQuickFilter('all');
+                    }}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    quickFilter={quickFilter}
+                    onQuickFilterChange={setQuickFilter}
+                    activeFilterCount={activeFilterCount}
+                    onToggleFilters={() => setShowFilters(!showFilters)}
+                    showFilters={showFilters}
+                    archetypes={archetypes}
+                    selectedArchetypes={selectedArchetypes}
+                    onToggleArchetype={(arch) => {
+                      setSelectedArchetypes(prev => {
+                        const next = new Set(prev);
+                        if (next.has(arch)) next.delete(arch);
+                        else next.add(arch);
+                        return next;
+                      });
+                    }}
+                    roles={roles}
+                    selectedRoleId={selectedRoleId}
+                    onRoleChange={handleRoleChange}
+                    minScore={minScore}
+                    maxScore={maxScore}
+                    onMinScoreChange={setMinScore}
+                    onMaxScoreChange={setMaxScore}
+                    onClearFilters={clearFilters}
+                  />
+
+                  <PlayerCardGrid
+                    mode="employer"
+                    candidates={filteredCandidates}
+                    savedIds={savedIds}
+                    getConnectionStatus={getConnectionStatus}
+                    onDeepDive={handleDeepDive}
+                    onBrew={(c) => setBrewTarget(c)}
+                    onToggleSave={handleToggleSave}
+                    onToggleSelect={handleToggleSelect}
+                    onConnect={(c) => setConnectTarget(c)}
+                  />
+                </motion.div>
+              ) : view === 'deepdive' && selectedCandidate ? (
+                <DeepDive
+                  key="deepdive"
+                  mode="employer"
+                  name={selectedCandidate.name}
+                  subtitle={selectedCandidate.headline}
+                  archetype={selectedCandidate.archetype}
+                  overallScore={selectedCandidate.overallScore}
+                  traitScore={selectedCandidate.traitScore}
+                  cultureScore={selectedCandidate.cultureScore}
+                  workStyleScore={selectedCandidate.workStyleFit}
+                  communicationScore={Math.round((selectedCandidate.breakdown.extraversionFit + selectedCandidate.breakdown.agreeablenessFit) / 2)}
+                  dimensions={deepDiveDimensions}
+                  candidateOcean={selectedCandidate.candidateOcean}
+                  employerOcean={employerOcean}
+                  candidateId={selectedCandidate.candidateId}
+                  employerId={employer.id}
+                  roleId={selectedRoleId || undefined}
+                  isSaved={savedIds.has(selectedCandidate.candidateId)}
+                  connectionStatus={getConnectionStatus(selectedCandidate.userId)}
+                  onBack={handleBackToGallery}
+                  onBrew={() => setBrewTarget(selectedCandidate)}
+                  onToggleSave={() => handleToggleSave(selectedCandidate)}
+                  onConnect={() => setConnectTarget(selectedCandidate)}
+                  onCompare={() => {
+                    setCompareIds(prev => {
+                      const next = new Set(prev);
+                      next.add(selectedCandidate.candidateId);
+                      return next;
+                    });
+                    setView('gallery');
+                  }}
+                />
+              ) : view === 'compare' && compareCandidates.length >= 2 ? (
+                <CompareView
+                  key="compare"
+                  candidates={compareCandidates}
+                  employerOcean={employerOcean as unknown as Record<string, number>}
+                  onBack={handleBackToGallery}
+                />
+              ) : null}
+            </AnimatePresence>
+          </main>
+
+          {/* ── Right Sidebar (320px, sticky) ── */}
+          {view !== 'deepdive' && (
+            <motion.aside
+              className="hidden lg:block w-[320px] flex-shrink-0"
+              variants={emberStagger}
+              initial="hidden"
+              animate="show"
+            >
+              <div className="sticky top-6 space-y-4">
+                {featuredMatch && (
+                  <motion.div variants={emberFadeUp}>
+                    <TopMatchCard
+                      name={featuredMatch.name}
+                      subtitle={featuredMatch.headline}
+                      score={featuredMatch.overallScore}
+                      onDeepDive={() => handleDeepDive(featuredMatch)}
+                    />
+                  </motion.div>
+                )}
+
+                <motion.div variants={emberFadeUp}>
+                  <MatchActivityFeed
+                    mode="employer"
+                    candidateMatches={candidates}
+                    savedMatches={savedMatches}
+                    pendingSent={pendingSent}
+                    acceptedConnections={accepted}
+                  />
+                </motion.div>
+
+                {/* Shortlisted Candidates */}
+                <motion.div variants={emberFadeUp}>
+                  <p
+                    className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3 mt-1"
+                    style={{ color: 'var(--color-textMuted)' }}
+                  >
+                    <Bookmark className="w-3 h-3 inline-block mr-1.5 -mt-px" />
+                    Shortlisted Candidates //
+                  </p>
+
+                  {shortlistedCandidates.length === 0 ? (
+                    <p className="text-xs py-3" style={{ color: 'var(--color-textMuted)' }}>
+                      Bookmark A Candidate To Save Them Here.
+                    </p>
+                  ) : (
+                    <div className="space-y-0">
+                      {shortlistedCandidates.map((c, i) => (
+                        <div
+                          key={c.candidateId}
+                          className="flex items-center gap-2.5 py-2.5 group"
+                          style={{
+                            borderBottom: i < shortlistedCandidates.length - 1
+                              ? '1px solid var(--color-border)'
+                              : undefined,
+                          }}
+                        >
+                          {/* Avatar */}
+                          <div
+                            className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                            style={{ backgroundColor: 'var(--color-surfaceHover)', color: 'var(--color-accent)' }}
+                          >
+                            {c.name.charAt(0)}
+                          </div>
+
+                          {/* Info — clickable to deep dive */}
+                          <button
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => handleDeepDive(c)}
+                          >
+                            <p
+                              className="text-xs font-medium truncate"
+                              style={{ color: 'var(--color-text)' }}
+                            >
+                              {c.name}
+                            </p>
+                            <p
+                              className="text-[10px] truncate"
+                              style={{ color: 'var(--color-textMuted)' }}
+                            >
+                              {c.archetype.name} · {c.overallScore}%
+                            </p>
+                          </button>
+
+                          {/* Remove bookmark */}
+                          <button
+                            onClick={() => handleToggleSave(c)}
+                            className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ color: 'var(--color-textMuted)' }}
+                            title="Remove from shortlist"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            </motion.aside>
           )}
         </div>
-
-        <AnimatePresence mode="wait">
-          {view === 'gallery' ? (
-            <motion.div
-              key="gallery"
-              className="space-y-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <GalleryFilterBar
-                mode="employer"
-                matchCount={filteredCandidates.length}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                quickFilter={quickFilter}
-                onQuickFilterChange={setQuickFilter}
-                activeFilterCount={activeFilterCount}
-                onToggleFilters={() => setShowFilters(!showFilters)}
-                showFilters={showFilters}
-                archetypes={archetypes}
-                selectedArchetypes={selectedArchetypes}
-                onToggleArchetype={(arch) => {
-                  setSelectedArchetypes(prev => {
-                    const next = new Set(prev);
-                    if (next.has(arch)) next.delete(arch);
-                    else next.add(arch);
-                    return next;
-                  });
-                }}
-                roles={roles}
-                selectedRoleId={selectedRoleId}
-                onRoleChange={handleRoleChange}
-                minScore={minScore}
-                maxScore={maxScore}
-                onMinScoreChange={setMinScore}
-                onMaxScoreChange={setMaxScore}
-                onClearFilters={clearFilters}
-              />
-
-              <PlayerCardGrid
-                mode="employer"
-                candidates={filteredCandidates}
-                savedIds={savedIds}
-                selectedIds={compareIds}
-                showSelect={true}
-                getConnectionStatus={getConnectionStatus}
-                onDeepDive={handleDeepDive}
-                onBrew={(c) => setBrewTarget(c)}
-                onToggleSave={handleToggleSave}
-                onToggleSelect={handleToggleSelect}
-                onConnect={(c) => setConnectTarget(c)}
-              />
-            </motion.div>
-          ) : view === 'deepdive' && selectedCandidate ? (
-            <DeepDive
-              key="deepdive"
-              mode="employer"
-              name={selectedCandidate.name}
-              subtitle={selectedCandidate.headline}
-              archetype={selectedCandidate.archetype}
-              overallScore={selectedCandidate.overallScore}
-              traitScore={selectedCandidate.traitScore}
-              cultureScore={selectedCandidate.cultureScore}
-              workStyleScore={selectedCandidate.workStyleFit}
-              communicationScore={Math.round((selectedCandidate.breakdown.extraversionFit + selectedCandidate.breakdown.agreeablenessFit) / 2)}
-              dimensions={deepDiveDimensions}
-              candidateOcean={selectedCandidate.candidateOcean}
-              employerOcean={employerOcean}
-              candidateId={selectedCandidate.candidateId}
-              employerId={employer.id}
-              roleId={selectedRoleId || undefined}
-              isSaved={savedIds.has(selectedCandidate.candidateId)}
-              connectionStatus={getConnectionStatus(selectedCandidate.userId)}
-              onBack={handleBackToGallery}
-              onBrew={() => setBrewTarget(selectedCandidate)}
-              onToggleSave={() => handleToggleSave(selectedCandidate)}
-              onConnect={() => setConnectTarget(selectedCandidate)}
-              onCompare={() => {
-                setCompareIds(prev => {
-                  const next = new Set(prev);
-                  next.add(selectedCandidate.candidateId);
-                  return next;
-                });
-                setView('gallery');
-              }}
-            />
-          ) : view === 'compare' && compareCandidates.length >= 2 ? (
-            <CompareView
-              key="compare"
-              candidates={compareCandidates}
-              employerOcean={employerOcean as unknown as Record<string, number>}
-              onBack={handleBackToGallery}
-            />
-          ) : null}
-        </AnimatePresence>
       </div>
 
       {/* Coffee Brew Modal */}

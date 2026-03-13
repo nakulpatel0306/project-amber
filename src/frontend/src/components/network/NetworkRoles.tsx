@@ -6,7 +6,6 @@ import {
   DollarSign, Bookmark,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { staggerContainer, fadeUp } from '../../utils/motion';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -59,6 +58,7 @@ interface RoleData {
     industry: string;
     location: string;
     company_website: string;
+    company_logo_url: string | null;
     culture_values: string[];
     openness_preference: number;
     conscientiousness_preference: number;
@@ -429,15 +429,17 @@ export function NetworkRoles({ isCandidate }: Props) {
             </p>
           </div>
         ) : (
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" variants={staggerContainer} initial="hidden" animate="show">
-            {filteredMatches.map(match => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMatches.map((match, i) => {
               const emp = match.role.employers;
               const salary = formatSalary(match.role.salary_min, match.role.salary_max);
               const isSaved = savedRoles.has(match.role.id);
               return (
                 <motion.div
                   key={match.role.id}
-                  variants={fadeUp}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.3) }}
                   className="p-4 rounded-xl border cursor-pointer transition-all hover:border-[var(--color-borderHover)]"
                   style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                   onClick={() => setModalMatch(match)}
@@ -446,9 +448,13 @@ export function NetworkRoles({ isCandidate }: Props) {
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: avatarGradient(emp.company_name) }}
+                        style={{ background: emp.company_logo_url ? 'white' : avatarGradient(emp.company_name) }}
                       >
-                        <span className="text-sm font-bold text-white">{emp.company_name.charAt(0)}</span>
+                        {emp.company_logo_url ? (
+                          <img src={emp.company_logo_url} alt={emp.company_name} className="w-full h-full rounded-xl object-contain" style={{ backgroundColor: 'white' }} />
+                        ) : (
+                          <span className="text-sm font-bold text-white">{emp.company_name.charAt(0)}</span>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold text-sm line-clamp-1" style={{ color: 'var(--color-text)' }}>{match.role.title}</h3>
@@ -519,7 +525,7 @@ export function NetworkRoles({ isCandidate }: Props) {
                 </motion.div>
               );
             })}
-          </motion.div>
+          </div>
         )}
       </div>
 

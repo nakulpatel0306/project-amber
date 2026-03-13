@@ -561,14 +561,14 @@ export function CultureInsights() {
     : 'Flexible & Adaptive';
 
   const idealCandidateType = sortedPrefs[0][0] === 'openness'
-    ? 'Creative visionaries and problem-solvers'
+    ? 'Creative Visionaries & Problem-Solvers'
     : sortedPrefs[0][0] === 'conscientiousness'
-    ? 'Disciplined achievers and organizers'
+    ? 'Disciplined Achievers & Organizers'
     : sortedPrefs[0][0] === 'extraversion'
-    ? 'Energetic collaborators and communicators'
+    ? 'Energetic Collaborators & Communicators'
     : sortedPrefs[0][0] === 'agreeableness'
-    ? 'Empathetic team players and mediators'
-    : 'Steady performers and resilient anchors';
+    ? 'Empathetic Team Players & Mediators'
+    : 'Steady Performers & Resilient Anchors';
 
   // Personality facts (reuse for employer context)
   const personalityFacts = getFactsForProfile(preferences, 4);
@@ -584,7 +584,7 @@ export function CultureInsights() {
         {/* 1. Hero / Profile Header */}
         <PageBanner
           title={archetypes.primary.name}
-          subtitle={`${tagline}${cultureData?.company_name ? ` · ${cultureData.company_name}` : ''}`}
+          subtitle={tagline}
           icon={Building2}
           iconNode={
             <div className="w-14 h-14 rounded-xl flex items-center justify-center"
@@ -635,7 +635,7 @@ export function CultureInsights() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Ideal Candidate Profile
             </h2>
@@ -745,7 +745,7 @@ export function CultureInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Your Culture Archetypes
           </h2>
@@ -859,7 +859,7 @@ export function CultureInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             The Environment You Create
           </h2>
@@ -911,7 +911,7 @@ export function CultureInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Leaf className="w-5 h-5" style={{ color: '#10B981' }} />
             Growth Edges
           </h2>
@@ -954,7 +954,7 @@ export function CultureInsights() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
           >
-            <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Culture Strengths & Growth Areas
             </h2>
@@ -1019,11 +1019,11 @@ export function CultureInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Compatibility Signals
           </h2>
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--color-textMuted)' }}>
             Candidate & Culture Fit //
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -1039,10 +1039,10 @@ export function CultureInsights() {
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Work Pace</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
                 {(preferences.extraversion + preferences.openness) / 2 > 60
-                  ? 'Fast-paced & dynamic'
+                  ? 'Fast-Paced & Dynamic'
                   : (preferences.extraversion + preferences.openness) / 2 < 40
-                  ? 'Measured & thoughtful'
-                  : 'Balanced rhythm'}
+                  ? 'Measured & Thoughtful'
+                  : 'Balanced Rhythm'}
               </p>
             </div>
           </div>
@@ -1091,7 +1091,7 @@ export function CultureInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Enhance Your Culture Profile
           </h2>
@@ -1198,7 +1198,7 @@ export function CultureInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ready to Find Your Matches?</h3>
+          <h3 className="text-base font-bold tracking-tight mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ready to Find Your Matches?</h3>
           <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
             Discover candidates whose personality aligns with your culture
           </p>
@@ -1230,7 +1230,7 @@ function DimensionDetail({
             <info.icon className="w-6 h-6" style={{ color: info.color }} />
           </div>
           <div>
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{info.fullLabel}</h2>
+            <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{info.fullLabel}</h2>
             <p className="text-sm" style={{ color: info.color }}>Preference: {score}/100</p>
           </div>
         </div>

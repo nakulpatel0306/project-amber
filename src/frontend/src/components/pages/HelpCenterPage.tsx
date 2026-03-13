@@ -13,6 +13,7 @@ import {
   Mail,
   MessageCircle,
   HelpCircle,
+  X,
 } from "lucide-react";
 
 interface FAQItem {
@@ -166,13 +167,21 @@ export function HelpCenterPage() {
             placeholder="Search for help..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none"
+            className="w-full pl-10 pr-8 py-2.5 rounded-xl text-sm outline-none"
             style={{
               background: "var(--color-surface)",
               border: "1px solid var(--color-border)",
               color: "var(--color-text)",
             }}
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              <X className="w-3.5 h-3.5" style={{ color: "var(--color-textMuted)" }} />
+            </button>
+          )}
         </div>
       </div>
 

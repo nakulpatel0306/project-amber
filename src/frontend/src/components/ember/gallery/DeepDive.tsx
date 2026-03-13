@@ -5,7 +5,7 @@ import {
   Bookmark, BookmarkCheck, GitCompareArrows, Share2, Lightbulb,
   AlertTriangle, CheckCircle2, HelpCircle, Target, ArrowUpRight,
   TrendingUp, ChevronRight, BarChart3, Users, Shield,
-  MapPin, Briefcase, DollarSign, X,
+  MapPin, Briefcase, DollarSign, X, User,
 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
@@ -244,7 +244,6 @@ export function DeepDive({
   const [employerRoles, setEmployerRoles] = useState<{ id: string; title: string; score: number; description?: string; requirements?: string[]; nice_to_have?: string[]; location?: string; work_style?: string; salary_min?: number; salary_max?: number; employment_type?: string }[]>([]);
   const [selectedRole, setSelectedRole] = useState<typeof employerRoles[number] | null>(null);
 
-  const initial = name.charAt(0).toUpperCase();
 
   /* Fetch Ember analysis */
   useEffect(() => {
@@ -279,7 +278,7 @@ export function DeepDive({
 
   /* Fetch employer roles with per-role compatibility */
   useEffect(() => {
-    if (!employerId || mode !== 'candidate') return;
+    if (!employerId) return;
     const fetchRoles = async () => {
       const { data } = await supabase
         .from('roles')
@@ -386,7 +385,7 @@ export function DeepDive({
             {avatarUrl ? (
               <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-lg font-bold" style={{ color: 'var(--color-accent)' }}>{initial}</span>
+              <User className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
             )}
           </div>
 

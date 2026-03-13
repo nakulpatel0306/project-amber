@@ -1,9 +1,10 @@
-import { useEffect, useRef, useCallback } from 'react';
-import type { EmployerResult } from '../../types/matching.types';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
+import type { EmployerResult, CandidateResult } from '../../types/matching.types';
 
 interface EmberBrainProps {
   className?: string;
   employers?: EmployerResult[];
+  candidates?: CandidateResult[];
 }
 
 interface Node {
@@ -39,7 +40,7 @@ const EDGE_DIST_PX = 130;  // max px distance to draw an edge
  * Nodes = employer matches, sized by score.
  * Hover to push nodes apart; they spring back when you move away.
  */
-export function EmberBrain({ className, employers = [] }: EmberBrainProps) {
+export function EmberBrain({ className, employers = [], candidates = [] }: EmberBrainProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -9999, y: -9999, active: false });
   const animRef = useRef<number>(0);
@@ -57,7 +58,15 @@ export function EmberBrain({ className, employers = [] }: EmberBrainProps) {
     mouseRef.current.active = false;
   }, []);
 
-  // Build nodes whenever employers change
+  // Build nodes whenever employers/candidates change
+  // Normalize both data sources into a common shape for the visualization
+  const dataPoints = useMemo(() => {
+    if (candidates.length > 0) {
+      return candidates.map(c => ({ label: c.name, score: c.overallScore }));
+    }
+    return employers.map(e => ({ label: e.companyName, score: e.overallScore }));
+  }, [employers, candidates]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -66,7 +75,7 @@ export function EmberBrain({ className, employers = [] }: EmberBrainProps) {
     const h = rect.height;
     if (w === 0 || h === 0) return;
 
-    const sorted = [...employers].sort((a, b) => b.overallScore - a.overallScore);
+    const sorted = [...dataPoints].sort((a, b) => b.score - a.score);
     const count = Math.max(sorted.length, 40);
     const nodes: Node[] = [];
 
@@ -77,8 +86,8 @@ export function EmberBrain({ className, employers = [] }: EmberBrainProps) {
     const spreadY = h * 0.35;
 
     for (let i = 0; i < count; i++) {
-      const emp = sorted[i % sorted.length];
-      const score = emp ? emp.overallScore : 50 + Math.random() * 40;
+      const dp = sorted[i % sorted.length];
+      const score = dp ? dp.score : 50 + Math.random() * 40;
       const baseR = 2 + (score / 100) * 4; // 2–6px
 
       // Organic distribution: golden-angle spiral with jitter
@@ -96,7 +105,7 @@ export function EmberBrain({ className, employers = [] }: EmberBrainProps) {
         y: homeY,
         vx: 0,
         vy: 0,
-        label: emp ? emp.companyName : '',
+        label: dp ? dp.label : '',
         score,
         radius: baseR,
         pulseRadius: baseR,
@@ -108,7 +117,7 @@ export function EmberBrain({ className, employers = [] }: EmberBrainProps) {
     }
 
     nodesRef.current = nodes;
-  }, [employers]);
+  }, [dataPoints]);
 
   // Animation loop
   useEffect(() => {

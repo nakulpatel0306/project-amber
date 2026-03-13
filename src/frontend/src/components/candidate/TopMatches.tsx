@@ -62,7 +62,7 @@ export function TopMatches() {
   const [selectedMatch, setSelectedMatch] = useState<TopMatch | null>(null);
   const [archetype, setArchetype] = useState<ReturnType<typeof determineArchetype> | null>(null);
   const [candidateId, setCandidateId] = useState<string | null>(null);
-  const showLoader = useMinLoader(isLoading, 3500);
+  const showLoader = useMinLoader(isLoading, 2500);
 
   // Dashboard stats
   const stats = useMemo(() => {

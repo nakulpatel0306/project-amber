@@ -346,13 +346,21 @@ export function BrowseCandidates() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search candidates..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
+              className="w-full pl-10 pr-8 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
               style={{
                 backgroundColor: 'var(--color-surface)',
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-text)',
               }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <X className="w-3.5 h-3.5" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
+            )}
           </div>
 
           {roles.length > 0 && (

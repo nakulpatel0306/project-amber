@@ -1,6 +1,6 @@
 import { LayoutGrid, Columns2, AlignJustify, LayoutDashboard } from 'lucide-react';
 
-export type FeedFilter = 'all' | 'job_seekers' | 'employers' | 'connections' | 'following';
+export type FeedFilter = 'all' | 'job_seekers' | 'employers' | 'connections';
 export type LayoutMode = 'grid-3' | 'grid-2' | 'feed' | 'masonry';
 
 interface FilterBarProps {
@@ -15,7 +15,6 @@ const FILTER_TABS: { value: FeedFilter; label: string }[] = [
   { value: 'job_seekers', label: 'Job Seekers' },
   { value: 'employers', label: 'Employers' },
   { value: 'connections', label: 'Connections' },
-  { value: 'following', label: 'Following' },
 ];
 
 const LAYOUT_OPTIONS: { value: LayoutMode; icon: typeof LayoutGrid; label: string }[] = [

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Search, X, MapPin, Coffee, Filter, Users } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
-import { staggerContainer, fadeUp } from '../../utils/motion';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -316,11 +315,13 @@ export function NetworkPeople() {
           </div>
         ) : (
           <>
-            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={staggerContainer} initial="hidden" animate="show">
-              {displayed.map(person => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {displayed.map((person, i) => (
                 <motion.div
                   key={person.id}
-                  variants={fadeUp}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.3) }}
                   className="p-4 rounded-xl border cursor-pointer transition-all hover:border-[var(--color-borderHover)]"
                   style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                   onClick={() => setSelectedPerson(person)}
@@ -380,7 +381,7 @@ export function NetworkPeople() {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
+            </div>
 
             {displayCount < filtered.length && (
               <div className="text-center mt-6">

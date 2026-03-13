@@ -95,7 +95,6 @@ const EMPTY_MESSAGES: Record<FeedFilter, { title: string; sub: string }> = {
   job_seekers: { title: 'No job seeker posts', sub: 'Job seekers haven\'t posted yet. Start the conversation!' },
   employers: { title: 'No employer posts', sub: 'No employer culture posts yet. Be the first to showcase your team.' },
   connections: { title: 'Nothing from connections', sub: 'Connect with more people to see their posts here.' },
-  following: { title: 'No followed posts', sub: 'Follow people to see their latest posts.' },
 };
 
 /* ------------------------------------------------------------------ */
@@ -355,9 +354,6 @@ export function NetworkHub() {
             const connIds = new Set(accepted.flatMap(c => [c.sender_id, c.receiver_id]));
             filtered = result.filter(p => connIds.has(p.user.user_id));
           }
-          break;
-        case 'following':
-          filtered = []; // Placeholder — no follow system yet
           break;
       }
 

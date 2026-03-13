@@ -29,7 +29,7 @@ interface HotRole {
   work_style: string | null;
   salary_min: number | null;
   salary_max: number | null;
-  employer: { id: string; company_name: string; industry: string };
+  employer: { id: string; company_name: string; industry: string; company_logo_url: string | null };
   matchScore: number | null;
   traitScore: number;
   cultureScore: number;
@@ -104,7 +104,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
     try {
       const { data: roles } = await supabase
         .from('roles')
-        .select('id, title, location, work_style, salary_min, salary_max, status, created_at, required_openness_min, required_openness_max, required_conscientiousness_min, required_conscientiousness_max, required_extraversion_min, required_extraversion_max, required_agreeableness_min, required_agreeableness_max, required_neuroticism_min, required_neuroticism_max, employers!inner(id, company_name, industry, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_values)')
+        .select('id, title, location, work_style, salary_min, salary_max, status, created_at, required_openness_min, required_openness_max, required_conscientiousness_min, required_conscientiousness_max, required_extraversion_min, required_extraversion_max, required_agreeableness_min, required_agreeableness_max, required_neuroticism_min, required_neuroticism_max, employers!inner(id, company_name, industry, company_logo_url, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_values)')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(6);
@@ -161,7 +161,7 @@ export function NetworkDiscover({ isCandidate }: Props) {
         return {
           id: r.id, title: r.title, location: r.location || '', work_style: r.work_style,
           salary_min: r.salary_min, salary_max: r.salary_max,
-          employer: { id: emp.id, company_name: emp.company_name, industry: emp.industry || '' },
+          employer: { id: emp.id, company_name: emp.company_name, industry: emp.industry || '', company_logo_url: emp.company_logo_url || null },
           matchScore, traitScore, cultureScore, highlightPills,
         };
       });
@@ -310,9 +310,13 @@ export function NetworkDiscover({ isCandidate }: Props) {
                       <div className="flex items-center gap-3 min-w-0">
                         <div
                           className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: avatarGradient(role.employer.company_name) }}
+                          style={{ background: role.employer.company_logo_url ? 'white' : avatarGradient(role.employer.company_name) }}
                         >
-                          <span className="text-xs font-bold text-white">{role.employer.company_name.charAt(0)}</span>
+                          {role.employer.company_logo_url ? (
+                            <img src={role.employer.company_logo_url} alt={role.employer.company_name} className="w-full h-full rounded-lg object-contain" style={{ backgroundColor: 'white' }} />
+                          ) : (
+                            <span className="text-xs font-bold text-white">{role.employer.company_name.charAt(0)}</span>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <h3 className="font-semibold text-sm line-clamp-1" style={{ color: 'var(--color-text)' }}>{role.title}</h3>

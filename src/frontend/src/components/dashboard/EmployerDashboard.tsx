@@ -10,6 +10,7 @@ import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility } from '../../lib/compatibilityScoring';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 
 import { DashboardHeader } from './DashboardHeader';
 import { BentoMetricCard } from './BentoMetricCard';
@@ -58,7 +59,7 @@ export function EmployerDashboard() {
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
   const [hasCompletedProfile, setHasCompletedProfile] = useState<boolean | null>(null);
-  const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState(false);
+  const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState<boolean | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [culturePreferences, setCulturePreferences] = useState<CulturePreferences | null>(null);
 
@@ -207,6 +208,14 @@ export function EmployerDashboard() {
   // Load dashboard stats + candidates
   useEffect(() => {
     if (!user) return;
+    if (!hasCompletedCultureQuiz || !culturePreferences) {
+      // If culture quiz not done, we know the final values already
+      if (hasCompletedCultureQuiz === false) {
+        setStatsLoaded(true);
+        setCandidatesLoaded(true);
+      }
+      return;
+    }
 
     const loadDashboardData = async () => {
       try {
@@ -218,113 +227,124 @@ export function EmployerDashboard() {
 
         if (!employer) return;
 
-        // Get roles
+        // Get roles for active roles count
         const { data: roles } = await supabase
           .from('roles')
-          .select('*')
-          .eq('employer_id', employer.id)
-          .order('created_at', { ascending: false });
+          .select('id, status')
+          .eq('employer_id', employer.id);
 
         const activeRolesList = (roles || []).filter(r => r.status === 'active');
         setActiveRolesCount(activeRolesList.length);
 
-        // Get applications
-        const roleIds = (roles || []).map(r => r.id);
-        let totalApps = 0;
-
-        if (roleIds.length > 0) {
+        // Get application count
+        if (roles && roles.length > 0) {
           const { data: apps } = await supabase
             .from('applications')
-            .select('*, candidates(*, profiles:user_id(full_name)), roles!inner(title, employer_id)')
-            .eq('roles.employer_id', employer.id)
-            .order('overall_match_score', { ascending: false })
-            .limit(50);
-
-          totalApps = apps?.length || 0;
-          setTotalApplicants(totalApps);
-
-          // Build candidate rows from applications
-          if (apps && apps.length > 0) {
-            const candidateRows: CandidateRow[] = [];
-            const seenCandidates = new Set<string>();
-
-            for (const app of apps) {
-              const candidate = app.candidates as Record<string, unknown> | null;
-              const profiles = candidate?.profiles as Record<string, unknown> | null;
-              const candidateId = (candidate?.id as string) || '';
-
-              if (seenCandidates.has(candidateId)) continue;
-              seenCandidates.add(candidateId);
-
-              // Calculate compatibility
-              const candidateOCEAN = {
-                openness: (candidate?.openness_score as number) || 50,
-                conscientiousness: (candidate?.conscientiousness_score as number) || 50,
-                extraversion: (candidate?.extraversion_score as number) || 50,
-                agreeableness: (candidate?.agreeableness_score as number) || 50,
-                neuroticism: (candidate?.neuroticism_score as number) || 50,
-              };
-
-              const result = calculateCompatibility({
-                candidateOCEAN,
-                employerPreferences: {
-                  openness: employer.openness_preference || 50,
-                  conscientiousness: employer.conscientiousness_preference || 50,
-                  extraversion: employer.extraversion_preference || 50,
-                  agreeableness: employer.agreeableness_preference || 50,
-                  neuroticism: employer.neuroticism_preference || 50,
-                  cultureValues: employer.culture_values || [],
-                },
-                roleRequirements: {},
-              });
-
-              candidateRows.push({
-                candidateId,
-                name: (profiles?.full_name as string) || 'Unknown',
-                headline: (candidate?.headline as string) || '',
-                location: (candidate?.location as string) || 'Remote',
-                matchScore: result.overallMatchScore,
-                topTrait: ((candidate?.top_traits as string[]) || ['--'])[0],
-                chatStatus: 'none',
-              });
-            }
-
-            // Lookup chat statuses
-            const { data: chatData } = await supabase
-              .from('coffee_chats')
-              .select('candidate_id, status')
-              .eq('employer_id', employer.id);
-
-            if (chatData) {
-              const chatMap = new Map<string, string>();
-              const priority: Record<string, number> = { completed: 3, accepted: 2, pending: 1 };
-              for (const c of chatData) {
-                const existing = chatMap.get(c.candidate_id);
-                const existingPri = existing ? (priority[existing] || 0) : 0;
-                const newPri = priority[c.status] || 0;
-                if (newPri > existingPri) chatMap.set(c.candidate_id, c.status);
-              }
-
-              for (const row of candidateRows) {
-                const status = chatMap.get(row.candidateId);
-                if (status) row.chatStatus = status as CandidateRow['chatStatus'];
-              }
-            }
-
-            candidateRows.sort((a, b) => b.matchScore - a.matchScore);
-            setAllCandidates(candidateRows);
-            setCandidatePage(0);
-            setTopCandidates(candidateRows.slice(0, 5));
-            setUniqueCandidates(candidateRows.length);
-
-            if (candidateRows.length > 0) {
-              setAvgMatchScore(Math.round(
-                candidateRows.reduce((s, c) => s + c.matchScore, 0) / candidateRows.length
-              ));
-            }
-          }
+            .select('id, roles!inner(employer_id)')
+            .eq('roles.employer_id', employer.id);
+          setTotalApplicants(apps?.length || 0);
         } else {
           setTotalApplicants(0);
+        }
+
+        // Fetch ALL candidates via RPC (bypasses RLS)
+        const { data: candidatesRaw, error: candidatesErr } = await supabase
+          .rpc('get_candidates_for_employer', { employer_user_id: user.id });
+
+        if (candidatesErr) {
+          console.error('Candidates fetch error:', candidatesErr.message);
+        }
+
+        const candidatesData = (candidatesRaw as Record<string, unknown>[] | null) || [];
+
+        if (candidatesData.length === 0) {
+          setStatsLoaded(true);
+          setCandidatesLoaded(true);
+          return;
+        }
+
+        // Fetch profile names via RPC
+        const candidateUserIds = candidatesData.map((c) => c.user_id as string).filter(Boolean);
+        let profileMap = new Map<string, string>();
+        if (candidateUserIds.length > 0) {
+          try {
+            const { data: rpcData, error: rpcErr } = await supabase
+              .rpc('get_profiles_by_ids', { user_ids: candidateUserIds });
+            const profiles = rpcErr ? [] : (rpcData || []);
+            for (const p of profiles) {
+              profileMap.set(p.id, p.full_name || '');
+            }
+          } catch {
+            // Profile lookup failed — names will fall back to 'Unknown'
+          }
+        }
+
+        // Build candidate_id → chat status map
+        let chatStatusMap = new Map<string, string>();
+        const { data: chatData } = await supabase
+          .from('coffee_chats')
+          .select('candidate_id, status')
+          .eq('employer_id', employer.id);
+
+        if (chatData) {
+          const priority: Record<string, number> = { completed: 3, accepted: 2, pending: 1 };
+          for (const c of chatData) {
+            const existing = chatStatusMap.get(c.candidate_id);
+            const existingPri = existing ? (priority[existing] || 0) : 0;
+            const newPri = priority[c.status] || 0;
+            if (newPri > existingPri) chatStatusMap.set(c.candidate_id, c.status);
+          }
+        }
+
+        // Calculate compatibility for each candidate
+        const candidateRows: CandidateRow[] = candidatesData
+          .filter((c) => c.openness_score !== null && c.openness_score !== undefined)
+          .map((c) => {
+            const candidateOCEAN = {
+              openness: (c.openness_score as number) || 50,
+              conscientiousness: (c.conscientiousness_score as number) || 50,
+              extraversion: (c.extraversion_score as number) || 50,
+              agreeableness: (c.agreeableness_score as number) || 50,
+              neuroticism: (c.neuroticism_score as number) || 50,
+            };
+
+            const result = calculateCompatibility({
+              candidateOCEAN,
+              employerPreferences: {
+                openness: employer.openness_preference || 50,
+                conscientiousness: employer.conscientiousness_preference || 50,
+                extraversion: employer.extraversion_preference || 50,
+                agreeableness: employer.agreeableness_preference || 50,
+                neuroticism: employer.neuroticism_preference || 50,
+                cultureValues: employer.culture_values || [],
+              },
+              roleRequirements: {},
+            });
+
+            const candidateId = (c.id as string) || '';
+            const rawChatStatus = chatStatusMap.get(candidateId) || 'none';
+
+            return {
+              candidateId,
+              name: profileMap.get(c.user_id as string) || 'Unknown',
+              headline: (c.headline as string) || '',
+              location: (c.location as string) || 'Remote',
+              matchScore: result.overallMatchScore,
+              topTrait: ((c.top_traits as string[]) || ['--'])[0],
+              chatStatus: rawChatStatus as CandidateRow['chatStatus'],
+            };
+          })
+          .sort((a, b) => b.matchScore - a.matchScore);
+
+        setAllCandidates(candidateRows);
+        setCandidatePage(0);
+        setTopCandidates(candidateRows.slice(0, 5));
+        setUniqueCandidates(candidateRows.length);
+
+        if (candidateRows.length > 0) {
+          setAvgMatchScore(Math.round(
+            candidateRows.reduce((s, c) => s + c.matchScore, 0) / candidateRows.length
+          ));
         }
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -335,7 +355,7 @@ export function EmployerDashboard() {
     };
 
     loadDashboardData();
-  }, [user]);
+  }, [user, hasCompletedCultureQuiz, culturePreferences]);
 
   const handleRefreshCandidates = () => {
     if (allCandidates.length <= 5) return;
@@ -350,6 +370,12 @@ export function EmployerDashboard() {
   };
 
   const bestMatchScore = topCandidates.length > 0 ? topCandidates[0].matchScore : 0;
+
+  const showLoader = useMinLoader(!statsLoaded, 1500);
+
+  if (showLoader) {
+    return <CoffeeBrewLoader variant="fullscreen" />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
@@ -406,7 +432,9 @@ export function EmployerDashboard() {
             { label: `${activeRolesCount} Active`, shade: 'light' as const },
             { label: `${totalApplicants} Applied`, shade: 'medium' as const },
             { label: 'Manage', shade: 'dark' as const },
-          ] : []}
+          ] : [
+            { label: 'Create a Role', shade: 'light' as const },
+          ]}
           onClick={() => navigate('/app/employer/roles')}
         />
         <BentoMetricCard
@@ -419,17 +447,19 @@ export function EmployerDashboard() {
               : 'Start connecting with candidates'
           }
           accentBorder
-          tags={[
+          tags={(pendingChats + acceptedChats + completedChats) > 0 ? [
             ...(pendingChats > 0 ? [{ label: `${pendingChats} Pending`, shade: 'light' as const }] : []),
             ...(acceptedChats > 0 ? [{ label: `${acceptedChats} Scheduled`, shade: 'medium' as const }] : []),
             ...(completedChats > 0 ? [{ label: `${completedChats} Completed`, shade: 'dark' as const }] : []),
+          ] : [
+            { label: 'Get Started', shade: 'light' as const },
           ]}
           onClick={() => navigate('/app/employer/chats')}
         />
       </div>
 
       {/* Quick Actions */}
-      <EmployerQuickActions hasCompletedCultureQuiz={hasCompletedCultureQuiz} />
+      <EmployerQuickActions hasCompletedCultureQuiz={hasCompletedCultureQuiz === true} />
 
       {/* Widgets row: Streak + Insights + Schedule (2-col) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -447,7 +477,7 @@ export function EmployerDashboard() {
       </div>
 
       {/* Setup Banner (if not complete) */}
-      {(!hasCompletedProfile || !hasCompletedCultureQuiz) && (
+      {(!hasCompletedProfile || hasCompletedCultureQuiz === false) && (
         <div
           className="bento-card"
           style={{ borderColor: 'var(--color-accent)' }}
@@ -514,7 +544,7 @@ export function EmployerDashboard() {
       {/* Top Culture Matches — clean status table */}
       <EmployerCandidateTable
         candidates={topCandidates}
-        hasCompletedCultureQuiz={hasCompletedCultureQuiz}
+        hasCompletedCultureQuiz={hasCompletedCultureQuiz === true}
         onRowClick={(candidate) => navigate(`/app/employer/ember?deepdive=${candidate.candidateId}`)}
         onRefresh={handleRefreshCandidates}
       />
