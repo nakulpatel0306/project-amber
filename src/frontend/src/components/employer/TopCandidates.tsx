@@ -527,8 +527,8 @@ export function TopCandidates() {
       <div className="min-h-[60vh] flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
-            Complete your setup
+          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+            Complete Your Setup
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
             Set up your employer profile to start finding candidates.
@@ -543,8 +543,8 @@ export function TopCandidates() {
       <div className="min-h-[60vh] flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
-            No candidates yet
+          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+            No Candidates Yet
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
             No candidates have completed their assessments yet. Check back soon!
@@ -560,7 +560,7 @@ export function TopCandidates() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       {/* Header */}
       <div className="border-b px-6 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* View tabs */}
           <div className="flex items-center gap-1 mb-4 p-1 rounded-xl w-fit" style={{ backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)' }}>
             <button
@@ -592,7 +592,7 @@ export function TopCandidates() {
 
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+              <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                 <Trophy className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                 {activeView === 'browse' ? 'Top Candidates' : 'Your Pipeline'}
               </h1>
@@ -765,7 +765,7 @@ export function TopCandidates() {
               {activeFilterCount > 0 && (
                 <div className="flex justify-end">
                   <button onClick={clearFilters} className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>
-                    Clear all filters
+                    Clear All Filters
                   </button>
                 </div>
               )}
@@ -776,7 +776,7 @@ export function TopCandidates() {
 
       {/* Pipeline View */}
       {activeView === 'pipeline' && (
-        <div className="max-w-6xl mx-auto p-6">
+        <div className="max-w-7xl mx-auto p-6">
           <MatchPipeline
             savedMatches={savedMatches}
             activeTab={pipelineTab}
@@ -798,17 +798,17 @@ export function TopCandidates() {
       )}
 
       {/* Results Grid */}
-      {activeView === 'browse' && <div className="max-w-6xl mx-auto p-6">
+      {activeView === 'browse' && <div className="max-w-7xl mx-auto p-6">
         {filteredCandidates.length === 0 ? (
-          <div className="p-12 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="bento-card text-center py-12">
             <Users className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-            <p className="font-medium mb-1" style={{ color: 'var(--color-text)' }}>No candidates match your filters</p>
+            <p className="font-medium mb-1" style={{ color: 'var(--color-text)' }}>No Candidates Match Your Filters</p>
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               Try adjusting your filters or search query.
             </p>
             {activeFilterCount > 0 && (
               <button onClick={clearFilters} className="mt-4 text-sm font-medium" style={{ color: 'var(--color-accent)' }}>
-                Clear all filters
+                Clear All Filters
               </button>
             )}
           </div>
@@ -819,11 +819,8 @@ export function TopCandidates() {
               return (
                 <div
                   key={c.candidateId}
-                  className="p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer group relative"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: isShortlisted ? 'var(--color-accent)' : 'var(--color-border)',
-                  }}
+                  className="bento-card transition-all hover:shadow-md cursor-pointer group relative"
+                  style={isShortlisted ? { borderColor: 'var(--color-accent)' } : undefined}
                   onClick={() => setModalCandidate(c)}
                 >
                   {/* Shortlist indicator */}

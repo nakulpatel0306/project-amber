@@ -111,6 +111,7 @@ export function PlayerCardGrid(props: PlayerCardGridProps) {
                   cultureScore={employer.cultureScore}
                   workStyleScore={employer.workStyleFit}
                   traitScore={employer.traitScore}
+                  avatarUrl={employer.logoUrl}
                   highlightPills={[]}
                   index={i}
                   isSaved={savedIds.has(employer.employerId)}

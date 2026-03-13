@@ -77,9 +77,9 @@ export function GalleryFilterBar({
   archetypes,
   selectedArchetypes,
   onToggleArchetype,
-  roles,
-  selectedRoleId,
-  onRoleChange,
+  roles: _roles,
+  selectedRoleId: _selectedRoleId,
+  onRoleChange: _onRoleChange,
   minScore,
   maxScore,
   onMinScoreChange,
@@ -132,23 +132,6 @@ export function GalleryFilterBar({
           ))}
         </select>
 
-        {/* Role dropdown (employer only) */}
-        {mode === 'employer' && roles && roles.length > 0 && (
-          <select
-            value={selectedRoleId || ''}
-            onChange={e => onRoleChange?.(e.target.value || null)}
-            className="appearance-none px-2 py-1 rounded-lg text-xs font-medium cursor-pointer"
-            style={{
-              backgroundColor: 'var(--color-background)',
-              color: 'var(--color-textSecondary)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <option value="">All Roles</option>
-            {roles.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
-          </select>
-        )}
-
         {/* Spacer */}
         <div className="flex-1" />
 
@@ -160,13 +143,21 @@ export function GalleryFilterBar({
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             placeholder="Search..."
-            className="pl-7 pr-3 py-1.5 rounded-lg text-xs w-40"
+            className="pl-7 pr-7 py-1.5 rounded-lg text-xs w-40"
             style={{
               backgroundColor: 'var(--color-background)',
               color: 'var(--color-text)',
               border: '1px solid var(--color-border)',
             }}
           />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+            >
+              <X className="w-3 h-3" style={{ color: 'var(--color-textMuted)' }} />
+            </button>
+          )}
         </div>
 
         {/* Filter toggle */}

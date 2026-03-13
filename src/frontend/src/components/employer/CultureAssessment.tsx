@@ -279,11 +279,7 @@ export function CultureAssessment() {
         style={{ backgroundColor: 'var(--color-background)' }}
       >
         <div
-          className="max-w-md w-full p-8 rounded-2xl border text-center"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
+          className="bento-card max-w-md w-full p-8 text-center"
         >
           <div
             className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
@@ -293,26 +289,26 @@ export function CultureAssessment() {
           </div>
           <h1
             className="text-2xl font-bold mb-3"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            set up your company first
+            Set Up Your Company First
           </h1>
           <p
             className="mb-6"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            before defining your culture, please set up your company profile. this helps candidates learn about your organization.
+            Before defining your culture, please set up your company profile. This helps candidates learn about your organization.
           </p>
           <div className="flex flex-col gap-3">
             <Button
               onClick={() => setShowSetupModal(true)}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              set up company
+              Set Up Company
             </Button>
             <Link to="/app/employer">
               <Button variant="ghost" className="w-full">
-                back to dashboard
+                Back to Dashboard
               </Button>
             </Link>
           </div>
@@ -340,11 +336,7 @@ export function CultureAssessment() {
         style={{ backgroundColor: 'var(--color-background)' }}
       >
         <div
-          className="max-w-md w-full p-8 rounded-2xl border text-center"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
+          className="bento-card max-w-md w-full p-8 text-center"
         >
           <div
             className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
@@ -354,15 +346,15 @@ export function CultureAssessment() {
           </div>
           <h1
             className="text-2xl font-bold mb-3"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
-            assessment cooldown
+            Assessment Cooldown
           </h1>
           <p
             className="mb-6"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            you've recently completed the culture assessment. you can retake it again in:
+            You've recently completed the culture assessment. You can retake it again in:
           </p>
 
           {/* Countdown Timer */}
@@ -411,12 +403,12 @@ export function CultureAssessment() {
           <div className="flex flex-col gap-3">
             <Link to="/app/employer/insights">
               <Button variant="primary" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                view your insights
+                View Your Insights
               </Button>
             </Link>
             <Link to="/app/employer/candidates">
               <Button variant="ghost" className="w-full">
-                browse candidates
+                Browse Candidates
               </Button>
             </Link>
             <div
@@ -488,7 +480,7 @@ export function CultureAssessment() {
         <div className="mb-8">
           <h1
             className="text-2xl md:text-3xl font-bold mb-4"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
           >
             {currentQuestion.question}
           </h1>
@@ -730,10 +722,9 @@ function RankingQuestion({
             onDragOver={(e) => handleDragOver(e, id)}
             onDragEnd={handleDragEnd}
             className={cn(
-              'p-4 rounded-xl border-2 flex items-center gap-4 cursor-grab transition-all',
+              'bento-card p-4 flex items-center gap-4 cursor-grab transition-all',
               draggedItem === id && 'opacity-50'
             )}
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
           >
             <GripVertical className="w-5 h-5" style={{ color: 'var(--color-textMuted)' }} />
             <div

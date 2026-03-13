@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
 import { supabase } from '../../lib/supabase';
 import { calculateCompatibility } from '../../lib/compatibilityScoring';
@@ -60,7 +61,7 @@ interface TopMatch {
 export function JobSeekerDashboard() {
   const { profile, user } = useAuth();
   const [greeting, setGreeting] = useState('');
-  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
+  const [hasCompletedAssessment, setHasCompletedAssessment] = useState<boolean | null>(null);
   const [hasCompletedProfile, setHasCompletedProfile] = useState<boolean | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [personalityScores, setPersonalityScores] = useState<PersonalityScores | null>(null);
@@ -448,13 +449,19 @@ export function JobSeekerDashboard() {
   // Best match score
   const bestMatchScore = topMatches.length > 0 ? topMatches[0].matchScore : 0;
 
+  const showLoader = useMinLoader(!matchesLoaded || !chatsLoaded, 1500);
+
+  if (showLoader) {
+    return <CoffeeBrewLoader variant="fullscreen" />;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
       {/* Dashboard Header — search + date + notifications */}
       <DashboardHeader greeting={greeting} firstName={firstName} />
 
       {/* Archetype Strip — editorial personality display */}
-      {hasCompletedAssessment && personalityScores && topTraits.length > 0 && (
+      {hasCompletedAssessment === true && personalityScores && topTraits.length > 0 && (
         <ArchetypeStrip personalityScores={personalityScores} topTraits={topTraits} />
       )}
 
@@ -511,17 +518,19 @@ export function JobSeekerDashboard() {
               : 'Start connecting with employers'
           }
           accentBorder
-          tags={[
+          tags={(pendingChats + acceptedChats + completedChats) > 0 ? [
             ...(pendingChats > 0 ? [{ label: `${pendingChats} Pending`, shade: 'light' as const }] : []),
             ...(acceptedChats > 0 ? [{ label: `${acceptedChats} Scheduled`, shade: 'medium' as const }] : []),
             ...(completedChats > 0 ? [{ label: `${completedChats} Completed`, shade: 'dark' as const }] : []),
+          ] : [
+            { label: 'Get Started', shade: 'light' as const },
           ]}
           onClick={() => navigate('/app/chats')}
         />
       </div>
 
       {/* Quick Actions */}
-      <QuickActions hasCompletedAssessment={hasCompletedAssessment} />
+      <QuickActions hasCompletedAssessment={hasCompletedAssessment === true} />
 
       {/* Widgets row: Streak + Insights + Schedule (2-col) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -538,7 +547,7 @@ export function JobSeekerDashboard() {
       </div>
 
       {/* Setup Banner (if not complete) */}
-      {(!hasCompletedProfile || !hasCompletedAssessment) && (
+      {(!hasCompletedProfile || hasCompletedAssessment === false) && (
         <div
           className="bento-card"
           style={{ borderColor: 'var(--color-accent)' }}
@@ -560,7 +569,7 @@ export function JobSeekerDashboard() {
               <div className="flex items-center gap-3">
                 {[
                   { label: 'Profile', done: hasCompletedProfile },
-                  { label: 'Assessment', done: hasCompletedAssessment },
+                  { label: 'Assessment', done: hasCompletedAssessment === true },
                   { label: 'Matches', done: false },
                 ].map((step, i) => (
                   <div key={step.label} className="flex items-center gap-2">
@@ -605,7 +614,7 @@ export function JobSeekerDashboard() {
       {/* Top Personality Matches — clean status table, no card wrapper */}
       <MatchingTable
         matches={topMatches}
-        hasCompletedAssessment={hasCompletedAssessment}
+        hasCompletedAssessment={hasCompletedAssessment === true}
         onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
         onRefresh={handleRefreshMatches}
       />

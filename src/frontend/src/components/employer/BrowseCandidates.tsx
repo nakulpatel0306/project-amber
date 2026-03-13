@@ -78,11 +78,11 @@ interface CandidateMatch {
 }
 
 const statusOptions = [
-  { value: 'all', label: 'all status' },
-  { value: 'new', label: 'new' },
-  { value: 'reviewed', label: 'reviewed' },
-  { value: 'shortlisted', label: 'shortlisted' },
-  { value: 'rejected', label: 'rejected' },
+  { value: 'all', label: 'All Status' },
+  { value: 'new', label: 'New' },
+  { value: 'reviewed', label: 'Reviewed' },
+  { value: 'shortlisted', label: 'Shortlisted' },
+  { value: 'rejected', label: 'Rejected' },
 ];
 
 export function BrowseCandidates() {
@@ -306,9 +306,9 @@ export function BrowseCandidates() {
 
   if (!employer) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-8 text-center">
+      <div className="max-w-7xl mx-auto px-6 py-8 text-center">
         <Users className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
           Complete Your Profile
         </h2>
         <p style={{ color: 'var(--color-textMuted)' }}>
@@ -319,17 +319,17 @@ export function BrowseCandidates() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1
           className="text-2xl font-bold mb-2"
-          style={{ color: 'var(--color-text)' }}
+          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
         >
-          browse candidates
+          Browse Candidates
         </h1>
         <p style={{ color: 'var(--color-textSecondary)' }}>
-          candidates ranked by culture fit for your company
+          Candidates ranked by culture fit for your company
         </p>
       </div>
 
@@ -345,14 +345,22 @@ export function BrowseCandidates() {
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="search candidates..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
+              placeholder="Search candidates..."
+              className="w-full pl-10 pr-8 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2"
               style={{
                 backgroundColor: 'var(--color-surface)',
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-text)',
               }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <X className="w-3.5 h-3.5" style={{ color: 'var(--color-textMuted)' }} />
+              </button>
+            )}
           </div>
 
           {roles.length > 0 && (
@@ -374,7 +382,7 @@ export function BrowseCandidates() {
                 color: 'var(--color-text)',
               }}
             >
-              <option value="all">all roles</option>
+              <option value="all">All Roles</option>
               {roles.map(role => (
                 <option key={role.id} value={role.id}>
                   {role.title}
@@ -399,7 +407,7 @@ export function BrowseCandidates() {
             }}
           >
             <Filter className="w-4 h-4" />
-            filters
+            Filters
             {showFilters ? (
               <ChevronUp className="w-4 h-4" />
             ) : (
@@ -411,11 +419,7 @@ export function BrowseCandidates() {
         {/* Expanded Filters */}
         {showFilters && (
           <div
-            className="p-4 rounded-xl border"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
+            className="bento-card p-4"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -423,7 +427,7 @@ export function BrowseCandidates() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  status
+                  Status
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {statusOptions.map(option => (
@@ -457,7 +461,7 @@ export function BrowseCandidates() {
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  minimum match score: {minMatchScore}%
+                  Minimum Match Score: {minMatchScore}%
                 </label>
                 <input
                   type="range"
@@ -486,11 +490,7 @@ export function BrowseCandidates() {
       <div className="space-y-4">
         {filteredCandidates.length === 0 ? (
           <div
-            className="text-center py-12 rounded-xl border"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
+            className="bento-card text-center py-12"
           >
             <Users
               className="w-12 h-12 mx-auto mb-4 opacity-40"
@@ -498,8 +498,8 @@ export function BrowseCandidates() {
             />
             <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
               {candidates.length === 0
-                ? 'no candidates have completed their assessments yet'
-                : 'no candidates match your filters'}
+                ? 'No candidates have completed their assessments yet'
+                : 'No candidates match your filters'}
             </p>
           </div>
         ) : (
@@ -511,11 +511,7 @@ export function BrowseCandidates() {
             return (
               <div
                 key={match.candidate.id}
-                className="rounded-xl border transition-all"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                }}
+                className="bento-card transition-all"
               >
                 <div
                   className="p-5 cursor-pointer"
@@ -608,7 +604,7 @@ export function BrowseCandidates() {
                         className="text-xs"
                         style={{ color: 'var(--color-textMuted)' }}
                       >
-                        culture fit
+                        Culture Fit
                       </p>
                     </div>
                   </div>
@@ -654,7 +650,7 @@ export function BrowseCandidates() {
                           handleStatusChange(match.candidate.id, 'shortlisted');
                         }}
                       >
-                        shortlist
+                        Shortlist
                       </Button>
                       <Button
                         size="sm"
@@ -678,7 +674,7 @@ export function BrowseCandidates() {
                           }
                         }}
                       >
-                        request coffee chat
+                        Request Coffee Chat
                       </Button>
                     </div>
 
@@ -689,7 +685,7 @@ export function BrowseCandidates() {
                           borderColor: 'var(--color-border)',
                           color: 'var(--color-textMuted)',
                         }}
-                        title="mark as reviewed"
+                        title="Mark As Reviewed"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStatusChange(match.candidate.id, 'reviewed');
@@ -703,7 +699,7 @@ export function BrowseCandidates() {
                           borderColor: 'var(--color-border)',
                           color: 'var(--color-error)',
                         }}
-                        title="reject"
+                        title="Reject"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStatusChange(match.candidate.id, 'rejected');
@@ -723,7 +719,7 @@ export function BrowseCandidates() {
       {/* Load More */}
       {filteredCandidates.length > 0 && filteredCandidates.length >= 10 && (
         <div className="text-center mt-8">
-          <Button variant="outline">load more candidates</Button>
+          <Button variant="outline">Load More Candidates</Button>
         </div>
       )}
     </div>

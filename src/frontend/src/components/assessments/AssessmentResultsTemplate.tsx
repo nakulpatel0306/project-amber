@@ -86,7 +86,7 @@ export function AssessmentResultsTemplate({
           </motion.div>
           <motion.h1
             className="text-2xl font-bold mb-2"
-            style={{ color: 'var(--color-text)' }}
+            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -107,8 +107,7 @@ export function AssessmentResultsTemplate({
         {/* Top Result Highlight */}
         {topDimension && (
           <motion.div
-            className="p-5 rounded-2xl border mb-6 text-center"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="bento-card p-5 mb-6 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -127,8 +126,7 @@ export function AssessmentResultsTemplate({
 
         {/* Radar Chart */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card p-6 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -146,13 +144,12 @@ export function AssessmentResultsTemplate({
 
         {/* Dimension Breakdown */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card p-6 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             OCEAN Modifiers
           </h2>
           <div className="space-y-3">
@@ -176,8 +173,7 @@ export function AssessmentResultsTemplate({
 
         {/* Profile Enhanced */}
         <motion.div
-          className="p-4 rounded-xl mb-6 flex items-start gap-3"
-          style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+          className="bento-card p-4 mb-6 flex items-start gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}

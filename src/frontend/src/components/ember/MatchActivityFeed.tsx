@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, UserPlus, Zap, Bookmark, Coffee, ArrowUpRight, Star } from 'lucide-react';
-import type { EmployerResult } from '../../types/matching.types';
+import type { EmployerResult, CandidateResult } from '../../types/matching.types';
 import type { SavedMatch } from '../../types/matching.types';
 import type { Connection } from '../../types/connections.types';
 
 interface MatchActivityFeedProps {
-  matches: EmployerResult[];
+  mode?: 'candidate' | 'employer';
+  matches?: EmployerResult[];
+  candidateMatches?: CandidateResult[];
   savedMatches?: SavedMatch[];
   pendingSent?: Connection[];
   acceptedConnections?: Connection[];
@@ -124,7 +126,93 @@ function buildActivity(
   return items.slice(0, 5);
 }
 
-export function MatchActivityFeed({ matches, savedMatches = [], pendingSent = [], acceptedConnections = [] }: MatchActivityFeedProps) {
+function buildEmployerActivity(
+  candidates: CandidateResult[],
+  savedMatches: SavedMatch[],
+  pendingSent: Connection[],
+  acceptedConnections: Connection[],
+): ActivityItem[] {
+  const items: ActivityItem[] = [];
+  const sorted = [...candidates].sort((a, b) => b.overallScore - a.overallScore);
+
+  // Top match
+  if (sorted[0]) {
+    items.push({
+      icon: TrendingUp,
+      text: titleCase(`Top Candidate: ${sorted[0].name} At ${sorted[0].overallScore}%`),
+      time: 'Live',
+      sortDate: Date.now(),
+    });
+  }
+
+  // Strong matches
+  const strong = sorted.filter(c => c.overallScore >= 80).length;
+  if (strong > 0) {
+    items.push({
+      icon: Zap,
+      text: titleCase(`${strong} Strong Candidate${strong > 1 ? 's' : ''} (80%+)`),
+      time: 'Live',
+      sortDate: Date.now() - 1000,
+    });
+  }
+
+  // Saved candidates
+  for (const sm of savedMatches.slice(0, 2)) {
+    const candidate = candidates.find(c => c.candidateId === sm.candidate_id);
+    const name = candidate?.name || 'A Candidate';
+    items.push({
+      icon: Bookmark,
+      text: titleCase(`Shortlisted ${name}`),
+      time: timeAgo(sm.created_at),
+      sortDate: new Date(sm.created_at).getTime(),
+    });
+  }
+
+  // Pending connection requests
+  for (const conn of pendingSent.slice(0, 2)) {
+    const name = conn.receiver_name || 'A Candidate';
+    items.push({
+      icon: UserPlus,
+      text: titleCase(`Requested ${name}`),
+      time: timeAgo(conn.created_at),
+      sortDate: new Date(conn.created_at).getTime(),
+    });
+  }
+
+  // Accepted connections
+  for (const conn of acceptedConnections.slice(0, 2)) {
+    const name = conn.receiver_name || conn.sender_name || 'A Candidate';
+    items.push({
+      icon: Coffee,
+      text: titleCase(`Connected With ${name}`),
+      time: timeAgo(conn.updated_at),
+      sortDate: new Date(conn.updated_at).getTime(),
+    });
+  }
+
+  // Engine status
+  if (sorted.length > 0) {
+    items.push({
+      icon: ArrowUpRight,
+      text: titleCase(`Scanning ${sorted.length} Candidates`),
+      time: 'Live',
+      sortDate: 0,
+    });
+  }
+
+  if (items.length === 0) {
+    items.push({
+      icon: Star,
+      text: 'Complete Your Culture Quiz To See Candidates',
+      time: 'Now',
+      sortDate: 0,
+    });
+  }
+
+  return items.slice(0, 5);
+}
+
+export function MatchActivityFeed({ mode = 'candidate', matches = [], candidateMatches = [], savedMatches = [], pendingSent = [], acceptedConnections = [] }: MatchActivityFeedProps) {
   // Tick every 30s so relative timestamps stay fresh
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -133,9 +221,11 @@ export function MatchActivityFeed({ matches, savedMatches = [], pendingSent = []
   }, []);
 
   const activity = useMemo(
-    () => buildActivity(matches, savedMatches, pendingSent, acceptedConnections),
+    () => mode === 'employer'
+      ? buildEmployerActivity(candidateMatches, savedMatches, pendingSent, acceptedConnections)
+      : buildActivity(matches, savedMatches, pendingSent, acceptedConnections),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [matches, savedMatches, pendingSent, acceptedConnections],
+    [mode, matches, candidateMatches, savedMatches, pendingSent, acceptedConnections],
   );
 
   return (

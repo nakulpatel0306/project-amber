@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Search, X, MapPin, ArrowRight, Building2, Briefcase, Users, Globe } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
-import { staggerContainer, fadeUp } from '../../utils/motion';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { supabase } from '../../lib/supabase';
 import { avatarGradient } from '../../utils/matchHelpers';
@@ -18,6 +17,7 @@ interface Company {
   description: string;
   culture_values: string[];
   company_website: string;
+  company_logo_url: string;
   activeRolesCount: number;
   roles: { id: string; title: string; location: string; work_style: string | null }[];
 }
@@ -53,6 +53,7 @@ export function NetworkCompanies() {
             description: emp.description || '',
             culture_values: emp.culture_values || [],
             company_website: emp.company_website || '',
+            company_logo_url: emp.company_logo_url || '',
             activeRolesCount: activeRoles.length,
             roles: activeRoles.map((r: any) => ({ id: r.id, title: r.title, location: r.location || '', work_style: r.work_style })),
           };
@@ -161,11 +162,13 @@ export function NetworkCompanies() {
             <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>Try adjusting your search or filters</p>
           </div>
         ) : (
-          <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={staggerContainer} initial="hidden" animate="show">
-            {filtered.map(company => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((company, i) => (
               <motion.div
                 key={company.id}
-                variants={fadeUp}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.3) }}
                 className="p-4 rounded-xl border cursor-pointer transition-all hover:border-[var(--color-borderHover)]"
                 style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}
                 onClick={() => setSelectedCompany(company)}
@@ -173,9 +176,13 @@ export function NetworkCompanies() {
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
-                    style={{ background: avatarGradient(company.company_name) }}
+                    style={{ background: company.company_logo_url ? 'white' : avatarGradient(company.company_name) }}
                   >
-                    {company.company_name.charAt(0)}
+                    {company.company_logo_url ? (
+                      <img src={company.company_logo_url} alt={company.company_name} className="w-full h-full rounded-xl object-contain" style={{ backgroundColor: 'white' }} />
+                    ) : (
+                      company.company_name.charAt(0)
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold line-clamp-1" style={{ color: 'var(--color-text)' }}>{company.company_name}</p>
@@ -227,7 +234,7 @@ export function NetworkCompanies() {
                 </div>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         )}
       </div>
 
@@ -238,9 +245,13 @@ export function NetworkCompanies() {
             <div className="flex items-center gap-4">
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-bold text-white"
-                style={{ background: avatarGradient(selectedCompany.company_name) }}
+                style={{ background: selectedCompany.company_logo_url ? 'white' : avatarGradient(selectedCompany.company_name) }}
               >
-                {selectedCompany.company_name.charAt(0)}
+                {selectedCompany.company_logo_url ? (
+                  <img src={selectedCompany.company_logo_url} alt={selectedCompany.company_name} className="w-full h-full rounded-xl object-contain" style={{ backgroundColor: 'white' }} />
+                ) : (
+                  selectedCompany.company_name.charAt(0)
+                )}
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>{selectedCompany.company_name}</h3>

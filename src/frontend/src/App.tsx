@@ -235,7 +235,6 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="leaderboard" element={<Navigate to="/app/network?tab=leaderboard" replace />} />
 
                   {/* Employer routes */}
                   <Route
@@ -298,7 +297,6 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="employer/leaderboard" element={<Navigate to="/app/network?tab=leaderboard" replace />} />
                   <Route
                     path="employer/assessments/team-dynamics"
                     element={

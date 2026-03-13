@@ -1,31 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Briefcase,
-  Users,
-  Coffee,
   ArrowRight,
   CheckCircle2,
   TrendingUp,
-  Plus,
-  Star,
-  ChevronRight,
-  Target,
-  RotateCcw,
-  Clock,
-  X,
-  Sparkles,
-  Puzzle,
-  Brain,
-  MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { EmployerSetupModal } from '../employer/EmployerSetupModal';
-import { determineEmployerArchetype } from '../../data/employerArchetypes';
 import { supabase } from '../../lib/supabase';
-import { DashboardHeader } from './DashboardHeader';
+import { calculateCompatibility } from '../../lib/compatibilityScoring';
+import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 
+import { DashboardHeader } from './DashboardHeader';
+import { BentoMetricCard } from './BentoMetricCard';
+import { EmployerArchetypeStrip } from './EmployerArchetypeStrip';
+import { EmployerQuickActions } from './EmployerQuickActions';
+import { EmployerCandidateTable } from './EmployerCandidateTable';
+import { StreakTracker } from './StreakTracker';
+import { CompatibilityInsights } from './CompatibilityInsights';
+import { ScheduleWidget } from './ScheduleWidget';
+
+import type { UpcomingChat } from './DashboardCalendar';
 
 interface CulturePreferences {
   openness: number;
@@ -33,6 +29,16 @@ interface CulturePreferences {
   extraversion: number;
   agreeableness: number;
   neuroticism: number;
+}
+
+interface CandidateRow {
+  candidateId: string;
+  name: string;
+  headline: string;
+  location: string;
+  matchScore: number;
+  topTrait: string;
+  chatStatus: 'none' | 'pending' | 'accepted' | 'completed';
 }
 
 interface EmployerData {
@@ -48,22 +54,33 @@ interface EmployerData {
   updated_at: string | null;
 }
 
-interface RecentChat {
-  candidateName: string;
-  status: string;
-  time: string;
-}
-
 export function EmployerDashboard() {
   const { profile, user } = useAuth();
+  const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
   const [hasCompletedProfile, setHasCompletedProfile] = useState<boolean | null>(null);
-  const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState(false);
-  const [_hasCreatedRole, setHasCreatedRole] = useState(false);
+  const [hasCompletedCultureQuiz, setHasCompletedCultureQuiz] = useState<boolean | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [culturePreferences, setCulturePreferences] = useState<CulturePreferences | null>(null);
-  const [cultureValues, setCultureValues] = useState<string[]>([]);
-  const [lastCultureUpdate, setLastCultureUpdate] = useState<Date | null>(null);
+
+  // Stats
+  const [activeRolesCount, setActiveRolesCount] = useState(0);
+  const [totalApplicants, setTotalApplicants] = useState(0);
+  const [pendingChats, setPendingChats] = useState(0);
+  const [acceptedChats, setAcceptedChats] = useState(0);
+  const [completedChats, setCompletedChats] = useState(0);
+  const [avgMatchScore, setAvgMatchScore] = useState(0);
+  const [uniqueCandidates, setUniqueCandidates] = useState(0);
+
+  // Loading states
+  const [statsLoaded, setStatsLoaded] = useState(false);
+  const [_candidatesLoaded, setCandidatesLoaded] = useState(false);
+
+  // Data
+  const [allCandidates, setAllCandidates] = useState<CandidateRow[]>([]);
+  const [topCandidates, setTopCandidates] = useState<CandidateRow[]>([]);
+  const [candidatePage, setCandidatePage] = useState(0);
+  const [upcomingChats, setUpcomingChats] = useState<UpcomingChat[]>([]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -86,21 +103,17 @@ export function EmployerDashboard() {
 
       const typedEmployer = employer as EmployerData | null;
 
-      // Profile is complete if they have company_name or description filled out
       const profileComplete = !!(typedEmployer?.company_name || typedEmployer?.description);
       setHasCompletedProfile(profileComplete);
 
-      // Show modal automatically if profile is not complete AND user hasn't skipped this session
       const hasSkippedThisSession = sessionStorage.getItem('employer_setup_skipped');
       if (!profileComplete && !hasSkippedThisSession) {
         setShowSetupModal(true);
       }
 
-      // If they've completed the culture quiz
       const cultureComplete = !!typedEmployer?.culture_quiz_completed;
       setHasCompletedCultureQuiz(cultureComplete);
 
-      // Set culture preferences if quiz is complete
       if (cultureComplete && typedEmployer) {
         setCulturePreferences({
           openness: typedEmployer.openness_preference || 0,
@@ -109,49 +122,31 @@ export function EmployerDashboard() {
           agreeableness: typedEmployer.agreeableness_preference || 0,
           neuroticism: typedEmployer.neuroticism_preference || 0,
         });
-        setCultureValues(typedEmployer.culture_values || []);
-        if (typedEmployer.updated_at) {
-          setLastCultureUpdate(new Date(typedEmployer.updated_at));
-        }
+
       }
     };
 
     checkCompletionStatus();
-    // TODO: Check role creation status
-    setHasCreatedRole(false);
   }, [user]);
 
   const handleSetupComplete = () => {
     setShowSetupModal(false);
     setHasCompletedProfile(true);
-    // Clear the skip flag since profile is now complete
     sessionStorage.removeItem('employer_setup_skipped');
   };
 
   const handleSetupSkip = () => {
     setShowSetupModal(false);
-    // Mark that user has skipped setup this session
     sessionStorage.setItem('employer_setup_skipped', 'true');
   };
 
   const firstName = profile?.full_name?.split(' ')[0] || 'There';
 
-  // Real data from Supabase
-  const [topCandidates, setTopCandidates] = useState<Array<{ name: string; role: string; matchScore: number; topTrait: string }>>([]);
-  const [activeRoles, setActiveRoles] = useState<Array<{ title: string; applicants: number; newThisWeek: number }>>([]);
-  const [stats, setStats] = useState([
-    { label: 'Active Roles', value: '0', change: '' },
-    { label: 'Total Applicants', value: '0', change: '' },
-    { label: 'Pending Chats', value: '0', change: '' },
-    { label: 'Avg. Match Score', value: '--', change: '' },
-  ]);
-  const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
-  const [statsLoading, setStatsLoading] = useState(true);
-
+  // Load chats (independent of culture quiz)
   useEffect(() => {
     if (!user) return;
 
-    const loadDashboardData = async () => {
+    const loadChats = async () => {
       try {
         const { data: employer } = await supabase
           .from('employers')
@@ -161,193 +156,382 @@ export function EmployerDashboard() {
 
         if (!employer) return;
 
-        // Get roles
-        const { data: roles } = await supabase
-          .from('roles')
-          .select('*')
-          .eq('employer_id', employer.id)
-          .order('created_at', { ascending: false });
-
-        const activeRolesList = (roles || []).filter(r => r.status === 'active');
-
-        // Get applications for these roles
-        const roleIds = (roles || []).map(r => r.id);
-        let totalApps = 0;
-        const roleCandidates: Array<{ name: string; role: string; matchScore: number; topTrait: string }> = [];
-
-        if (roleIds.length > 0) {
-          const { data: apps } = await supabase
-            .from('applications')
-            .select('*, candidates(*, profiles:user_id(full_name)), roles!inner(title, employer_id)')
-            .eq('roles.employer_id', employer.id)
-            .order('overall_match_score', { ascending: false })
-            .limit(10);
-
-          totalApps = apps?.length || 0;
-
-          if (apps) {
-            for (const app of apps.slice(0, 3)) {
-              const candidate = app.candidates as Record<string, unknown> | null;
-              const profiles = candidate?.profiles as Record<string, unknown> | null;
-              const role = app.roles as Record<string, unknown> | null;
-              roleCandidates.push({
-                name: (profiles?.full_name as string) || 'Unknown',
-                role: (role?.title as string) || 'Unknown Role',
-                matchScore: app.overall_match_score || 0,
-                topTrait: ((candidate?.top_traits as string[]) || ['--'])[0],
-              });
-            }
-          }
-        }
-
-        // Get pending coffee chats
-        const { data: pendingChats } = await supabase
+        const { data: pendingChatData } = await supabase
           .from('coffee_chats')
           .select('id')
           .eq('employer_id', employer.id)
           .eq('status', 'pending');
 
-        // Get recent coffee chats (all statuses)
-        const { data: allChats } = await supabase
-          .from('coffee_chats')
-          .select('*, candidates!inner(profiles:user_id(full_name))')
-          .eq('employer_id', employer.id)
-          .order('updated_at', { ascending: false })
-          .limit(5);
+        setPendingChats(pendingChatData?.length || 0);
 
-        if (allChats) {
-          setRecentChats(allChats.map(c => {
-            const candidateRecord = c.candidates as Record<string, unknown> | null;
-            const candidateProfile = candidateRecord?.profiles as Record<string, unknown> | null;
-            return {
-              candidateName: (candidateProfile?.full_name as string) || 'Unknown',
-              status: c.status || 'pending',
-              time: c.updated_at
-                ? new Date(c.updated_at).toLocaleDateString()
-                : c.created_at
-                  ? new Date(c.created_at).toLocaleDateString()
-                  : '',
-            };
-          }));
+        const { data: connectionData } = await supabase
+          .from('coffee_chats')
+          .select('id, status')
+          .eq('employer_id', employer.id)
+          .in('status', ['accepted', 'completed']);
+
+        setAcceptedChats(connectionData?.filter(c => c.status === 'accepted').length || 0);
+        setCompletedChats(connectionData?.filter(c => c.status === 'completed').length || 0);
+
+        // Get ALL non-cancelled coffee chats for schedule widget
+        const { data: chats } = await supabase
+          .from('coffee_chats')
+          .select('*')
+          .eq('employer_id', employer.id)
+          .order('created_at', { ascending: false });
+
+        if (chats) {
+          setUpcomingChats(
+            chats
+              .filter((c: any) => c.status !== 'cancelled')
+              .map((c: any) => ({
+                id: c.id,
+                company: c.candidate_name || 'Unknown',
+                person: c.candidate_name || 'Unknown',
+                role: c.role_title || 'Coffee Chat',
+                time: c.scheduled_at ? new Date(c.scheduled_at).toLocaleDateString() : 'TBD',
+                scheduledAt: c.scheduled_at || null,
+                meetingLink: c.meeting_link || null,
+                status: c.status || 'pending',
+                preferredDates: c.preferred_dates || null,
+              }))
+          );
+        }
+      } catch (err) {
+        console.error('Error loading chats:', err);
+      }
+    };
+
+    loadChats();
+  }, [user]);
+
+  // Load dashboard stats + candidates
+  useEffect(() => {
+    if (!user) return;
+    if (!hasCompletedCultureQuiz || !culturePreferences) {
+      // If culture quiz not done, we know the final values already
+      if (hasCompletedCultureQuiz === false) {
+        setStatsLoaded(true);
+        setCandidatesLoaded(true);
+      }
+      return;
+    }
+
+    const loadDashboardData = async () => {
+      try {
+        const { data: employer } = await supabase
+          .from('employers')
+          .select('id, openness_preference, conscientiousness_preference, extraversion_preference, agreeableness_preference, neuroticism_preference, culture_values')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!employer) return;
+
+        // Get roles for active roles count
+        const { data: roles } = await supabase
+          .from('roles')
+          .select('id, status')
+          .eq('employer_id', employer.id);
+
+        const activeRolesList = (roles || []).filter(r => r.status === 'active');
+        setActiveRolesCount(activeRolesList.length);
+
+        // Get application count
+        if (roles && roles.length > 0) {
+          const { data: apps } = await supabase
+            .from('applications')
+            .select('id, roles!inner(employer_id)')
+            .eq('roles.employer_id', employer.id);
+          setTotalApplicants(apps?.length || 0);
+        } else {
+          setTotalApplicants(0);
         }
 
-        setTopCandidates(roleCandidates);
-        setActiveRoles(activeRolesList.map(r => ({
-          title: r.title,
-          applicants: totalApps,
-          newThisWeek: 0,
-        })));
-        setStats([
-          { label: 'Active Roles', value: String(activeRolesList.length), change: '' },
-          { label: 'Total Applicants', value: String(totalApps), change: '' },
-          { label: 'Pending Chats', value: String(pendingChats?.length || 0), change: '' },
-          { label: 'Avg. Match Score', value: roleCandidates.length > 0 ? `${Math.round(roleCandidates.reduce((s, c) => s + c.matchScore, 0) / roleCandidates.length)}%` : '--', change: '' },
-        ]);
+        // Fetch ALL candidates via RPC (bypasses RLS)
+        const { data: candidatesRaw, error: candidatesErr } = await supabase
+          .rpc('get_candidates_for_employer', { employer_user_id: user.id });
+
+        if (candidatesErr) {
+          console.error('Candidates fetch error:', candidatesErr.message);
+        }
+
+        const candidatesData = (candidatesRaw as Record<string, unknown>[] | null) || [];
+
+        if (candidatesData.length === 0) {
+          setStatsLoaded(true);
+          setCandidatesLoaded(true);
+          return;
+        }
+
+        // Fetch profile names via RPC
+        const candidateUserIds = candidatesData.map((c) => c.user_id as string).filter(Boolean);
+        let profileMap = new Map<string, string>();
+        if (candidateUserIds.length > 0) {
+          try {
+            const { data: rpcData, error: rpcErr } = await supabase
+              .rpc('get_profiles_by_ids', { user_ids: candidateUserIds });
+            const profiles = rpcErr ? [] : (rpcData || []);
+            for (const p of profiles) {
+              profileMap.set(p.id, p.full_name || '');
+            }
+          } catch {
+            // Profile lookup failed — names will fall back to 'Unknown'
+          }
+        }
+
+        // Build candidate_id → chat status map
+        let chatStatusMap = new Map<string, string>();
+        const { data: chatData } = await supabase
+          .from('coffee_chats')
+          .select('candidate_id, status')
+          .eq('employer_id', employer.id);
+
+        if (chatData) {
+          const priority: Record<string, number> = { completed: 3, accepted: 2, pending: 1 };
+          for (const c of chatData) {
+            const existing = chatStatusMap.get(c.candidate_id);
+            const existingPri = existing ? (priority[existing] || 0) : 0;
+            const newPri = priority[c.status] || 0;
+            if (newPri > existingPri) chatStatusMap.set(c.candidate_id, c.status);
+          }
+        }
+
+        // Calculate compatibility for each candidate
+        const candidateRows: CandidateRow[] = candidatesData
+          .filter((c) => c.openness_score !== null && c.openness_score !== undefined)
+          .map((c) => {
+            const candidateOCEAN = {
+              openness: (c.openness_score as number) || 50,
+              conscientiousness: (c.conscientiousness_score as number) || 50,
+              extraversion: (c.extraversion_score as number) || 50,
+              agreeableness: (c.agreeableness_score as number) || 50,
+              neuroticism: (c.neuroticism_score as number) || 50,
+            };
+
+            const result = calculateCompatibility({
+              candidateOCEAN,
+              employerPreferences: {
+                openness: employer.openness_preference || 50,
+                conscientiousness: employer.conscientiousness_preference || 50,
+                extraversion: employer.extraversion_preference || 50,
+                agreeableness: employer.agreeableness_preference || 50,
+                neuroticism: employer.neuroticism_preference || 50,
+                cultureValues: employer.culture_values || [],
+              },
+              roleRequirements: {},
+            });
+
+            const candidateId = (c.id as string) || '';
+            const rawChatStatus = chatStatusMap.get(candidateId) || 'none';
+
+            return {
+              candidateId,
+              name: profileMap.get(c.user_id as string) || 'Unknown',
+              headline: (c.headline as string) || '',
+              location: (c.location as string) || 'Remote',
+              matchScore: result.overallMatchScore,
+              topTrait: ((c.top_traits as string[]) || ['--'])[0],
+              chatStatus: rawChatStatus as CandidateRow['chatStatus'],
+            };
+          })
+          .sort((a, b) => b.matchScore - a.matchScore);
+
+        setAllCandidates(candidateRows);
+        setCandidatePage(0);
+        setTopCandidates(candidateRows.slice(0, 5));
+        setUniqueCandidates(candidateRows.length);
+
+        if (candidateRows.length > 0) {
+          setAvgMatchScore(Math.round(
+            candidateRows.reduce((s, c) => s + c.matchScore, 0) / candidateRows.length
+          ));
+        }
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
-        setStatsLoading(false);
+        setStatsLoaded(true);
+        setCandidatesLoaded(true);
       }
     };
 
     loadDashboardData();
-  }, [user]);
+  }, [user, hasCompletedCultureQuiz, culturePreferences]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'accepted':
-      case 'completed':
-        return <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--color-success)' }} />;
-      case 'cancelled':
-      case 'declined':
-        return <X className="w-4 h-4" style={{ color: 'var(--color-error, #EF4444)' }} />;
-      default:
-        return <Clock className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />;
+  const handleRefreshCandidates = () => {
+    if (allCandidates.length <= 5) return;
+    const nextPage = candidatePage + 1;
+    const start = (nextPage * 5) % allCandidates.length;
+    const page = allCandidates.slice(start, start + 5);
+    if (page.length < 5) {
+      page.push(...allCandidates.slice(0, 5 - page.length));
     }
+    setCandidatePage(nextPage);
+    setTopCandidates(page);
   };
 
+  const bestMatchScore = topCandidates.length > 0 ? topCandidates[0].matchScore : 0;
+
+  const showLoader = useMinLoader(!statsLoaded, 1500);
+
+  if (showLoader) {
+    return <CoffeeBrewLoader variant="fullscreen" />;
+  }
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      {/* Welcome Header */}
+    <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
+      {/* Dashboard Header */}
       <DashboardHeader
         greeting={hasCompletedCultureQuiz ? greeting : `${firstName}, ready to define your culture?`}
         firstName={hasCompletedCultureQuiz ? firstName : ''}
       />
 
+      {/* Culture Archetype Strip */}
+      {hasCompletedCultureQuiz && culturePreferences && (
+        <EmployerArchetypeStrip
+          culturePreferences={culturePreferences}
+        />
+      )}
+
+      {/* Key Metrics Row — 3 bento cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <BentoMetricCard
+          title="Culture Match Index"
+          loading={!statsLoaded}
+          value={avgMatchScore > 0 ? `${avgMatchScore}%` : hasCompletedCultureQuiz ? '0%' : 'N/A'}
+          subtitle={
+            avgMatchScore > 0
+              ? `Average compatibility across ${uniqueCandidates} ${uniqueCandidates === 1 ? 'candidate' : 'candidates'}`
+              : hasCompletedCultureQuiz
+              ? 'No candidates available yet'
+              : 'Complete culture quiz to unlock'
+          }
+          accentBorder
+          tags={avgMatchScore > 0 ? [
+            { label: `Best ${bestMatchScore}%`, shade: 'light' as const },
+            { label: `${uniqueCandidates} Candidates Analyzed`, shade: 'medium' as const },
+            { label: `${activeRolesCount} ${activeRolesCount === 1 ? 'Role' : 'Roles'}`, shade: 'dark' as const },
+          ] : hasCompletedCultureQuiz ? [
+            { label: 'Culture Defined', shade: 'light' as const },
+            { label: 'Awaiting Candidates', shade: 'medium' as const },
+          ] : [
+            { label: 'Not Started', shade: 'dark' as const },
+          ]}
+          onClick={() => navigate(hasCompletedCultureQuiz ? '/app/employer/ember' : '/app/employer/culture-assessment')}
+        />
+        <BentoMetricCard
+          title="Active Roles"
+          loading={!statsLoaded}
+          value={String(activeRolesCount)}
+          subtitle={
+            activeRolesCount > 0
+              ? `${totalApplicants} ${totalApplicants === 1 ? 'applicant' : 'applicants'} across all roles`
+              : 'No open positions right now'
+          }
+          accentBorder
+          tags={activeRolesCount > 0 ? [
+            { label: `${activeRolesCount} Active`, shade: 'light' as const },
+            { label: `${totalApplicants} Applied`, shade: 'medium' as const },
+            { label: 'Manage', shade: 'dark' as const },
+          ] : [
+            { label: 'Create a Role', shade: 'light' as const },
+          ]}
+          onClick={() => navigate('/app/employer/roles')}
+        />
+        <BentoMetricCard
+          title="Coffee Chats"
+          loading={!statsLoaded}
+          value={String(pendingChats + acceptedChats + completedChats)}
+          subtitle={
+            (pendingChats + acceptedChats + completedChats) > 0
+              ? 'Your conversation activity'
+              : 'Start connecting with candidates'
+          }
+          accentBorder
+          tags={(pendingChats + acceptedChats + completedChats) > 0 ? [
+            ...(pendingChats > 0 ? [{ label: `${pendingChats} Pending`, shade: 'light' as const }] : []),
+            ...(acceptedChats > 0 ? [{ label: `${acceptedChats} Scheduled`, shade: 'medium' as const }] : []),
+            ...(completedChats > 0 ? [{ label: `${completedChats} Completed`, shade: 'dark' as const }] : []),
+          ] : [
+            { label: 'Get Started', shade: 'light' as const },
+          ]}
+          onClick={() => navigate('/app/employer/chats')}
+        />
+      </div>
+
+      {/* Quick Actions */}
+      <EmployerQuickActions hasCompletedCultureQuiz={hasCompletedCultureQuiz === true} />
+
+      {/* Widgets row: Streak + Insights + Schedule (2-col) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StreakTracker />
+        <CompatibilityInsights viewerRole="employer" />
+        <div className="md:col-span-2">
+          <ScheduleWidget
+            upcomingChats={upcomingChats}
+            pendingChats={pendingChats}
+            acceptedChats={acceptedChats}
+            allAcceptedChats={upcomingChats.filter(c => c.status === 'accepted' && !c.scheduledAt)}
+            viewerRole="employer"
+          />
+        </div>
+      </div>
+
       {/* Setup Banner (if not complete) */}
-      {(!hasCompletedProfile || !hasCompletedCultureQuiz) && (
+      {(!hasCompletedProfile || hasCompletedCultureQuiz === false) && (
         <div
-          className="p-5 rounded-2xl mb-6 border"
-          style={{
-            backgroundColor: 'rgba(217, 119, 6, 0.08)',
-            borderColor: 'var(--color-accent)',
-          }}
+          className="bento-card"
+          style={{ borderColor: 'var(--color-accent)' }}
         >
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <h2
-                className="text-lg font-semibold mb-2 flex items-center gap-2"
+                className="text-sm font-semibold mb-2 flex items-center gap-2"
                 style={{ color: 'var(--color-text)' }}
               >
-                <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
-                Get Started with Hiring
+                <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                Get Started With Hiring
               </h2>
-              <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-textSecondary)' }}>
                 {!hasCompletedProfile
-                  ? 'Start by setting up your company profile, then define your culture to match with candidates.'
+                  ? 'Set up your company profile, then define your culture to match with candidates.'
                   : 'Define your company culture to start matching with candidates who fit your team.'}
               </p>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCompletedProfile ? '' : 'border-2'}`}
-                    style={{
-                      backgroundColor: hasCompletedProfile ? 'var(--color-success)' : 'transparent',
-                      borderColor: hasCompletedProfile ? 'transparent' : 'var(--color-border)',
-                    }}
-                  >
-                    {hasCompletedProfile && <CheckCircle2 className="w-3 h-3 text-white" />}
+              <div className="flex items-center gap-3">
+                {[
+                  { label: 'Profile', done: hasCompletedProfile },
+                  { label: 'Culture', done: hasCompletedCultureQuiz },
+                  { label: 'Candidates', done: false },
+                ].map((step, i) => (
+                  <div key={step.label} className="flex items-center gap-2">
+                    {i > 0 && (
+                      <div className="w-6 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
+                    )}
+                    <div
+                      className={`w-4 h-4 rounded-full flex items-center justify-center ${step.done ? '' : 'border'}`}
+                      style={{
+                        backgroundColor: step.done ? 'var(--color-success)' : 'transparent',
+                        borderColor: step.done ? 'transparent' : 'var(--color-border)',
+                      }}
+                    >
+                      {step.done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                    <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
+                      {step.label}
+                    </span>
                   </div>
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    Profile
-                  </span>
-                </div>
-                <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${hasCompletedCultureQuiz ? '' : 'border-2'}`}
-                    style={{
-                      backgroundColor: hasCompletedCultureQuiz ? 'var(--color-success)' : 'transparent',
-                      borderColor: hasCompletedCultureQuiz ? 'transparent' : 'var(--color-border)',
-                    }}
-                  >
-                    {hasCompletedCultureQuiz && <CheckCircle2 className="w-3 h-3 text-white" />}
-                  </div>
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    Culture
-                  </span>
-                </div>
-                <div className="w-8 h-0.5" style={{ backgroundColor: 'var(--color-border)' }} />
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-5 h-5 rounded-full border-2"
-                    style={{ borderColor: 'var(--color-border)' }}
-                  />
-                  <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                    Candidates
-                  </span>
-                </div>
+                ))}
               </div>
             </div>
             {hasCompletedProfile ? (
               <Link to="/app/employer/culture-assessment">
-                <Button rightIcon={<ArrowRight className="w-4 h-4" />}>
+                <Button size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
                   Define Culture
                 </Button>
               </Link>
             ) : (
               <Button
-                rightIcon={<ArrowRight className="w-4 h-4" />}
+                size="sm"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                 onClick={() => setShowSetupModal(true)}
               >
                 Set Up Company
@@ -357,484 +541,13 @@ export function EmployerDashboard() {
         </div>
       )}
 
-      {/* Culture Profile Summary (when quiz is complete) */}
-      {hasCompletedCultureQuiz && culturePreferences && (() => {
-        const preferences = {
-          openness: culturePreferences.openness,
-          conscientiousness: culturePreferences.conscientiousness,
-          extraversion: culturePreferences.extraversion,
-          agreeableness: culturePreferences.agreeableness,
-          neuroticism: 100 - culturePreferences.neuroticism,
-        };
-
-        const archetypeScores = {
-          innovation: preferences.openness,
-          collaboration: (preferences.extraversion + preferences.agreeableness) / 2,
-          results: preferences.conscientiousness,
-          warmth: preferences.agreeableness,
-          growth: (preferences.openness + preferences.conscientiousness) / 2,
-          excellence: preferences.conscientiousness,
-        };
-        const archetypes = determineEmployerArchetype(archetypeScores);
-
-        const decisionStyle = preferences.openness > 60 && preferences.conscientiousness > 60
-          ? 'Data-Informed Innovation'
-          : preferences.openness > 60
-          ? 'Intuition-Led'
-          : preferences.conscientiousness > 60
-          ? 'Data-Driven'
-          : 'Balanced Analysis';
-        const communicationStyle = preferences.extraversion > 60 && preferences.agreeableness > 60
-          ? 'Open & Supportive'
-          : preferences.extraversion > 60
-          ? 'Direct & Energetic'
-          : preferences.agreeableness > 60
-          ? 'Thoughtful & Caring'
-          : 'Balanced Dialogue';
-        const teamDynamic = preferences.extraversion > 60
-          ? 'Collaborative-First'
-          : preferences.conscientiousness > 60
-          ? 'Structured & Focused'
-          : 'Flexible Hybrid';
-
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Card 1: Culture Archetype */}
-            <div
-              className="p-5 rounded-2xl border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-                  <Sparkles className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                  Culture Archetype
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Link to="/app/employer/insights">
-                    <Button variant="ghost" size="sm">Details</Button>
-                  </Link>
-                  <Link to="/app/employer/culture-assessment">
-                    <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="w-3 h-3" />}>Retake</Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-sm font-semibold px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--color-accent)', color: 'white' }}
-                >
-                  {archetypes.primary.name}
-                </span>
-              </div>
-              <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--color-textMuted)' }}>
-                {archetypes.primary.description}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {archetypes.primary.strengths.slice(0, 4).map((s) => (
-                  <span
-                    key={s}
-                    className="px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Card 2: Culture Preferences (OCEAN Bars) */}
-            <div
-              className="p-5 rounded-2xl border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
-                <Brain className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                Culture Preferences
-              </h2>
-              <div className="space-y-2.5">
-                {[
-                  { label: 'Openness', value: preferences.openness, color: '#8B5CF6' },
-                  { label: 'Conscientiousness', value: preferences.conscientiousness, color: '#10B981' },
-                  { label: 'Extraversion', value: preferences.extraversion, color: '#F59E0B' },
-                  { label: 'Agreeableness', value: preferences.agreeableness, color: '#EC4899' },
-                  { label: 'Stability', value: preferences.neuroticism, color: '#06B6D4' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item.label}</span>
-                      <span className="text-xs font-semibold" style={{ color: item.color }}>{item.value}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
-                      <div
-                        className="h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${item.value}%`, backgroundColor: item.color }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Card 3: Operating Style */}
-            <div
-              className="p-5 rounded-2xl border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--color-text)' }}>
-                <Puzzle className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                Operating Style
-              </h2>
-              <div className="space-y-2">
-                {[
-                  { icon: Brain, label: 'Decision', value: decisionStyle, color: '#8B5CF6' },
-                  { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: '#10B981' },
-                  { icon: Users, label: 'Team Dynamic', value: teamDynamic, color: '#F59E0B' },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="p-2.5 rounded-lg"
-                    style={{ backgroundColor: `${item.color}10` }}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div
-                        className="w-5 h-5 rounded flex items-center justify-center"
-                        style={{ backgroundColor: `${item.color}20` }}
-                      >
-                        <item.icon className="w-3 h-3" style={{ color: item.color }} />
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--color-textMuted)' }}>{item.label}</span>
-                    </div>
-                    <p className="text-xs font-semibold leading-tight" style={{ color: item.color }}>{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Card 4: Ideal Candidates + Culture Values */}
-            <div
-              className="p-5 rounded-2xl border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-                  <Target className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-                  Ideal Candidates
-                </h2>
-                {lastCultureUpdate && (
-                  <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    {lastCultureUpdate.toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-              <div className="space-y-1.5 mb-3">
-                {archetypes.primary.idealCandidates.slice(0, 4).map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#8B5CF6' }} />
-                    <span className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-              {cultureValues.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {cultureValues.slice(0, 4).map((value, index) => (
-                    <span
-                      key={value}
-                      className="px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                      style={{
-                        backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-background)',
-                        color: index === 0 ? 'white' : 'var(--color-text)',
-                      }}
-                    >
-                      {value}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="p-4 rounded-xl border"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-            }}
-          >
-            {statsLoading ? (
-              <div className="h-8 w-16 rounded-md mb-1 animate-pulse" style={{ backgroundColor: 'var(--color-border)' }} />
-            ) : (
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-                {stat.value}
-              </p>
-            )}
-            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-              {stat.label}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Candidates */}
-        <div
-          className="p-6 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="font-semibold flex items-center gap-2"
-              style={{ color: 'var(--color-text)' }}
-            >
-              <Star className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              Top Candidates
-            </h2>
-            <Link
-              to="/app/employer/candidates"
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-accent)' }}
-            >
-              View All
-            </Link>
-          </div>
-
-          {hasCompletedCultureQuiz ? (
-            <div className="space-y-3">
-              {topCandidates.map((candidate, i) => (
-                <div
-                  key={i}
-                  className="p-3 rounded-lg flex items-center justify-between"
-                  style={{ backgroundColor: 'var(--color-background)' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{
-                        backgroundColor: 'var(--color-accent)',
-                      }}
-                    >
-                      <span className="text-sm font-medium text-white">
-                        {candidate.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>
-                        {candidate.name}
-                      </p>
-                      <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                        {candidate.role} · {candidate.topTrait}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className="px-2 py-1 rounded-lg text-sm font-semibold"
-                    style={{
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      color: 'var(--color-success)',
-                    }}
-                  >
-                    {candidate.matchScore}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-center py-3 min-h-0" style={{ color: 'var(--color-textMuted)' }}>
-              Define your culture to see matched candidates
-            </p>
-          )}
-        </div>
-
-        {/* Active Roles */}
-        <div
-          className="p-6 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="font-semibold flex items-center gap-2"
-              style={{ color: 'var(--color-text)' }}
-            >
-              <Briefcase className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-              Active Roles
-            </h2>
-            <Link
-              to="/app/employer/roles"
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-accent)' }}
-            >
-              Manage
-            </Link>
-          </div>
-
-          {activeRoles.length > 0 ? (
-            <div className="space-y-3">
-              {activeRoles.map((role, i) => (
-                <div
-                  key={i}
-                  className="p-3 rounded-lg flex items-center justify-between"
-                  style={{ backgroundColor: 'var(--color-background)' }}
-                >
-                  <div>
-                    <p className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>
-                      {role.title}
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                      {role.applicants} applicants · {role.newThisWeek} new this week
-                    </p>
-                  </div>
-                  <ChevronRight className="w-4 h-4" style={{ color: 'var(--color-textMuted)' }} />
-                </div>
-              ))}
-              <Link
-                to="/app/employer/roles/new"
-                className="p-3 rounded-lg flex items-center justify-center gap-2 border-2 border-dashed transition-colors hover:bg-[var(--color-background)]"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-textMuted)' }}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="text-sm">Add New Role</span>
-              </Link>
-            </div>
-          ) : (
-            <div className="text-center py-3 min-h-0">
-              <p className="text-sm mb-3" style={{ color: 'var(--color-textMuted)' }}>
-                No active roles yet
-              </p>
-              <Link to="/app/employer/roles/new">
-                <Button size="sm">Create Your First Role</Button>
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Hiring Pipeline */}
-      {hasCompletedCultureQuiz && (
-        <div
-          className="mt-6 p-6 rounded-xl border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <h2
-            className="font-semibold flex items-center gap-2 mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
-            <TrendingUp className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-            Hiring Pipeline
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { stage: 'Matched', count: topCandidates.length > 0 ? topCandidates.length : 0, color: '#8B5CF6', desc: 'Culture-fit candidates' },
-              { stage: 'Coffee Chat', count: parseInt(stats.find(s => s.label === 'Pending Chats')?.value || '0'), color: '#F59E0B', desc: 'In conversation' },
-              { stage: 'Interview', count: 0, color: '#10B981', desc: 'Formal interviews' },
-              { stage: 'Offer', count: 0, color: '#EC4899', desc: 'Offers extended' },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-xl text-center relative"
-                style={{ backgroundColor: 'var(--color-background)' }}
-              >
-                <div
-                  className="text-2xl font-bold mb-1"
-                  style={{ color: item.color }}
-                >
-                  {item.count}
-                </div>
-                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                  {item.stage}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                  {item.desc}
-                </p>
-                {i < 3 && (
-                  <div
-                    className="hidden md:block absolute top-1/2 -right-2 w-4 text-center"
-                    style={{ color: 'var(--color-border)', transform: 'translateY(-50%)' }}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Coffee Chat Activity */}
-      <div
-        className="mt-6 p-6 rounded-xl border"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2
-            className="font-semibold flex items-center gap-2"
-            style={{ color: 'var(--color-text)' }}
-          >
-            <Coffee className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
-            Recent Coffee Chat Activity
-          </h2>
-          <Link
-            to="/app/employer/chats"
-            className="text-sm font-medium"
-            style={{ color: 'var(--color-accent)' }}
-          >
-            View All
-          </Link>
-        </div>
-
-        {recentChats.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {recentChats.map((chat, i) => (
-              <div
-                key={i}
-                className="p-3 rounded-lg flex items-center gap-3"
-                style={{ backgroundColor: 'var(--color-background)' }}
-              >
-                {getStatusIcon(chat.status)}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate" style={{ color: 'var(--color-text)' }}>
-                    {chat.candidateName}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                    {chat.time}
-                  </p>
-                </div>
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs capitalize"
-                  style={{
-                    backgroundColor: 'var(--color-background)',
-                    color: 'var(--color-textSecondary)',
-                    border: '1px solid var(--color-border)',
-                  }}
-                >
-                  {chat.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-center py-3 min-h-0" style={{ color: 'var(--color-textMuted)' }}>
-            No coffee chat activity yet
-          </p>
-        )}
-      </div>
+      {/* Top Culture Matches — clean status table */}
+      <EmployerCandidateTable
+        candidates={topCandidates}
+        hasCompletedCultureQuiz={hasCompletedCultureQuiz === true}
+        onRowClick={(candidate) => navigate(`/app/employer/ember?deepdive=${candidate.candidateId}`)}
+        onRefresh={handleRefreshCandidates}
+      />
 
       {/* Employer Setup Modal */}
       <EmployerSetupModal

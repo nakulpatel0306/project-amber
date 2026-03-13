@@ -7,4 +7,3 @@ export { ManageRoles } from './ManageRoles';
 export { BrowseCandidates } from './BrowseCandidates';
 export { EmployerSetupModal } from './EmployerSetupModal';
 export { TopCandidates } from './TopCandidates';
-export { Leaderboard as EmployerLeaderboard } from './Leaderboard';

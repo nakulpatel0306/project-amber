@@ -552,21 +552,23 @@ export function CultureInsights() {
   });
 
   // Compatibility signals
-  const idealCompanySize = preferences.openness > 60 && preferences.extraversion < 50
-    ? 'Small to mid-size teams'
+  const hiringPace = preferences.extraversion > 60 && preferences.conscientiousness > 60
+    ? 'Rapid & Structured'
+    : preferences.extraversion > 60
+    ? 'Fast & Dynamic'
     : preferences.conscientiousness > 60
-    ? 'Mid to large organizations'
-    : 'Flexible team sizes';
+    ? 'Methodical & Steady'
+    : 'Flexible & Adaptive';
 
   const idealCandidateType = sortedPrefs[0][0] === 'openness'
-    ? 'Creative visionaries and problem-solvers'
+    ? 'Creative Visionaries & Problem-Solvers'
     : sortedPrefs[0][0] === 'conscientiousness'
-    ? 'Disciplined achievers and organizers'
+    ? 'Disciplined Achievers & Organizers'
     : sortedPrefs[0][0] === 'extraversion'
-    ? 'Energetic collaborators and communicators'
+    ? 'Energetic Collaborators & Communicators'
     : sortedPrefs[0][0] === 'agreeableness'
-    ? 'Empathetic team players and mediators'
-    : 'Steady performers and resilient anchors';
+    ? 'Empathetic Team Players & Mediators'
+    : 'Steady Performers & Resilient Anchors';
 
   // Personality facts (reuse for employer context)
   const personalityFacts = getFactsForProfile(preferences, 4);
@@ -577,13 +579,37 @@ export function CultureInsights() {
 
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
         {/* 1. Hero / Profile Header */}
         <PageBanner
           title={archetypes.primary.name}
-          subtitle={`${tagline}${cultureData?.company_name ? ` · ${cultureData.company_name}` : ''}`}
+          subtitle={tagline}
           icon={Building2}
+          iconNode={
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #b45309, #d97706, #f59e0b)' }}>
+              <Brain className="w-7 h-7 text-white" />
+            </div>
+          }
+          belowSubtitle={
+            <div className="flex flex-wrap items-center gap-2.5 mt-3">
+              {([
+                { label: 'Strongest', value: DIMENSION_INFO[sortedPrefs[0]?.[0]]?.label || 'Openness', color: '#8B5CF6', Icon: Brain },
+                { label: 'Style', value: decisionStyle, color: '#10B981', Icon: Compass },
+                { label: 'Top Score', value: `${sortedPrefs[0]?.[1] || 0}%`, color: '#f59e0b', Icon: TrendingUp },
+              ] as const).map(stat => (
+                <span key={stat.label} className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full text-[11px] font-semibold"
+                  style={{ background: `linear-gradient(135deg, ${stat.color}18, ${stat.color}08)`, border: `1px solid ${stat.color}30`, color: 'var(--color-text)' }}>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: `${stat.color}20` }}>
+                    <stat.Icon className="w-3 h-3" style={{ color: stat.color }} />
+                  </span>
+                  <span className="font-extrabold" style={{ color: stat.color }}>{stat.value}</span>
+                  <span style={{ color: 'var(--color-textSecondary)' }}>{stat.label}</span>
+                </span>
+              ))}
+            </div>
+          }
           rightContent={
             <div className="flex items-center gap-3 flex-wrap">
               <ProfileCompleteness completedCount={completionCount} variant="ring" size="sm" showLabel={false} />
@@ -604,13 +630,12 @@ export function CultureInsights() {
         {/* 2. OCEAN Mind Map + Dimension Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           <motion.div
-            className="lg:col-span-3 p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="lg:col-span-3 bento-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Ideal Candidate Profile
             </h2>
@@ -631,15 +656,14 @@ export function CultureInsights() {
               onDimensionClick={handleDimensionClick}
               selectedDimension={selectedDimension}
             />
-            <p className="text-xs text-center mt-2" style={{ color: 'var(--color-textMuted)' }}>
-              Click a dimension to explore details
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-center mt-2" style={{ color: 'var(--color-textMuted)' }}>
+              Click a dimension to explore
             </p>
           </motion.div>
 
           {/* Dimension Breakdown / Detail */}
           <motion.div
-            className="lg:col-span-2 p-6 rounded-2xl border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="lg:col-span-2 bento-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
@@ -653,7 +677,7 @@ export function CultureInsights() {
               />
             ) : (
               <div>
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                   <Layers className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                   Preference Breakdown
                 </h2>
@@ -682,7 +706,7 @@ export function CultureInsights() {
                           </div>
                         </div>
                       </button>
-                      <GradientProgressBar value={preferences[key as keyof typeof preferences]} showValue={false} size="sm" color={info.progressColor} />
+                      <GradientProgressBar value={preferences[key as keyof typeof preferences]} showValue={false} size="sm" color={info.color} />
                       <AnimatePresence>
                         {expandedDimension === key && (
                           <motion.div
@@ -716,18 +740,17 @@ export function CultureInsights() {
 
         {/* 3. Culture Archetypes */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Your Culture Archetypes
           </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Your unique combination shapes how you attract, retain, and develop talent
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+            Attract, Retain, Develop //
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <ArchetypeCard
@@ -762,13 +785,12 @@ export function CultureInsights() {
 
         {/* 4. Operating Style */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Puzzle className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Operating Style
           </h2>
@@ -791,13 +813,12 @@ export function CultureInsights() {
 
         {/* 5. Hiring Energy Map */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Battery className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Hiring Energy Map
           </h2>
@@ -833,18 +854,17 @@ export function CultureInsights() {
 
         {/* 6. Culture Environment */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             The Environment You Create
           </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Based on your culture profile, here's the work environment candidates can expect
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+            Culture Environment //
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -886,18 +906,17 @@ export function CultureInsights() {
 
         {/* 7. Growth Edges */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Leaf className="w-5 h-5" style={{ color: '#10B981' }} />
             Growth Edges
           </h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-            Areas where evolving your culture could attract a broader, stronger talent pool
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+            Room to Grow //
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {sortedPrefs.slice(-2).map(([key, value]) => {
@@ -916,7 +935,7 @@ export function CultureInsights() {
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{info.fullLabel}</span>
                     <span className="text-xs font-semibold ml-auto" style={{ color: info.color }}>{value}/100</span>
                   </div>
-                  <GradientProgressBar value={value} showValue={false} size="sm" color={info.progressColor} />
+                  <GradientProgressBar value={value} showValue={false} size="sm" color={info.color} />
                   <p className="text-xs mt-2" style={{ color: 'var(--color-textMuted)' }}>
                     {growthTips[key]}
                   </p>
@@ -930,18 +949,17 @@ export function CultureInsights() {
         {/* 8. Culture Strengths & Growth Areas — always shown */}
         {(cultureStrengths.length > 0 || cultureGaps.length > 0) && (
           <motion.div
-            className="p-6 rounded-2xl border mb-6"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="bento-card mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
           >
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Culture Strengths & Growth Areas
             </h2>
-            <p className="text-sm mb-6" style={{ color: 'var(--color-textMuted)' }}>
-              Where your culture excels and where intentional development could broaden your talent appeal
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
+              Strengths & Growth Areas //
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {cultureStrengths.length > 0 && (
@@ -996,36 +1014,35 @@ export function CultureInsights() {
 
         {/* 9. Compatibility Signals */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Compatibility Signals
           </h2>
-          <p className="text-sm mb-4" style={{ color: 'var(--color-textMuted)' }}>
-            What types of candidates you'll mesh with best
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-3" style={{ color: 'var(--color-textMuted)' }}>
+            Candidate & Culture Fit //
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-textMuted)' }}>Ideal Team Size</p>
-              <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{idealCompanySize}</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Hiring Pace</p>
+              <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{hiringPace}</p>
             </div>
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-textMuted)' }}>Ideal Candidates</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Ideal Candidates</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{idealCandidateType}</p>
             </div>
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-textMuted)' }}>Work Pace</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Work Pace</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
                 {(preferences.extraversion + preferences.openness) / 2 > 60
-                  ? 'Fast-paced & dynamic'
+                  ? 'Fast-Paced & Dynamic'
                   : (preferences.extraversion + preferences.openness) / 2 < 40
-                  ? 'Measured & thoughtful'
-                  : 'Balanced rhythm'}
+                  ? 'Measured & Thoughtful'
+                  : 'Balanced Rhythm'}
               </p>
             </div>
           </div>
@@ -1039,13 +1056,12 @@ export function CultureInsights() {
         {/* 10. Culture Values */}
         {cultureData?.culture_values && cultureData.culture_values.length > 0 && (
           <motion.div
-            className="p-6 rounded-2xl border mb-6"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            className="bento-card mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55 }}
           >
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
               <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Your Culture Values
             </h2>
@@ -1070,19 +1086,18 @@ export function CultureInsights() {
 
         {/* 11. Enhance Your Culture Profile — Supplementary Assessments */}
         <motion.div
-          className="p-6 rounded-2xl border mb-6"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Enhance Your Culture Profile
           </h2>
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-              Complete more assessments for a more nuanced culture profile and better candidate matches
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: 'var(--color-textMuted)' }}>
+              Deeper Culture Insights //
             </p>
             <ProfileCompleteness completedCount={completionCount} variant="ring" size="sm" showLabel={false} />
           </div>
@@ -1160,8 +1175,7 @@ export function CultureInsights() {
 
         {/* Disclaimer */}
         <motion.div
-          className="p-4 rounded-xl border mb-6 flex items-start gap-3"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="p-4 bento-card mb-6 flex items-start gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65 }}
@@ -1179,13 +1193,12 @@ export function CultureInsights() {
 
         {/* CTA */}
         <motion.div
-          className="p-6 rounded-2xl border text-center"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="bento-card text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Ready to Find Your Matches?</h3>
+          <h3 className="text-base font-bold tracking-tight mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ready to Find Your Matches?</h3>
           <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
             Discover candidates whose personality aligns with your culture
           </p>
@@ -1217,7 +1230,7 @@ function DimensionDetail({
             <info.icon className="w-6 h-6" style={{ color: info.color }} />
           </div>
           <div>
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{info.fullLabel}</h2>
+            <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{info.fullLabel}</h2>
             <p className="text-sm" style={{ color: info.color }}>Preference: {score}/100</p>
           </div>
         </div>
@@ -1226,7 +1239,7 @@ function DimensionDetail({
         </button>
       </div>
 
-      <GradientProgressBar value={score} color={info.progressColor} showValue={false} size="md" />
+      <GradientProgressBar value={score} color={info.color} showValue={false} size="md" />
 
       <p className="text-sm mt-3 mb-3" style={{ color: 'var(--color-textSecondary)' }}>{info.description}</p>
 

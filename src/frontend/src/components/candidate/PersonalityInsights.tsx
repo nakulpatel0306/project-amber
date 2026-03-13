@@ -433,7 +433,7 @@ export function PersonalityInsights() {
 
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
         {/* 1. Hero / Profile Header */}
         <PageBanner
@@ -837,7 +837,7 @@ export function PersonalityInsights() {
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Company Size</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
-                {scores.conscientiousness > 65 ? 'Mid-size to Enterprise' : scores.openness > 65 ? 'Startups to Mid-size' : 'Flexible across sizes'}
+                {scores.conscientiousness > 65 ? 'Mid-Size to Enterprise' : scores.openness > 65 ? 'Startups to Mid-Size' : 'Flexible Across Sizes'}
               </p>
             </div>
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -849,7 +849,7 @@ export function PersonalityInsights() {
             <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--color-textMuted)' }}>Management Style</p>
               <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
-                {scores.conscientiousness > 65 ? 'Structured & Clear' : scores.openness > 65 ? 'Autonomous & Trust-based' : 'Supportive & Flexible'}
+                {scores.conscientiousness > 65 ? 'Structured & Clear' : scores.openness > 65 ? 'Autonomous & Trust-Based' : 'Supportive & Flexible'}
               </p>
             </div>
           </div>
