@@ -90,9 +90,9 @@ export function JobSeekerDashboard() {
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setGreeting('Good morning');
-    else if (hour >= 12 && hour < 17) setGreeting('Good afternoon');
-    else if (hour >= 17 && hour < 21) setGreeting('Good evening');
+    if (hour >= 5 && hour < 12) setGreeting('Good Morning');
+    else if (hour >= 12 && hour < 17) setGreeting('Good Afternoon');
+    else if (hour >= 17 && hour < 21) setGreeting('Good Evening');
     else setGreeting('Hey There');
   }, []);
 
@@ -506,7 +506,7 @@ export function JobSeekerDashboard() {
             { label: `${uniqueCompanies} ${uniqueCompanies === 1 ? 'Company' : 'Companies'}`, shade: 'medium' as const },
             { label: 'Explore', shade: 'dark' as const },
           ] : []}
-          onClick={() => navigate('/app/network')}
+          onClick={() => navigate('/app/roles')}
         />
         <BentoMetricCard
           title="Coffee Chats"

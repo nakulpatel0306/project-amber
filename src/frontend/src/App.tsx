@@ -47,6 +47,7 @@ import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResu
 import { EmberAgent, EmberEmployerPage } from './components/ember';
 import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
 import { NetworkHub, PracticeCoffeeChat } from './components/network';
+import { RolesPage } from './components/pages/RolesPage';
 import { PricingPage, BillingSuccessPage, BillingCancelPage } from './components/pricing';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment, TeamDynamicsAssessment, LeadershipStyleAssessment, GrowthPhilosophyAssessment, WorkEnvironmentAssessment } from './components/assessments';
@@ -221,7 +222,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="jobs" element={<div className="p-8 text-center" style={{ color: 'var(--color-textMuted)' }}>Jobs page coming soon...</div>} />
+                  <Route path="roles" element={<RolesPage />} />
 
                   {/* Network Hub (shared route for both roles) */}
                   <Route path="network" element={<NetworkHub />} />
