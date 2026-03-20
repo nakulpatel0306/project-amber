@@ -107,10 +107,11 @@ CREATE TABLE IF NOT EXISTS public.employers (
   company_name TEXT NOT NULL,
   company_website TEXT,
   company_logo_url TEXT,
-  company_size TEXT CHECK (company_size IN ('1-10', '11-50', '51-200', '201-500', '500+')),
+  company_size TEXT CHECK (company_size IN ('1-10', '11-50', '51-200')),
   industry TEXT,
   description TEXT,
   location TEXT,
+  linkedin_url TEXT,
 
   -- Culture values (top 5 selected from predefined list)
   culture_values TEXT[],

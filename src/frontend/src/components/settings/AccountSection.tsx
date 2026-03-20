@@ -6,6 +6,9 @@ import { Input } from '../ui/Input';
 import { Modal, ModalFooter } from '../ui/Modal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export function AccountSection() {
   const navigate = useNavigate();
@@ -54,21 +57,38 @@ export function AccountSection() {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'delete my account') {
-      showError('Confirmation required', 'Please type "delete my account" to confirm.');
+    if (deleteConfirmText !== 'delete') {
+      showError('Confirmation required', 'Please type "delete" to confirm.');
       return;
     }
 
     setIsDeleting(true);
 
     try {
-      // Note: This requires server-side implementation to fully delete user data
-      // For now, we just sign out and redirect
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch(`${API_BASE}/api/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+        throw new Error(data.detail || 'Failed to delete account');
+      }
+
       await signOut();
       navigate('/');
-      success('Account deleted', 'Your account has been scheduled for deletion.');
+      success('Account deleted', 'Your account and all data have been permanently deleted.');
     } catch (err) {
-      showError('Delete failed', 'Please contact support to delete your account.');
+      const message = err instanceof Error ? err.message : 'Failed to delete account';
+      showError('Delete failed', message);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -292,10 +312,10 @@ export function AccountSection() {
           </div>
 
           <Input
-            label={`Type "delete my account" to confirm`}
+            label={`Type "delete" to confirm`}
             value={deleteConfirmText}
             onChange={e => setDeleteConfirmText(e.target.value)}
-            placeholder="delete my account"
+            placeholder="delete"
           />
         </div>
 
@@ -311,7 +331,7 @@ export function AccountSection() {
             variant="danger"
             onClick={handleDeleteAccount}
             isLoading={isDeleting}
-            disabled={deleteConfirmText !== 'delete my account'}
+            disabled={deleteConfirmText !== 'delete'}
           >
             Delete Account
           </Button>

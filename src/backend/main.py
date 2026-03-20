@@ -96,6 +96,7 @@ from auth import (
     AuthUser,
     get_current_user_dependency,
     check_email_in_profiles,
+    delete_user_account,
 )
 from auth.supabase_auth import is_auth_configured
 
@@ -382,6 +383,23 @@ async def check_email_exists(request: CheckEmailRequest):
         exists=False,
         message="No account found with this email."
     )
+
+
+@app.delete("/api/auth/delete-account")
+async def delete_account(user: AuthUser = Depends(require_auth)):
+    """
+    Delete the current user's account.
+    This permanently removes the user and all associated data.
+    """
+    success = delete_user_account(user.id)
+
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete account. Please try again or contact support."
+        )
+
+    return {"message": "Account successfully deleted"}
 
 
 # ============ User Endpoints ============

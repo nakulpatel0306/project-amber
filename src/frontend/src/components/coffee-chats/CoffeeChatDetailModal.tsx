@@ -12,12 +12,15 @@ import {
   Heart,
   Target,
   MessageCircle,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { Avatar } from '../ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { determineArchetype } from '../../lib/archetypes';
 import type { OCEANScores } from '../../lib/compatibilityScoring';
+import { getHobbyById } from '../../data/hobbies';
 
 interface EmployerDetails {
   id: string;
@@ -50,6 +53,7 @@ interface CandidateDetails {
   id: string;
   user_id: string;
   headline: string | null;
+  bio: string | null;
   location: string | null;
   preferred_work_style: string | null;
   openness_score: number;
@@ -58,6 +62,8 @@ interface CandidateDetails {
   agreeableness_score: number;
   neuroticism_score: number;
   top_traits: string[];
+  hobbies: string[];
+  catalog_photos: string[];
   profile?: {
     full_name: string;
     email: string;
@@ -115,7 +121,7 @@ export function CoffeeChatDetailModal({
         // Load candidate details
         const { data: candidate } = await supabase
           .from('candidates')
-          .select('*')
+          .select('id, user_id, headline, bio, location, preferred_work_style, openness_score, conscientiousness_score, extraversion_score, agreeableness_score, neuroticism_score, top_traits, hobbies, catalog_photos')
           .eq('id', partnerId)
           .single();
 
@@ -129,6 +135,8 @@ export function CoffeeChatDetailModal({
 
           setCandidateDetails({
             ...candidate,
+            hobbies: candidate.hobbies || [],
+            catalog_photos: candidate.catalog_photos || [],
             profile: profile || undefined,
           });
         }
@@ -346,27 +354,44 @@ export function CoffeeChatDetailModal({
                   className="p-4 rounded-xl"
                   style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
                 >
-                  {candidateDetails.headline && (
-                    <p className="text-sm mb-3" style={{ color: 'var(--color-textSecondary)' }}>
-                      {candidateDetails.headline}
+                  <div className="flex items-start gap-4 mb-3">
+                    <Avatar
+                      src={candidateDetails.profile?.avatar_url}
+                      fallback={candidateDetails.profile?.full_name || 'User'}
+                      size="lg"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                        {candidateDetails.profile?.full_name || 'Candidate'}
+                      </h4>
+                      {candidateDetails.headline && (
+                        <p className="text-sm" style={{ color: 'var(--color-accent)' }}>
+                          {candidateDetails.headline}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-3 text-sm mt-2">
+                        {candidateDetails.location && (
+                          <div className="flex items-center gap-1.5" style={{ color: 'var(--color-textMuted)' }}>
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>{candidateDetails.location}</span>
+                          </div>
+                        )}
+                        {candidateDetails.preferred_work_style && (
+                          <span
+                            className="px-2 py-0.5 rounded-full text-xs"
+                            style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-text)' }}
+                          >
+                            {candidateDetails.preferred_work_style}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {candidateDetails.bio && (
+                    <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+                      {candidateDetails.bio}
                     </p>
                   )}
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    {candidateDetails.location && (
-                      <div className="flex items-center gap-2" style={{ color: 'var(--color-textMuted)' }}>
-                        <MapPin className="w-4 h-4" />
-                        <span>{candidateDetails.location}</span>
-                      </div>
-                    )}
-                    {candidateDetails.preferred_work_style && (
-                      <span
-                        className="px-2 py-1 rounded-full text-xs"
-                        style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-text)' }}
-                      >
-                        {candidateDetails.preferred_work_style}
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -463,6 +488,56 @@ export function CoffeeChatDetailModal({
                         {trait}
                       </span>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Photo Gallery */}
+              {candidateDetails.catalog_photos && candidateDetails.catalog_photos.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                    <ImageIcon className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                    Photos
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {candidateDetails.catalog_photos.slice(0, 6).map((photo, idx) => (
+                      <div
+                        key={idx}
+                        className="aspect-square rounded-lg overflow-hidden"
+                      >
+                        <img
+                          src={photo}
+                          alt={`Photo ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hobbies & Interests */}
+              {candidateDetails.hobbies && candidateDetails.hobbies.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                    <Heart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                    Hobbies & Interests
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {candidateDetails.hobbies.map((hobbyId, idx) => {
+                      const hobby = getHobbyById(hobbyId);
+                      if (!hobby) return null;
+                      return (
+                        <span
+                          key={idx}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                        >
+                          <span>{hobby.emoji}</span>
+                          {hobby.name}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
