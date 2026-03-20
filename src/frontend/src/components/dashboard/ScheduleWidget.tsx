@@ -31,11 +31,12 @@ import { deriveDisplayStatus, sortChatsForDateView, type DisplayStatus } from '.
 import type { ChatStatus } from '../coffee-chats/CoffeeChatCard';
 import type { UpcomingChat } from './DashboardCalendar';
 
-// Reuse exact same dot colors from DashboardCalendar
+// Unified dot colors — matching Coffee Chats calendar
 const DOT_COLORS = {
   pending: '#9CA3AF',
-  upcoming: '#D97706',
-  completed: 'rgba(217, 119, 6, 0.4)',
+  upcoming: '#3B82F6',
+  completed: '#22C55E',
+  cancelled: '#EF4444',
 };
 
 interface ScheduleWidgetProps {

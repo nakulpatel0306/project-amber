@@ -71,10 +71,11 @@ function getTimeLabel(dateStr: string): string {
   return format(date, 'h:mm a');
 }
 
-function getDisplayStatusVariant(ds: DisplayStatus): 'success' | 'warning' | 'default' {
+function getDisplayStatusVariant(ds: DisplayStatus): 'success' | 'warning' | 'default' | 'info' {
   switch (ds) {
-    case 'upcoming': return 'success';
+    case 'upcoming': return 'info';
     case 'pending': return 'warning';
+    case 'completed': return 'success';
     default: return 'default';
   }
 }
@@ -89,11 +90,12 @@ function getDisplayStatusLabel(ds: DisplayStatus): string {
   }
 }
 
-// Dot colors for calendar indicators
+// Dot colors — unified with Coffee Chats calendar
 const DOT_COLORS = {
-  pending: '#9CA3AF',           // grey
-  upcoming: '#D97706',          // orange (amber-600)
-  completed: 'rgba(217, 119, 6, 0.4)', // lighter orange
+  pending: '#9CA3AF',     // grey
+  upcoming: '#3B82F6',    // blue
+  completed: '#22C55E',   // green
+  cancelled: '#EF4444',   // red
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -115,13 +117,14 @@ export function DashboardCalendar({
 
   // Compute display status for each chat and build date → dot info map
   const chatDateInfo = useMemo(() => {
-    const info: Record<string, { hasPending: boolean; hasUpcoming: boolean; hasCompleted: boolean }> = {};
+    const info: Record<string, { hasPending: boolean; hasUpcoming: boolean; hasCompleted: boolean; hasCancelled: boolean }> = {};
 
     const addToDate = (dateKey: string, displayStatus: DisplayStatus) => {
-      if (!info[dateKey]) info[dateKey] = { hasPending: false, hasUpcoming: false, hasCompleted: false };
+      if (!info[dateKey]) info[dateKey] = { hasPending: false, hasUpcoming: false, hasCompleted: false, hasCancelled: false };
       if (displayStatus === 'pending') info[dateKey].hasPending = true;
       else if (displayStatus === 'upcoming') info[dateKey].hasUpcoming = true;
       else if (displayStatus === 'completed') info[dateKey].hasCompleted = true;
+      else if (displayStatus === 'cancelled') info[dateKey].hasCancelled = true;
     };
 
     for (const chat of upcomingChats) {
@@ -304,7 +307,8 @@ export function DashboardCalendar({
                 const showPendingDot = dateInfo?.hasPending && viewerRole === 'candidate';
                 const showUpcomingDot = dateInfo?.hasUpcoming;
                 const showCompletedDot = dateInfo?.hasCompleted;
-                const hasDots = showPendingDot || showUpcomingDot || showCompletedDot;
+                const showCancelledDot = dateInfo?.hasCancelled;
+                const hasDots = showPendingDot || showUpcomingDot || showCompletedDot || showCancelledDot;
 
                 return (
                   <button
@@ -348,6 +352,9 @@ export function DashboardCalendar({
                         )}
                         {showCompletedDot && (
                           <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.completed }} />
+                        )}
+                        {showCancelledDot && (
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: DOT_COLORS.cancelled }} />
                         )}
                       </div>
                     )}
