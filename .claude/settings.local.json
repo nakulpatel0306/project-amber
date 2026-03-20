@@ -10,7 +10,27 @@
       "Bash(SUPABASE_URL=\"https://fnjjilryapsxhzxoqyzi.supabase.co\" SUPABASE_KEY=\"sb_publishable_04F3fCq6svuNIt-8OFE_KA_Dja1mA6D\" __NEW_LINE_52d9a07ac8f50a9f__ curl -s -X POST \"$SUPABASE_URL/auth/v1/token?grant_type=password\" -H \"apikey: $SUPABASE_KEY\" -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"test-probe@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"ProbeTest123!\"\"\"\"}')",
       "Bash(__NEW_LINE_c55e866680ac0c6e__ python3 -c \"\nimport urllib.request\nimport json\n\nurl = ''$SUPABASE_URL/auth/v1/token?grant_type=password''\nheaders = {\n    ''apikey'': ''$SUPABASE_KEY'',\n    ''Content-Type'': ''application/json''\n}\nbody = json.dumps\\({''email'': ''test-probe@example.com'', ''password'': ''ProbeTest123!''}\\).encode\\(\\)\n\nreq = urllib.request.Request\\(url, data=body, headers=headers, method=''POST''\\)\ntry:\n    with urllib.request.urlopen\\(req\\) as resp:\n        data = json.loads\\(resp.read\\(\\)\\)\n        print\\(''LOGIN SUCCESS''\\)\n        user = data.get\\(''user'', {}\\)\n        print\\(''  email:'', user.get\\(''email''\\)\\)\n        print\\(''  app_metadata:'', json.dumps\\(user.get\\(''app_metadata'', {}\\)\\)\\)\n        for i in user.get\\(''identities'', []\\):\n            print\\(''  identity_id:'', i.get\\(''identity_id''\\)\\)\n            print\\(''  id:'', i.get\\(''id''\\)\\)\n            print\\(''  provider:'', i.get\\(''provider''\\)\\)\nexcept urllib.error.HTTPError as e:\n    data = json.loads\\(e.read\\(\\)\\)\n    print\\(''LOGIN FAILED:'', json.dumps\\(data\\)\\)\n\")",
       "Bash(git add:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git clean:*)",
+      "Bash(git stash:*)",
+      "Bash(node scripts/seedAllUsers.mjs:*)",
+      "Bash(node scripts/checkDatabase.mjs:*)",
+      "Bash(node scripts/checkUsers.mjs:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__execute_sql",
+      "Bash(pip install:*)",
+      "mcp__supabase__list_tables",
+      "Bash(git merge:*)"
     ]
   }
 }
