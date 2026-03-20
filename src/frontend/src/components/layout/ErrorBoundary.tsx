@@ -1,6 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { RefreshCw, Home } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { EmberFirefly } from '../ember/EmberFirefly';
 
 interface Props {
   children: ReactNode;
@@ -46,28 +47,31 @@ export class ErrorBoundary extends Component<Props, State> {
           style={{ backgroundColor: 'var(--color-background)' }}
         >
           <div className="max-w-md w-full text-center">
-            <div
-              className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center"
-              style={{ backgroundColor: 'var(--color-error)', opacity: 0.1 }}
-            >
-              <AlertTriangle
-                className="w-8 h-8"
-                style={{ color: 'var(--color-error)' }}
+            {/* Dimmed / flickering Ember firefly */}
+            <div className="relative mx-auto mb-6 w-24 h-24 flex items-center justify-center">
+              <div
+                className="absolute inset-0 rounded-full animate-pulse"
+                style={{
+                  background: 'radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%)',
+                }}
               />
+              <div style={{ opacity: 0.4, filter: 'grayscale(0.6)' }}>
+                <EmberFirefly size="lg" mood="thinking" animated />
+              </div>
             </div>
 
             <h1
               className="text-xl font-semibold mb-2"
               style={{ color: 'var(--color-text)' }}
             >
-              something went wrong
+              Something Went Wrong
             </h1>
 
             <p
               className="text-sm mb-6"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              we encountered an unexpected error. please try again or return to
+              We encountered an unexpected error. Please try again or return to
               the home page.
             </p>
 
@@ -83,7 +87,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   className="cursor-pointer text-sm font-medium"
                   style={{ color: 'var(--color-textSecondary)' }}
                 >
-                  error details
+                  Error Details
                 </summary>
                 <pre
                   className="mt-2 text-xs overflow-auto"
@@ -100,13 +104,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleGoHome}
                 leftIcon={<Home className="w-4 h-4" />}
               >
-                go home
+                Go Home
               </Button>
               <Button
                 onClick={this.handleRetry}
                 leftIcon={<RefreshCw className="w-4 h-4" />}
               >
-                try again
+                Try Again
               </Button>
             </div>
           </div>

@@ -27,7 +27,7 @@ export function QuickActions({ hasCompletedAssessment }: QuickActionsProps) {
     {
       icon: Search,
       label: 'Browse Roles',
-      onClick: () => navigate('/app/network?tab=roles'),
+      onClick: () => navigate('/app/roles'),
     },
     {
       icon: MessageCircle,

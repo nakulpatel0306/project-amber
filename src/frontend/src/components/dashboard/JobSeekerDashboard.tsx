@@ -66,6 +66,7 @@ export function JobSeekerDashboard() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [personalityScores, setPersonalityScores] = useState<PersonalityScores | null>(null);
   const [topTraits, setTopTraits] = useState<string[]>([]);
+  const [testError, setTestError] = useState(false);
 
   // Stats
   const [_profileCompletion, setProfileCompletion] = useState(0);
@@ -459,6 +460,15 @@ export function JobSeekerDashboard() {
     <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
       {/* Dashboard Header — search + date + notifications */}
       <DashboardHeader greeting={greeting} firstName={firstName} />
+
+      {/* DEV: Test error boundary */}
+      {testError && (() => { throw new Error('Test error'); })()}
+      <button
+        onClick={() => setTestError(true)}
+        className="text-[10px] px-2 py-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20"
+      >
+        Test Error Page
+      </button>
 
       {/* Archetype Strip — editorial personality display */}
       {hasCompletedAssessment === true && personalityScores && topTraits.length > 0 && (
