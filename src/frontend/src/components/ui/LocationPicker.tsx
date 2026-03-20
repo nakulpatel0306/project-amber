@@ -8,92 +8,119 @@ interface LocationPickerProps {
   label?: string;
   placeholder?: string;
   error?: string;
+  required?: boolean;
 }
 
-const COUNTRIES = [
-  'United States',
-  'Canada',
-  'United Kingdom',
-  'Australia',
-  'Germany',
-  'France',
-  'India',
-  'China',
-  'Japan',
-  'Brazil',
-  'Mexico',
-  'Spain',
-  'Italy',
-  'Netherlands',
-  'South Korea',
-  'Singapore',
-  'Ireland',
-  'Sweden',
-  'Switzerland',
-  'Poland',
-  'Belgium',
-  'Austria',
-  'Portugal',
-  'Denmark',
-  'Norway',
-  'Finland',
-  'New Zealand',
-  'South Africa',
-  'United Arab Emirates',
-  'Saudi Arabia',
-  'Israel',
-  'Indonesia',
-  'Malaysia',
-  'Thailand',
-  'Vietnam',
-  'Philippines',
-  'Argentina',
-  'Colombia',
-  'Chile',
-  'Peru',
-  'Egypt',
-  'Nigeria',
-  'Kenya',
-  'Pakistan',
-  'Bangladesh',
-  'Russia',
-  'Turkey',
-  'Greece',
-  'Czech Republic',
-  'Romania',
-  'Hungary',
-  'Ukraine',
-  'Hong Kong',
-  'Taiwan',
-  'Iceland',
-  'Luxembourg',
-  'Malta',
-  'Cyprus',
-  'Estonia',
-  'Latvia',
-  'Lithuania',
-  'Slovenia',
-  'Croatia',
-  'Serbia',
-  'Bulgaria',
-  'Slovakia',
+// Major cities and tech hubs - sorted alphabetically
+const LOCATIONS = [
   'Remote',
-].sort();
+  // North America
+  'San Francisco, CA',
+  'New York, NY',
+  'Los Angeles, CA',
+  'Seattle, WA',
+  'Austin, TX',
+  'Boston, MA',
+  'Chicago, IL',
+  'Denver, CO',
+  'Miami, FL',
+  'San Diego, CA',
+  'Atlanta, GA',
+  'Dallas, TX',
+  'Houston, TX',
+  'Phoenix, AZ',
+  'Portland, OR',
+  'San Jose, CA',
+  'Palo Alto, CA',
+  'Mountain View, CA',
+  'Toronto, Canada',
+  'Vancouver, Canada',
+  'Montreal, Canada',
+  'Calgary, Canada',
+  'Ottawa, Canada',
+  // Europe
+  'London, UK',
+  'Berlin, Germany',
+  'Munich, Germany',
+  'Paris, France',
+  'Amsterdam, Netherlands',
+  'Dublin, Ireland',
+  'Stockholm, Sweden',
+  'Barcelona, Spain',
+  'Madrid, Spain',
+  'Zurich, Switzerland',
+  'Vienna, Austria',
+  'Copenhagen, Denmark',
+  'Oslo, Norway',
+  'Helsinki, Finland',
+  'Lisbon, Portugal',
+  'Milan, Italy',
+  'Rome, Italy',
+  'Brussels, Belgium',
+  'Warsaw, Poland',
+  'Prague, Czech Republic',
+  'Budapest, Hungary',
+  'Tallinn, Estonia',
+  // Asia Pacific
+  'Singapore',
+  'Hong Kong',
+  'Tokyo, Japan',
+  'Sydney, Australia',
+  'Melbourne, Australia',
+  'Bangalore, India',
+  'Mumbai, India',
+  'Delhi, India',
+  'Hyderabad, India',
+  'Beijing, China',
+  'Shanghai, China',
+  'Shenzhen, China',
+  'Seoul, South Korea',
+  'Taipei, Taiwan',
+  'Auckland, New Zealand',
+  'Jakarta, Indonesia',
+  'Kuala Lumpur, Malaysia',
+  'Bangkok, Thailand',
+  'Ho Chi Minh City, Vietnam',
+  'Manila, Philippines',
+  // Middle East & Africa
+  'Tel Aviv, Israel',
+  'Dubai, UAE',
+  'Abu Dhabi, UAE',
+  'Riyadh, Saudi Arabia',
+  'Cape Town, South Africa',
+  'Johannesburg, South Africa',
+  'Lagos, Nigeria',
+  'Nairobi, Kenya',
+  'Cairo, Egypt',
+  // Latin America
+  'São Paulo, Brazil',
+  'Mexico City, Mexico',
+  'Buenos Aires, Argentina',
+  'Bogotá, Colombia',
+  'Santiago, Chile',
+  'Lima, Peru',
+].sort((a, b) => {
+  // Keep "Remote" at the top
+  if (a === 'Remote') return -1;
+  if (b === 'Remote') return 1;
+  return a.localeCompare(b);
+});
 
 export function LocationPicker({
   value,
   onChange,
-  label = 'Country',
-  placeholder = 'Select country',
+  label = 'Location',
+  placeholder = 'Select location',
   error,
 }: LocationPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const filteredCountries = search
-    ? COUNTRIES.filter(c => c.toLowerCase().includes(search.toLowerCase()))
-    : COUNTRIES;
+  const filteredLocations = search
+    ? LOCATIONS.filter(loc => loc.toLowerCase().includes(search.toLowerCase()))
+    : LOCATIONS;
 
   // Close on outside click
   useEffect(() => {
@@ -108,16 +135,27 @@ export function LocationPicker({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (country: string) => {
-    onChange(country);
-    setIsOpen(false);
-    setSearch('');
+  const handleSelect = (location: string) => {
+    if (location === 'Other') {
+      setShowCustomInput(true);
+      setIsOpen(false);
+      setSearch('');
+    } else {
+      onChange(location);
+      setIsOpen(false);
+      setSearch('');
+      setShowCustomInput(false);
+    }
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange('');
+    setShowCustomInput(false);
   };
+
+  // Check if current value is a custom location (not in predefined list)
+  const isCustomLocation = value && !LOCATIONS.includes(value);
 
   return (
     <div className="w-full" ref={containerRef}>
@@ -130,6 +168,54 @@ export function LocationPicker({
         </label>
       )}
 
+      {/* Show custom input OR dropdown button */}
+      {(showCustomInput || isCustomLocation) ? (
+        <div className="relative">
+          <MapPin
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+            style={{ color: 'var(--color-textMuted)' }}
+          />
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Enter city, state/country"
+            className={cn(
+              'w-full pl-10 pr-20 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2',
+              error
+                ? 'border-[var(--color-error)] focus:ring-[var(--color-error)]'
+                : 'border-[var(--color-border)] focus:ring-[var(--color-accent)]'
+            )}
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCustomInput(false);
+                setIsOpen(true);
+              }}
+              className="text-xs px-2 py-1 rounded hover:bg-[var(--color-background)]"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              Browse
+            </button>
+            {value && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-1 rounded hover:bg-[var(--color-background)]"
+                style={{ color: 'var(--color-textMuted)' }}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
       <div className="relative">
         <button
           type="button"
@@ -194,7 +280,7 @@ export function LocationPicker({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search countries..."
+                  placeholder="Search cities..."
                   autoFocus
                   className="w-full pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none"
                   style={{
@@ -205,35 +291,61 @@ export function LocationPicker({
               </div>
             </div>
 
-            {/* Country list */}
+            {/* Location list */}
             <div className="max-h-48 overflow-y-auto">
-              {filteredCountries.length > 0 ? (
-                filteredCountries.map(country => (
+              {filteredLocations.length > 0 ? (
+                <>
+                  {filteredLocations.map(location => (
+                    <button
+                      key={location}
+                      type="button"
+                      onClick={() => handleSelect(location)}
+                      className={cn(
+                        'w-full px-4 py-2.5 text-sm text-left transition-colors',
+                        'hover:bg-[var(--color-surface)]',
+                        value === location && 'bg-[var(--color-accent)]/10'
+                      )}
+                      style={{
+                        color: value === location ? 'var(--color-accent)' : 'var(--color-text)'
+                      }}
+                    >
+                      {location}
+                    </button>
+                  ))}
+                  {/* Other option */}
                   <button
-                    key={country}
                     type="button"
-                    onClick={() => handleSelect(country)}
+                    onClick={() => handleSelect('Other')}
                     className={cn(
-                      'w-full px-4 py-2.5 text-sm text-left transition-colors',
-                      'hover:bg-[var(--color-surface)]',
-                      value === country && 'bg-[var(--color-accent)]/10'
+                      'w-full px-4 py-2.5 text-sm text-left transition-colors border-t',
+                      'hover:bg-[var(--color-surface)]'
                     )}
                     style={{
-                      color: value === country ? 'var(--color-accent)' : 'var(--color-text)'
+                      color: 'var(--color-textMuted)',
+                      borderColor: 'var(--color-border)'
                     }}
                   >
-                    {country}
+                    Other location...
                   </button>
-                ))
+                </>
               ) : (
                 <div className="px-4 py-3 text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                  No countries found
+                  No locations found.{' '}
+                  <button
+                    type="button"
+                    onClick={() => handleSelect('Other')}
+                    className="underline"
+                    style={{ color: 'var(--color-accent)' }}
+                  >
+                    Enter custom location
+                  </button>
                 </div>
               )}
             </div>
           </div>
         )}
       </div>
+      )}
 
       {error && (
         <p className="mt-1.5 text-xs" style={{ color: 'var(--color-error)' }}>

@@ -5,6 +5,8 @@ Verifies JWT tokens issued by Supabase Auth.
 """
 
 import os
+import ssl
+import certifi
 from typing import Optional
 from dataclasses import dataclass
 from datetime import datetime
@@ -22,6 +24,7 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # Supabase client (lazy initialization)
 _supabase_client: Optional[Client] = None
+_jwks_client: Optional[PyJWKClient] = None
 
 
 def get_supabase_client() -> Optional[Client]:
@@ -30,6 +33,17 @@ def get_supabase_client() -> Optional[Client]:
     if _supabase_client is None and SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
         _supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     return _supabase_client
+
+
+def get_jwks_client() -> Optional[PyJWKClient]:
+    """Get the JWKS client for ES256 token verification."""
+    global _jwks_client
+    if _jwks_client is None and SUPABASE_URL:
+        jwks_url = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+        # Use certifi SSL context to fix macOS certificate issues
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        _jwks_client = PyJWKClient(jwks_url, ssl_context=ssl_context)
+    return _jwks_client
 
 
 def check_email_in_profiles(email: str) -> bool:
@@ -46,7 +60,6 @@ def check_email_in_profiles(email: str) -> bool:
         return False
 
 # JWT configuration
-JWT_ALGORITHM = "HS256"
 JWT_AUDIENCE = "authenticated"
 
 
@@ -83,31 +96,29 @@ def verify_token(token: str) -> dict:
     Raises:
         HTTPException: If token is invalid or expired
     """
-    if not SUPABASE_JWT_SECRET:
+    if not SUPABASE_URL:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication not configured. Set SUPABASE_JWT_SECRET."
+            detail="Authentication not configured. Set SUPABASE_URL."
         )
 
     try:
-        # Decode and verify the JWT
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=[JWT_ALGORITHM],
-            audience=JWT_AUDIENCE,
-        )
-
-        # Check expiration
-        exp = payload.get("exp")
-        if exp and datetime.utcnow().timestamp() > exp:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired",
-                headers={"WWW-Authenticate": "Bearer"},
+        # Try ES256 verification using JWKS (newer Supabase projects)
+        jwks_client = get_jwks_client()
+        if jwks_client:
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["ES256"],
+                audience=JWT_AUDIENCE,
             )
+            return payload
 
-        return payload
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication not configured properly."
+        )
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -125,6 +136,13 @@ def verify_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        print(f"Token verification error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token verification failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -171,4 +189,28 @@ def get_current_user(token: str) -> AuthUser:
 
 def is_auth_configured() -> bool:
     """Check if authentication is properly configured."""
-    return bool(SUPABASE_JWT_SECRET)
+    return bool(SUPABASE_URL)
+
+
+def delete_user_account(user_id: str) -> bool:
+    """
+    Delete a user account from Supabase Auth.
+    This will cascade delete all related data due to foreign key constraints.
+
+    Args:
+        user_id: The UUID of the user to delete
+
+    Returns:
+        True if successful, False otherwise
+    """
+    client = get_supabase_client()
+    if not client:
+        return False
+
+    try:
+        # Delete user from Supabase Auth (this cascades to profiles and other tables)
+        client.auth.admin.delete_user(user_id)
+        return True
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return False

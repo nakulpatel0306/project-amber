@@ -43,13 +43,11 @@ export const WORK_STYLES = [
   { id: 'flexible', label: 'Flexible', description: 'Choose what works for you' },
 ] as const;
 
-// Company size options
+// Company size options (startup-focused)
 export const COMPANY_SIZES = [
   { id: '1-10', label: '1-10 employees', description: 'Early stage startup' },
-  { id: '11-50', label: '11-50 employees', description: 'Small company' },
-  { id: '51-200', label: '51-200 employees', description: 'Medium company' },
-  { id: '201-500', label: '201-500 employees', description: 'Large company' },
-  { id: '500+', label: '500+ employees', description: 'Enterprise' },
+  { id: '11-50', label: '11-50 employees', description: 'Growing startup' },
+  { id: '51-200', label: '51-200 employees', description: 'Scaling company' },
 ] as const;
 
 // Job sectors / categories for employer role creation

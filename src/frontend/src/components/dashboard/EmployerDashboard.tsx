@@ -52,6 +52,7 @@ interface EmployerData {
   neuroticism_preference: number | null;
   culture_values: string[] | null;
   updated_at: string | null;
+  setup_completed_at: string | null;
 }
 
 export function EmployerDashboard() {
@@ -103,11 +104,18 @@ export function EmployerDashboard() {
 
       const typedEmployer = employer as EmployerData | null;
 
-      const profileComplete = !!(typedEmployer?.company_name || typedEmployer?.description);
-      setHasCompletedProfile(profileComplete);
+      // Profile is complete if setup wizard was completed (not just default values)
+      // Check: setup_completed_at is set, OR company_name is not the default "My Company" with actual description
+      const hasCompletedSetup = !!(
+        typedEmployer?.setup_completed_at ||
+        (typedEmployer?.company_name &&
+         typedEmployer.company_name !== 'My Company' &&
+         typedEmployer?.description)
+      );
+      setHasCompletedProfile(hasCompletedSetup);
 
       const hasSkippedThisSession = sessionStorage.getItem('employer_setup_skipped');
-      if (!profileComplete && !hasSkippedThisSession) {
+      if (!hasCompletedSetup && !hasSkippedThisSession) {
         setShowSetupModal(true);
       }
 

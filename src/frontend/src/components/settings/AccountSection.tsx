@@ -8,6 +8,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export function AccountSection() {
   const navigate = useNavigate();
   const { user, updatePassword, signOut } = useAuth();
@@ -55,8 +57,8 @@ export function AccountSection() {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'delete my account') {
-      showError('Confirmation required', 'Please type "delete my account" to confirm.');
+    if (deleteConfirmText !== 'delete') {
+      showError('Confirmation required', 'Please type "delete" to confirm.');
       return;
     }
 
@@ -64,28 +66,30 @@ export function AccountSection() {
     setIsDeleting(true);
 
     try {
-      // Delete user data from all related tables (RLS policies allow users to delete own data)
-      const deletions = [
-        supabase.from('feedback').delete().eq('user_id', user.id),
-        supabase.from('user_settings').delete().eq('user_id', user.id),
-        supabase.from('coffee_chats').delete().or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`),
-        supabase.from('personality_results').delete().eq('user_id', user.id),
-        supabase.from('match_scores').delete().or(`candidate_id.eq.${user.id},employer_id.eq.${user.id}`),
-        supabase.from('profiles').delete().eq('id', user.id),
-      ];
-
-      const results = await Promise.allSettled(deletions);
-      const failures = results.filter(r => r.status === 'rejected');
-      if (failures.length > 0) {
-        console.warn('Some deletions failed:', failures);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session');
       }
 
-      // Sign out after data cleanup
+      const response = await fetch(`${API_BASE}/api/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+        throw new Error(data.detail || 'Failed to delete account');
+      }
+
       await signOut();
       navigate('/');
-      success('Account Deleted', 'Your account and data have been removed.');
+      success('Account deleted', 'Your account and all data have been permanently deleted.');
     } catch (err) {
-      showError('Delete Failed', 'Some data could not be removed. Please contact support at amberfounders@gmail.com.');
+      const message = err instanceof Error ? err.message : 'Failed to delete account';
+      showError('Delete failed', message);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -400,10 +404,10 @@ export function AccountSection() {
           </div>
 
           <Input
-            label={`Type "delete my account" to confirm`}
+            label={`Type "delete" to confirm`}
             value={deleteConfirmText}
             onChange={e => setDeleteConfirmText(e.target.value)}
-            placeholder="delete my account"
+            placeholder="delete"
           />
         </div>
 
@@ -419,7 +423,7 @@ export function AccountSection() {
             variant="danger"
             onClick={handleDeleteAccount}
             isLoading={isDeleting}
-            disabled={deleteConfirmText !== 'delete my account'}
+            disabled={deleteConfirmText !== 'delete'}
           >
             Delete Account
           </Button>

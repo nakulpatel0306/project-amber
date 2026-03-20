@@ -5,6 +5,7 @@ import {
   Link as LinkIcon,
   Users,
   Save,
+  Linkedin,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -22,14 +23,13 @@ interface EmployerData {
   industry: string;
   location: string;
   company_website: string;
+  linkedin_url: string;
 }
 
 const COMPANY_SIZES = [
-  { id: '1-10', label: 'Startup (1-10)' },
-  { id: '11-50', label: 'Small (11-50)' },
-  { id: '51-200', label: 'Growing (51-200)' },
-  { id: '201-500', label: 'Mid-size (201-500)' },
-  { id: '500+', label: 'Enterprise (500+)' },
+  { id: '1-10', label: 'Early Stage (1-10)' },
+  { id: '11-50', label: 'Growing (11-50)' },
+  { id: '51-200', label: 'Scaling (51-200)' },
 ];
 
 const INDUSTRIES = [
@@ -56,10 +56,11 @@ export function EmployerProfileSection() {
   const [data, setData] = useState<EmployerData>({
     company_name: '',
     description: '',
-    company_size: '11-50',
+    company_size: '1-10',
     industry: '',
     location: '',
     company_website: '',
+    linkedin_url: '',
   });
 
   const [originalData, setOriginalData] = useState<EmployerData>(data);
@@ -82,12 +83,14 @@ export function EmployerProfileSection() {
 
       if (employer) {
         const loadedData = {
-          company_name: employer.company_name || '',
+          // Don't show "My Company" default - treat it as empty
+          company_name: employer.company_name === 'My Company' ? '' : (employer.company_name || ''),
           description: employer.description || '',
-          company_size: employer.company_size || '11-50',
+          company_size: employer.company_size || '1-10',
           industry: employer.industry || '',
           location: employer.location || '',
           company_website: employer.company_website || '',
+          linkedin_url: employer.linkedin_url || '',
         };
         setData(loadedData);
         setOriginalData(loadedData);
@@ -125,6 +128,7 @@ export function EmployerProfileSection() {
           industry: data.industry || null,
           location: data.location || null,
           company_website: data.company_website || null,
+          linkedin_url: data.linkedin_url || null,
         }, {
           onConflict: 'user_id',
         });
@@ -222,23 +226,57 @@ export function EmployerProfileSection() {
             >
               Industry
             </label>
-            <select
-              value={data.industry}
-              onChange={(e) => handleChange('industry', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-              }}
-            >
-              <option value="">Select industry</option>
-              {INDUSTRIES.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industry}
-                </option>
-              ))}
-            </select>
+            {/* Show text input if user is entering custom industry */}
+            {data.industry === 'Other' ? (
+              <div>
+                <Input
+                  label=""
+                  type="text"
+                  value=""
+                  onChange={(e) => handleChange('industry', e.target.value || 'Other')}
+                  placeholder="Enter your industry"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => handleChange('industry', '')}
+                  className="text-xs mt-1"
+                  style={{ color: 'var(--color-accent)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <select
+                value={INDUSTRIES.includes(data.industry) ? data.industry : '_custom'}
+                onChange={(e) => {
+                  if (e.target.value === 'Other') {
+                    handleChange('industry', 'Other');
+                  } else if (e.target.value === '_custom') {
+                    // Keep current custom value
+                  } else {
+                    handleChange('industry', e.target.value);
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <option value="">Select industry</option>
+                {/* Show custom industry as an option if it exists */}
+                {data.industry && !INDUSTRIES.includes(data.industry) && (
+                  <option value="_custom">{data.industry}</option>
+                )}
+                {INDUSTRIES.map((industry) => (
+                  <option key={industry} value={industry}>
+                    {industry}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <LocationPicker
             label="Headquarters"
@@ -292,7 +330,16 @@ export function EmployerProfileSection() {
         </h3>
 
         <Input
-          label="Company Website"
+          label="Your LinkedIn Profile (Optional)"
+          type="url"
+          value={data.linkedin_url}
+          onChange={(e) => handleChange('linkedin_url', e.target.value)}
+          placeholder="https://linkedin.com/in/yourprofile"
+          leftIcon={<Linkedin className="w-4 h-4" />}
+        />
+
+        <Input
+          label="Company Website (Optional)"
           type="url"
           value={data.company_website}
           onChange={(e) => handleChange('company_website', e.target.value)}

@@ -8,6 +8,7 @@ import {
   Link as LinkIcon,
   Globe,
   CheckCircle2,
+  Linkedin,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -30,14 +31,13 @@ interface EmployerData {
   industry: string;
   location: string;
   company_website: string;
+  linkedin_url: string;
 }
 
 const COMPANY_SIZES = [
-  { id: '1-10', label: 'Startup', description: '1-10 employees' },
-  { id: '11-50', label: 'Small', description: '11-50 employees' },
-  { id: '51-200', label: 'Growing', description: '51-200 employees' },
-  { id: '201-500', label: 'Mid-size', description: '201-500 employees' },
-  { id: '500+', label: 'Enterprise', description: '500+ employees' },
+  { id: '1-10', label: 'Early Stage', description: '1-10 employees' },
+  { id: '11-50', label: 'Growing', description: '11-50 employees' },
+  { id: '51-200', label: 'Scaling', description: '51-200 employees' },
 ];
 
 const INDUSTRIES = [
@@ -66,13 +66,15 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [data, setData] = useState<EmployerData>({
     company_name: '',
     description: '',
-    company_size: '11-50',
+    company_size: '1-10',
     industry: '',
     location: '',
     company_website: '',
+    linkedin_url: '',
   });
 
   // Track if we've loaded data for this modal session
@@ -101,12 +103,14 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
 
       if (employer) {
         setData({
-          company_name: employer.company_name || '',
+          // Don't show "My Company" default - treat it as empty
+          company_name: employer.company_name === 'My Company' ? '' : (employer.company_name || ''),
           description: employer.description || '',
-          company_size: employer.company_size || '11-50',
+          company_size: employer.company_size || '1-10',
           industry: employer.industry || '',
           location: employer.location || '',
           company_website: employer.company_website || '',
+          linkedin_url: employer.linkedin_url || '',
         });
         // Resume from saved step (but not past the last step)
         if (employer.setup_step && employer.setup_step > 0 && employer.setup_step < STEPS.length) {
@@ -119,56 +123,45 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
     loadEmployerData();
   }, [userId, isOpen, dataLoaded]);
 
-  // Save step data to database
-  const saveStepData = async (step: number) => {
-    if (!user) return;
+  // Validate required fields for current step
+  const validateStep = (step: number): boolean => {
+    const errors: string[] = [];
 
-    try {
-      let upsertData: Record<string, unknown> = {
-        user_id: user.id,
-        setup_step: step,
-        company_name: data.company_name || 'My Company',  // Required field
-      };
-
-      // Include relevant data based on completed step
-      if (step >= 1) {
-        // Company info step completed
-        upsertData = {
-          ...upsertData,
-          company_name: data.company_name || 'My Company',
-          description: data.description || null,
-          industry: data.industry || null,
-        };
-      }
-      if (step >= 2) {
-        // Details step completed
-        upsertData = {
-          ...upsertData,
-          company_size: data.company_size || null,
-          location: data.location || null,
-        };
-      }
-      if (step >= 3) {
-        // Links step completed
-        upsertData = {
-          ...upsertData,
-          company_website: data.company_website || null,
-        };
-      }
-
-      await supabase
-        .from('employers')
-        .upsert(upsertData, { onConflict: 'user_id' });
-    } catch (err) {
-      console.error('Error saving step data:', err);
+    if (step === 1) {
+      // Company info step - all fields required
+      if (!data.company_name.trim()) errors.push('Company name is required');
+      if (!data.description.trim()) errors.push('Company description is required');
+      if (!data.industry || data.industry === 'Other') errors.push('Please select or enter an industry');
     }
+
+    if (step === 2) {
+      // Details step - all fields required
+      if (!data.company_size) errors.push('Please select company size');
+      if (!data.location.trim()) errors.push('Headquarters location is required');
+    }
+
+    // Step 3 - Links step - both LinkedIn and website are optional
+    // No validation needed for step 3
+
+    setValidationErrors(errors);
+
+    if (errors.length > 0) {
+      showError('Missing required fields', errors.join('. '));
+      return false;
+    }
+
+    return true;
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
+      // Validate current step before proceeding (skip validation for intro step)
+      if (currentStep > 0 && !validateStep(currentStep)) {
+        return;
+      }
+
       const nextStep = currentStep + 1;
-      // Save current step data before moving to next
-      await saveStepData(nextStep);
+      // Don't save to database until user completes setup
       setCurrentStep(nextStep);
     }
   };
@@ -200,6 +193,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
   const handleComplete = async () => {
     if (!user) return;
 
+    // Validate final step before completing
+    if (!validateStep(currentStep)) {
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Upsert employer data - creates record if doesn't exist, updates if it does
@@ -207,12 +205,13 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
         .from('employers')
         .upsert({
           user_id: user.id,
-          company_name: data.company_name || 'My Company',
+          company_name: data.company_name,
           description: data.description || null,
           company_size: data.company_size || null,
           industry: data.industry || null,
           location: data.location || null,
           company_website: data.company_website || null,
+          linkedin_url: data.linkedin_url || null,
           setup_step: STEPS.length,  // Mark all steps complete
           setup_completed_at: new Date().toISOString(),
         }, {
@@ -366,6 +365,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                   onChange={(e) => setData({ ...data, company_name: e.target.value })}
                   placeholder="e.g., Acme Corporation"
                   leftIcon={<Building2 className="w-4 h-4" />}
+                  required
                 />
 
                 <div>
@@ -373,7 +373,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                     className="block text-sm font-medium mb-2"
                     style={{ color: 'var(--color-text)' }}
                   >
-                    Company Description
+                    Company Description <span style={{ color: 'var(--color-error)' }}>*</span>
                   </label>
                   <textarea
                     value={data.description}
@@ -394,28 +394,57 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                     className="block text-sm font-medium mb-3"
                     style={{ color: 'var(--color-text)' }}
                   >
-                    Industry
+                    Industry <span style={{ color: 'var(--color-error)' }}>*</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {INDUSTRIES.map((industry) => (
-                      <button
-                        key={industry}
-                        type="button"
-                        onClick={() => setData({ ...data, industry })}
-                        className={cn(
-                          'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                          data.industry === industry
-                            ? 'bg-[var(--color-accent)] text-white'
-                            : 'bg-[var(--color-surface)] border border-[var(--color-border)]'
-                        )}
-                        style={{
-                          color: data.industry === industry ? undefined : 'var(--color-text)',
-                        }}
-                      >
-                        {industry}
-                      </button>
-                    ))}
+                    {INDUSTRIES.map((industry) => {
+                      // Check if this industry button should be selected
+                      // For "Other", check if current value is not in the predefined list
+                      const isOtherSelected = industry === 'Other' &&
+                        data.industry &&
+                        !INDUSTRIES.slice(0, -1).includes(data.industry);
+                      const isSelected = data.industry === industry || isOtherSelected;
+
+                      return (
+                        <button
+                          key={industry}
+                          type="button"
+                          onClick={() => {
+                            if (industry === 'Other') {
+                              // Clear to show input, will be filled by user
+                              setData({ ...data, industry: 'Other' });
+                            } else {
+                              setData({ ...data, industry });
+                            }
+                          }}
+                          className={cn(
+                            'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                            isSelected
+                              ? 'bg-[var(--color-accent)] text-white'
+                              : 'bg-[var(--color-surface)] border border-[var(--color-border)]'
+                          )}
+                          style={{
+                            color: isSelected ? undefined : 'var(--color-text)',
+                          }}
+                        >
+                          {industry}
+                        </button>
+                      );
+                    })}
                   </div>
+
+                  {/* Custom industry input when "Other" is selected */}
+                  {(data.industry === 'Other' || (data.industry && !INDUSTRIES.slice(0, -1).includes(data.industry))) && (
+                    <div className="mt-3">
+                      <Input
+                        label=""
+                        type="text"
+                        value={data.industry === 'Other' ? '' : data.industry}
+                        onChange={(e) => setData({ ...data, industry: e.target.value || 'Other' })}
+                        placeholder="Enter your industry"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -443,7 +472,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                     className="block text-sm font-medium mb-3"
                     style={{ color: 'var(--color-text)' }}
                   >
-                    Company Size
+                    Company Size <span style={{ color: 'var(--color-error)' }}>*</span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {COMPANY_SIZES.map((size) => (
@@ -481,10 +510,11 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                 </div>
 
                 <LocationPicker
-                  label="Headquarters Location"
+                  label="Headquarters Location *"
                   value={data.location}
                   onChange={(location) => setData({ ...data, location })}
                   placeholder="Select headquarters location"
+                  required
                 />
               </div>
             )}
@@ -508,7 +538,16 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                 </div>
 
                 <Input
-                  label="Company Website"
+                  label="Your LinkedIn Profile (Optional)"
+                  type="url"
+                  value={data.linkedin_url}
+                  onChange={(e) => setData({ ...data, linkedin_url: e.target.value })}
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  leftIcon={<Linkedin className="w-4 h-4" />}
+                />
+
+                <Input
+                  label="Company Website (Optional)"
                   type="url"
                   value={data.company_website}
                   onChange={(e) => setData({ ...data, company_website: e.target.value })}
