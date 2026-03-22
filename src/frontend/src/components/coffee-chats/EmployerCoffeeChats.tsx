@@ -12,6 +12,7 @@ import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
 import { CoffeeChatDetailModal } from './CoffeeChatDetailModal';
+import { AcceptWithDateModal } from './AcceptWithDateModal';
 import { PageBanner } from '../ui/PageBanner';
 import { Button } from '../ui/Button';
 import { InboxPanel } from '../connections/InboxPanel';
@@ -66,9 +67,11 @@ export function EmployerCoffeeChats() {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [acceptWithDateModalOpen, setAcceptWithDateModalOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [activeChatPartner, setActiveChatPartner] = useState('');
   const [activeChat, setActiveChat] = useState<CoffeeChatData | null>(null);
+  const [chatToAccept, setChatToAccept] = useState<CoffeeChatData | null>(null);
 
   const showLoader = useMinLoader(isLoading);
 
@@ -184,6 +187,47 @@ export function EmployerCoffeeChats() {
       success('Updated', `Chat ${status}`);
     } catch {
       showError('Error', 'Failed to update chat');
+    }
+  };
+
+  // Handle accepting a chat - if it has preferred dates, show modal to select one
+  const handleAcceptChat = (chatId: string) => {
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) return;
+
+    if (chat.preferred_dates && chat.preferred_dates.length > 0) {
+      // Has preferred dates - show modal to select one
+      setChatToAccept(chat);
+      setAcceptWithDateModalOpen(true);
+    } else {
+      // No preferred dates - just accept (will need to schedule later)
+      updateChatStatus(chatId, 'accepted');
+    }
+  };
+
+  // Accept and schedule with a selected date
+  const handleAcceptWithDate = async (scheduledAt: string) => {
+    if (!chatToAccept) return;
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/coffee-chats/${chatToAccept.id}/schedule`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ scheduled_at: scheduledAt }),
+      });
+      if (!res.ok) throw new Error('Failed to schedule');
+      setChats(prev =>
+        prev.map(c =>
+          c.id === chatToAccept.id
+            ? { ...c, status: 'scheduled' as ChatStatus, scheduled_at: scheduledAt }
+            : c
+        )
+      );
+      success('Scheduled!', `Coffee chat scheduled with ${chatToAccept.partner_name}`);
+      setAcceptWithDateModalOpen(false);
+      setChatToAccept(null);
+    } catch {
+      showError('Error', 'Failed to accept and schedule');
     }
   };
 
@@ -421,7 +465,7 @@ export function EmployerCoffeeChats() {
               <CoffeeChatCard
                 chat={chat}
                 userRole="employer"
-                onAccept={id => updateChatStatus(id, 'accepted')}
+                onAccept={handleAcceptChat}
                 onDecline={id => updateChatStatus(id, 'cancelled')}
                 onSchedule={id => {
                   setActiveChatId(id);
@@ -497,6 +541,19 @@ export function EmployerCoffeeChats() {
       )}
 
       <InboxPanel isOpen={inboxOpen} onClose={() => setInboxOpen(false)} />
+
+      {chatToAccept && (
+        <AcceptWithDateModal
+          isOpen={acceptWithDateModalOpen}
+          onClose={() => {
+            setAcceptWithDateModalOpen(false);
+            setChatToAccept(null);
+          }}
+          onAccept={handleAcceptWithDate}
+          partnerName={chatToAccept.partner_name}
+          preferredDates={chatToAccept.preferred_dates || []}
+        />
+      )}
     </div>
   );
 }

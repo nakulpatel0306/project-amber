@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { X, UserPlus, Clock, Check, Calendar, MessageCircle } from 'lucide-react';
+import { X, UserPlus, Clock, Check, Calendar, MessageCircle, CalendarPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useConnections } from '../../contexts/ConnectionsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { avatarGradient } from '../../utils/matchHelpers';
+import { ScheduleModal } from '../coffee-chats/ScheduleModal';
 import type { Connection } from '../../types/connections.types';
 
 interface InboxPanelProps {
@@ -32,26 +33,53 @@ export function InboxPanel({ isOpen, onClose }: InboxPanelProps) {
   const { success: showSuccess, error: showError } = useToast();
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [selectedTimeIdx, setSelectedTimeIdx] = useState<Record<string, number>>({});
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [connectionToSchedule, setConnectionToSchedule] = useState<Connection | null>(null);
 
-  const handleAccept = async (conn: Connection) => {
+  const handleAccept = async (conn: Connection, customScheduledAt?: string) => {
     setAcceptingId(conn.id);
     try {
       const hasMeetInvite = conn.meet_invite && conn.meet_invite.status === 'pending';
+      const hasProposedTimes = hasMeetInvite && conn.meet_invite!.proposed_times.length > 0;
       const timeIdx = selectedTimeIdx[conn.id];
-      const confirmedTime = hasMeetInvite && conn.meet_invite?.proposed_times?.[timeIdx]
-        ? conn.meet_invite.proposed_times[timeIdx]
-        : undefined;
+
+      // Determine the confirmed time
+      let confirmedTime: string | undefined;
+      if (customScheduledAt) {
+        // Custom time from ScheduleModal
+        confirmedTime = customScheduledAt;
+      } else if (hasProposedTimes && timeIdx !== undefined) {
+        // Selected from proposed times
+        confirmedTime = conn.meet_invite!.proposed_times[timeIdx];
+      }
 
       await acceptConnection(conn.id, {
-        acceptMeetInvite: !!hasMeetInvite && confirmedTime !== undefined,
+        acceptMeetInvite: !!hasMeetInvite || !!customScheduledAt,
         confirmedTime,
       });
-      showSuccess('Connected!', `You're now connected with ${conn.sender_name || 'this user'}`);
+      showSuccess('Connected!', confirmedTime
+        ? `Meeting scheduled with ${conn.sender_name || 'this user'}`
+        : `You're now connected with ${conn.sender_name || 'this user'}`
+      );
     } catch {
       showError('Error', 'Failed to accept connection');
     } finally {
       setAcceptingId(null);
+      setConnectionToSchedule(null);
     }
+  };
+
+  const handleAcceptWithSchedule = (conn: Connection) => {
+    // Open schedule modal for the user to pick a time
+    setConnectionToSchedule(conn);
+    setScheduleModalOpen(true);
+  };
+
+  const handleScheduleSubmit = (scheduledAt: string, _meetingLink?: string) => {
+    if (connectionToSchedule) {
+      handleAccept(connectionToSchedule, scheduledAt);
+    }
+    setScheduleModalOpen(false);
   };
 
   const handleDecline = async (conn: Connection) => {
@@ -213,20 +241,55 @@ export function InboxPanel({ isOpen, onClose }: InboxPanelProps) {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAccept(conn)}
-                        isLoading={acceptingId === conn.id}
-                        className="flex-1"
-                      >
-                        <Check className="w-3.5 h-3.5 mr-1" />
-                        Accept
-                      </Button>
+                      {hasMeetInvite && conn.meet_invite!.proposed_times.length > 0 ? (
+                        // Has proposed times - show Accept (with selected time) or Schedule (custom)
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAccept(conn)}
+                            isLoading={acceptingId === conn.id}
+                            disabled={selectedTimeIdx[conn.id] === undefined}
+                            className="flex-1"
+                            title={selectedTimeIdx[conn.id] === undefined ? 'Select a time above' : undefined}
+                          >
+                            <Check className="w-3.5 h-3.5 mr-1" />
+                            {selectedTimeIdx[conn.id] !== undefined ? 'Accept & Schedule' : 'Select Time'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAcceptWithSchedule(conn)}
+                            title="Set a different time"
+                          >
+                            <CalendarPlus className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      ) : (
+                        // No proposed times - show Accept with Schedule option
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAcceptWithSchedule(conn)}
+                            isLoading={acceptingId === conn.id}
+                            className="flex-1"
+                          >
+                            <Calendar className="w-3.5 h-3.5 mr-1" />
+                            Accept & Schedule
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAccept(conn)}
+                            title="Accept without scheduling"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDecline(conn)}
-                        className="flex-1"
                         style={{ color: 'var(--color-error)' }}
                       >
                         Decline
@@ -246,6 +309,16 @@ export function InboxPanel({ isOpen, onClose }: InboxPanelProps) {
           )}
         </div>
       </div>
+
+      {/* Schedule Modal for setting custom time */}
+      <ScheduleModal
+        isOpen={scheduleModalOpen}
+        onClose={() => {
+          setScheduleModalOpen(false);
+          setConnectionToSchedule(null);
+        }}
+        onSchedule={handleScheduleSubmit}
+      />
     </>
   );
 }

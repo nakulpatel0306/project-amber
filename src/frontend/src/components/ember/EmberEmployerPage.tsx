@@ -332,6 +332,9 @@ export function EmberEmployerPage() {
   const handleConnect = useCallback(async (message: string, meetInvite?: { proposed_times: string[]; duration_minutes: number }) => {
     if (!employer || !connectTarget) return;
     try {
+      // Get selected role info for the coffee chat
+      const selectedRole = selectedRoleId ? roles.find(r => r.id === selectedRoleId) : undefined;
+
       await sendConnectionRequest({
         receiverId: connectTarget.userId,
         senderRole: 'employer',
@@ -341,13 +344,15 @@ export function EmberEmployerPage() {
         receiverName: connectTarget.name,
         meetInvite,
         matchScore: connectTarget.overallScore,
+        roleId: selectedRole?.id,
+        roleTitle: selectedRole?.title,
       });
       showSuccess('Sent!', `Connection request sent to ${connectTarget.name}`);
     } catch {
       showError('Error', 'Failed to send connection request');
       throw new Error('Failed');
     }
-  }, [employer, connectTarget, profile, sendConnectionRequest, showSuccess, showError]);
+  }, [employer, connectTarget, profile, selectedRoleId, roles, sendConnectionRequest, showSuccess, showError]);
 
   // Deep dive dimension data
   const deepDiveDimensions = useMemo(() => {
