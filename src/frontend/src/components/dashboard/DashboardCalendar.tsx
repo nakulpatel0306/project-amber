@@ -303,8 +303,8 @@ export function DashboardCalendar({
                 const today = isToday(day);
                 const isPastDate = isPast(startOfDay(day)) && !today;
 
-                // Determine which dots to show
-                const showPendingDot = dateInfo?.hasPending && viewerRole === 'candidate';
+                // Determine which dots to show - both candidates and employers see pending
+                const showPendingDot = dateInfo?.hasPending;
                 const showUpcomingDot = dateInfo?.hasUpcoming;
                 const showCompletedDot = dateInfo?.hasCompleted;
                 const showCancelledDot = dateInfo?.hasCancelled;
