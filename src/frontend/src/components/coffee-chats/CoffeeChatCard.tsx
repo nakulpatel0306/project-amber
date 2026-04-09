@@ -10,6 +10,8 @@ import {
   Sparkles,
   User,
   RefreshCw,
+  Mic,
+  FileText,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -37,6 +39,8 @@ export interface CoffeeChatData {
   role_title?: string;
   // Preferred dates for scheduling
   preferred_dates?: string[] | null;
+  // Meeting notes flag
+  has_meeting_notes?: boolean;
 }
 
 interface CoffeeChatCardProps {
@@ -51,6 +55,8 @@ interface CoffeeChatCardProps {
   onMessage?: (chatId: string, partnerName: string) => void;
   onViewDetails?: (chat: CoffeeChatData) => void;
   onReschedule?: (chatId: string) => void;
+  onRecord?: (chatId: string) => void;
+  onViewNotes?: (chatId: string) => void;
 }
 
 const statusConfig: Record<ChatStatus, { label: string; color: string; bg: string }> = {
@@ -73,6 +79,8 @@ export function CoffeeChatCard({
   onMessage,
   onViewDetails,
   onReschedule,
+  onRecord,
+  onViewNotes,
 }: CoffeeChatCardProps) {
   const status = statusConfig[chat.status];
   const isIncoming = chat.initiated_by !== userRole;
@@ -264,7 +272,7 @@ export function CoffeeChatCard({
           </Button>
         )}
 
-        {/* Scheduled: Join / Reschedule / Complete */}
+        {/* Scheduled: Join / Record / Reschedule / Complete */}
         {chat.status === 'scheduled' && (
           <>
             {chat.meeting_link && (
@@ -273,6 +281,11 @@ export function CoffeeChatCard({
                   Join Meeting
                 </Button>
               </a>
+            )}
+            {onRecord && (
+              <Button size="sm" variant="outline" leftIcon={<Mic className="w-4 h-4" />} onClick={() => onRecord(chat.id)}>
+                Record
+              </Button>
             )}
             {onReschedule && (
               <Button size="sm" variant="outline" leftIcon={<RefreshCw className="w-4 h-4" />} onClick={() => onReschedule(chat.id)}>
@@ -285,10 +298,17 @@ export function CoffeeChatCard({
           </>
         )}
 
-        {/* Completed: Feedback */}
+        {/* Completed: Feedback / View Notes */}
         {chat.status === 'completed' && !chat.rating && (
           <Button size="sm" variant="outline" leftIcon={<Star className="w-4 h-4" />} onClick={() => onFeedback?.(chat.id)}>
             Leave Feedback
+          </Button>
+        )}
+
+        {/* View Meeting Notes */}
+        {chat.has_meeting_notes && onViewNotes && (
+          <Button size="sm" variant="outline" leftIcon={<FileText className="w-4 h-4" />} onClick={() => onViewNotes(chat.id)}>
+            View Notes
           </Button>
         )}
 

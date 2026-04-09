@@ -12,6 +12,8 @@ import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
 import { CoffeeChatDetailModal } from './CoffeeChatDetailModal';
+import { MeetingNotesModal } from './MeetingNotesModal';
+import { MeetingRecorderModal } from './MeetingRecorderModal';
 import { PageBanner } from '../ui/PageBanner';
 import { Button } from '../ui/Button';
 import { InboxPanel } from '../connections/InboxPanel';
@@ -66,6 +68,8 @@ export function EmployerCoffeeChats() {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [recorderModalOpen, setRecorderModalOpen] = useState(false);
+  const [notesModalOpen, setNotesModalOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [activeChatPartner, setActiveChatPartner] = useState('');
   const [activeChat, setActiveChat] = useState<CoffeeChatData | null>(null);
@@ -88,6 +92,27 @@ export function EmployerCoffeeChats() {
   const handleViewDetails = useCallback((chat: CoffeeChatData) => {
     setActiveChat(chat);
     setDetailModalOpen(true);
+  }, []);
+
+  // Handle recording meeting
+  const handleRecord = useCallback((chatId: string) => {
+    const chat = chats.find(c => c.id === chatId);
+    setActiveChatId(chatId);
+    setActiveChatPartner(chat?.partner_name || '');
+    setRecorderModalOpen(true);
+  }, [chats]);
+
+  // Handle viewing meeting notes
+  const handleViewNotes = useCallback((chatId: string) => {
+    const chat = chats.find(c => c.id === chatId);
+    setActiveChatId(chatId);
+    setActiveChatPartner(chat?.partner_name || '');
+    setNotesModalOpen(true);
+  }, [chats]);
+
+  // Handle notes processed - refresh chats
+  const handleNotesProcessed = useCallback(() => {
+    loadChats();
   }, []);
 
   useEffect(() => {
@@ -153,6 +178,7 @@ export function EmployerCoffeeChats() {
           match_score: c.match_score,
           role_title: c.role_title,
           preferred_dates: c.preferred_dates,
+          has_meeting_notes: c.has_meeting_notes,
         }));
         setChats(mapped);
       }
@@ -187,24 +213,25 @@ export function EmployerCoffeeChats() {
     }
   };
 
-  const handleSchedule = async (scheduledAt: string, meetingLink?: string) => {
+  const handleSchedule = async (scheduledAt: string) => {
     if (!activeChatId) return;
     try {
       const headers = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/api/coffee-chats/${activeChatId}/schedule`, {
         method: 'PATCH', headers,
-        body: JSON.stringify({ scheduled_at: scheduledAt, meeting_link: meetingLink || null }),
+        body: JSON.stringify({ scheduled_at: scheduledAt }),
       });
       if (!res.ok) throw new Error('Failed to schedule');
+      const updatedChat = await res.json();
       setChats(prev =>
         prev.map(c =>
           c.id === activeChatId
-            ? { ...c, status: 'scheduled' as ChatStatus, scheduled_at: scheduledAt, meeting_link: meetingLink }
+            ? { ...c, status: 'scheduled' as ChatStatus, scheduled_at: scheduledAt, meeting_link: updatedChat.meeting_link }
             : c
         )
       );
       setScheduleModalOpen(false);
-      success('Scheduled', 'Coffee chat scheduled!');
+      success('Scheduled', 'Coffee chat scheduled with video link!');
     } catch {
       showError('Error', 'Failed to schedule');
     }
@@ -448,6 +475,8 @@ export function EmployerCoffeeChats() {
                 }}
                 onMessage={handleMessage}
                 onViewDetails={handleViewDetails}
+                onRecord={handleRecord}
+                onViewNotes={handleViewNotes}
               />
               {(chat.status === 'accepted' || chat.status === 'scheduled') && (
                 <CoffeeChatPrep chatId={chat.id} />
@@ -497,6 +526,33 @@ export function EmployerCoffeeChats() {
       )}
 
       <InboxPanel isOpen={inboxOpen} onClose={() => setInboxOpen(false)} />
+
+      {/* Meeting Recorder Modal */}
+      {activeChatId && (
+        <MeetingRecorderModal
+          isOpen={recorderModalOpen}
+          onClose={() => {
+            setRecorderModalOpen(false);
+            setActiveChatId(null);
+          }}
+          coffeeChatId={activeChatId}
+          partnerName={activeChatPartner}
+          onNotesProcessed={handleNotesProcessed}
+        />
+      )}
+
+      {/* Meeting Notes Modal */}
+      {activeChatId && (
+        <MeetingNotesModal
+          isOpen={notesModalOpen}
+          onClose={() => {
+            setNotesModalOpen(false);
+            setActiveChatId(null);
+          }}
+          coffeeChatId={activeChatId}
+          partnerName={activeChatPartner}
+        />
+      )}
     </div>
   );
 }

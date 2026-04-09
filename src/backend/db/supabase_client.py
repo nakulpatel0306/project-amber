@@ -427,3 +427,119 @@ def get_meet_invite_by_connection(connection_id: str) -> Optional[dict]:
     except Exception as e:
         print(f"Error fetching meet invite: {e}")
         return None
+
+
+# ============ Meeting Transcript Helpers ============
+
+def create_meeting_transcript(data: dict) -> Optional[dict]:
+    """Create a new meeting transcript record."""
+    client = get_supabase()
+    if not client:
+        print("Error creating meeting transcript: Supabase client not available")
+        return None
+    try:
+        result = client.table('meeting_transcripts').insert(data).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error creating meeting transcript: {type(e).__name__}: {e}")
+        return None
+
+
+def get_meeting_transcript(transcript_id: str) -> Optional[dict]:
+    """Get a meeting transcript by ID."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('meeting_transcripts').select('*').eq(
+            'id', transcript_id
+        ).limit(1).execute()
+        return _first_or_none(result)
+    except Exception as e:
+        print(f"Error fetching meeting transcript: {e}")
+        return None
+
+
+def get_meeting_transcript_by_chat(coffee_chat_id: str) -> Optional[dict]:
+    """Get the meeting transcript for a coffee chat."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('meeting_transcripts').select('*').eq(
+            'coffee_chat_id', coffee_chat_id
+        ).order('created_at', desc=True).limit(1).execute()
+        return _first_or_none(result)
+    except Exception as e:
+        print(f"Error fetching meeting transcript by chat: {e}")
+        return None
+
+
+def update_meeting_transcript(transcript_id: str, data: dict) -> Optional[dict]:
+    """Update a meeting transcript record."""
+    client = get_supabase()
+    if not client:
+        return None
+    try:
+        result = client.table('meeting_transcripts').update(data).eq(
+            'id', transcript_id
+        ).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error updating meeting transcript: {e}")
+        return None
+
+
+def upload_meeting_recording(
+    coffee_chat_id: str,
+    participant_role: str,
+    audio_data: bytes,
+    filename: str
+) -> Optional[str]:
+    """
+    Upload a meeting recording to Supabase Storage.
+
+    Args:
+        coffee_chat_id: The coffee chat ID
+        participant_role: 'candidate' or 'employer'
+        audio_data: Raw audio bytes
+        filename: Original filename
+
+    Returns:
+        Storage path if successful, None otherwise
+    """
+    client = get_supabase()
+    if not client:
+        return None
+
+    # Generate storage path
+    ext = filename.split('.')[-1] if '.' in filename else 'webm'
+    storage_path = f"{coffee_chat_id}/{participant_role}_recording.{ext}"
+
+    try:
+        # Upload to meeting-recordings bucket
+        result = client.storage.from_('meeting-recordings').upload(
+            storage_path,
+            audio_data,
+            file_options={"content-type": f"audio/{ext}", "upsert": "true"}
+        )
+        return storage_path
+    except Exception as e:
+        print(f"Error uploading meeting recording: {e}")
+        return None
+
+
+def get_meeting_recording_url(storage_path: str) -> Optional[str]:
+    """Get a signed URL for a meeting recording."""
+    client = get_supabase()
+    if not client or not storage_path:
+        return None
+    try:
+        result = client.storage.from_('meeting-recordings').create_signed_url(
+            storage_path,
+            expires_in=3600  # 1 hour
+        )
+        return result.get('signedURL') or result.get('signedUrl')
+    except Exception as e:
+        print(f"Error getting recording URL: {e}")
+        return None

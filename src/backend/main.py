@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -86,6 +86,12 @@ from db.supabase_client import (
     update_meet_invite,
     get_meet_invite_by_connection,
     get_coffee_chat_by_connection,
+    create_meeting_transcript,
+    get_meeting_transcript,
+    get_meeting_transcript_by_chat,
+    update_meeting_transcript,
+    upload_meeting_recording,
+    get_meeting_recording_url,
 )
 from engine.questions import get_question, get_all_questions, get_total_questions
 from engine.scoring import calculate_scores, get_score_explanation
@@ -1296,16 +1302,26 @@ async def update_coffee_chat_status(
     return result
 
 
+def generate_jitsi_link(chat_id: str) -> str:
+    """Generate a Jitsi Meet link for a coffee chat."""
+    # Use chat_id to create a unique, consistent room name
+    room_name = f"luna-coffee-{chat_id[:8]}"
+    return f"https://meet.jit.si/{room_name}"
+
+
 @app.patch("/api/coffee-chats/{chat_id}/schedule")
 async def schedule_coffee_chat(
     chat_id: str,
     request: ScheduleCoffeeChatRequest,
     user: Optional[AuthUser] = Depends(get_current_user_dependency)
 ):
-    """Schedule a coffee chat with date/time and optional meeting link."""
+    """Schedule a coffee chat with date/time. Auto-generates Jitsi meeting link if none provided."""
+    # Auto-generate Jitsi link if no meeting link provided
+    meeting_link = request.meeting_link if request.meeting_link else generate_jitsi_link(chat_id)
+
     result = update_coffee_chat(chat_id, {
         'scheduled_at': request.scheduled_at,
-        'meeting_link': request.meeting_link,
+        'meeting_link': meeting_link,
         'status': 'scheduled',
     })
     if not result:
@@ -1328,6 +1344,253 @@ async def submit_coffee_chat_feedback(
     if not result:
         raise HTTPException(status_code=500, detail="Failed to submit feedback")
     return result
+
+
+# ============ Meeting Notes Endpoints ============
+
+def _process_meeting_notes(transcript_id: str, coffee_chat_id: str):
+    """
+    Background task to process meeting notes.
+    Transcribes audio files and generates AI summary.
+    """
+    from services.transcription_service import get_transcription_service
+    from services.summary_service import get_summary_service
+
+    try:
+        # Get the transcript record
+        transcript = get_meeting_transcript(transcript_id)
+        if not transcript:
+            return
+
+        # Update status to processing
+        update_meeting_transcript(transcript_id, {'status': 'processing'})
+
+        transcription_service = get_transcription_service()
+        candidate_text = None
+        employer_text = None
+
+        # Transcribe candidate recording if available
+        if transcript.get('candidate_audio_path'):
+            try:
+                audio_url = get_meeting_recording_url(transcript['candidate_audio_path'])
+                if audio_url:
+                    candidate_text = transcription_service.transcribe_from_url(audio_url)
+            except Exception as e:
+                print(f"Error transcribing candidate audio: {e}")
+
+        # Transcribe employer recording if available
+        if transcript.get('employer_audio_path'):
+            try:
+                audio_url = get_meeting_recording_url(transcript['employer_audio_path'])
+                if audio_url:
+                    employer_text = transcription_service.transcribe_from_url(audio_url)
+            except Exception as e:
+                print(f"Error transcribing employer audio: {e}")
+
+        # Merge transcripts
+        merged = transcription_service.merge_transcripts(candidate_text, employer_text)
+
+        # Generate AI summary
+        summary_service = get_summary_service()
+        summary_data = summary_service.generate_summary(merged)
+
+        # Update the transcript record
+        update_meeting_transcript(transcript_id, {
+            'candidate_transcript': candidate_text,
+            'employer_transcript': employer_text,
+            'merged_transcript': merged,
+            'summary_text': summary_data.get('summary', ''),
+            'key_topics': summary_data.get('key_topics', []),
+            'action_items': summary_data.get('action_items', []),
+            'status': 'completed',
+        })
+
+        # Update coffee_chat to mark it has notes
+        update_coffee_chat(coffee_chat_id, {'has_meeting_notes': True})
+
+    except Exception as e:
+        print(f"Error processing meeting notes: {e}")
+        update_meeting_transcript(transcript_id, {
+            'status': 'failed',
+            'error_message': str(e),
+        })
+
+
+@app.post("/api/coffee-chats/{chat_id}/upload-recording")
+async def upload_meeting_recording_endpoint(
+    chat_id: str,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    user: AuthUser = Depends(require_auth)
+):
+    """
+    Upload a participant's audio recording for a coffee chat.
+    Automatically determines participant role and creates/updates transcript record.
+    """
+    # Verify the coffee chat exists
+    chat = get_coffee_chat_by_id(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Coffee chat not found")
+
+    # Determine participant role
+    candidate = get_candidate_by_user_id(user.id)
+    employer = get_employer_by_user_id(user.id)
+
+    participant_role = None
+    if candidate and chat['candidate_id'] == candidate['id']:
+        participant_role = 'candidate'
+    elif employer and chat['employer_id'] == employer['id']:
+        participant_role = 'employer'
+
+    if not participant_role:
+        raise HTTPException(status_code=403, detail="You are not a participant in this coffee chat")
+
+    # Read the uploaded file
+    audio_data = await file.read()
+    filename = file.filename or "recording.webm"
+
+    # Upload to storage
+    storage_path = upload_meeting_recording(chat_id, participant_role, audio_data, filename)
+    if not storage_path:
+        raise HTTPException(status_code=500, detail="Failed to upload recording")
+
+    # Get or create transcript record
+    transcript = get_meeting_transcript_by_chat(chat_id)
+    if not transcript:
+        transcript = create_meeting_transcript({
+            'coffee_chat_id': chat_id,
+            'status': 'pending',
+        })
+        if not transcript:
+            raise HTTPException(status_code=500, detail="Failed to create transcript record")
+
+    # Update the appropriate audio path
+    update_data = {
+        f'{participant_role}_audio_path': storage_path,
+    }
+    update_meeting_transcript(transcript['id'], update_data)
+
+    return {
+        'success': True,
+        'message': f'{participant_role.capitalize()} recording uploaded successfully',
+        'transcript_id': transcript['id'],
+        'storage_path': storage_path,
+        'participant_role': participant_role,
+    }
+
+
+@app.get("/api/coffee-chats/{chat_id}/meeting-notes")
+async def get_meeting_notes(
+    chat_id: str,
+    user: AuthUser = Depends(require_auth)
+):
+    """
+    Get meeting transcript and summary for a coffee chat.
+    Only accessible to chat participants.
+    """
+    # Verify the coffee chat exists
+    chat = get_coffee_chat_by_id(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Coffee chat not found")
+
+    # Verify user is a participant
+    candidate = get_candidate_by_user_id(user.id)
+    employer = get_employer_by_user_id(user.id)
+
+    is_participant = (
+        (candidate and chat['candidate_id'] == candidate['id']) or
+        (employer and chat['employer_id'] == employer['id'])
+    )
+    if not is_participant:
+        raise HTTPException(status_code=403, detail="You are not a participant in this coffee chat")
+
+    # Get the transcript
+    transcript = get_meeting_transcript_by_chat(chat_id)
+    if not transcript:
+        return {
+            'exists': False,
+            'message': 'No meeting notes available yet',
+        }
+
+    return {
+        'exists': True,
+        'id': transcript['id'],
+        'status': transcript.get('status', 'pending'),
+        'summary_text': transcript.get('summary_text'),
+        'key_topics': transcript.get('key_topics', []),
+        'action_items': transcript.get('action_items', []),
+        'merged_transcript': transcript.get('merged_transcript'),
+        'has_candidate_recording': bool(transcript.get('candidate_audio_path')),
+        'has_employer_recording': bool(transcript.get('employer_audio_path')),
+        'created_at': transcript.get('created_at'),
+        'updated_at': transcript.get('updated_at'),
+        'error_message': transcript.get('error_message'),
+    }
+
+
+@app.post("/api/coffee-chats/{chat_id}/process-notes")
+async def process_meeting_notes(
+    chat_id: str,
+    background_tasks: BackgroundTasks,
+    user: AuthUser = Depends(require_auth)
+):
+    """
+    Trigger processing of meeting notes (transcription + summarization).
+    Should be called after both participants have uploaded their recordings.
+    """
+    # Verify the coffee chat exists
+    chat = get_coffee_chat_by_id(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Coffee chat not found")
+
+    # Verify user is a participant
+    candidate = get_candidate_by_user_id(user.id)
+    employer = get_employer_by_user_id(user.id)
+
+    is_participant = (
+        (candidate and chat['candidate_id'] == candidate['id']) or
+        (employer and chat['employer_id'] == employer['id'])
+    )
+    if not is_participant:
+        raise HTTPException(status_code=403, detail="You are not a participant in this coffee chat")
+
+    # Get the transcript
+    transcript = get_meeting_transcript_by_chat(chat_id)
+    if not transcript:
+        raise HTTPException(status_code=404, detail="No recordings uploaded yet")
+
+    # Check if at least one recording exists
+    has_candidate = bool(transcript.get('candidate_audio_path'))
+    has_employer = bool(transcript.get('employer_audio_path'))
+
+    if not has_candidate and not has_employer:
+        raise HTTPException(status_code=400, detail="At least one recording must be uploaded before processing")
+
+    # Don't re-process if already processing or completed
+    if transcript.get('status') == 'processing':
+        return {
+            'success': True,
+            'message': 'Notes are already being processed',
+            'status': 'processing',
+        }
+
+    if transcript.get('status') == 'completed':
+        return {
+            'success': True,
+            'message': 'Notes have already been processed',
+            'status': 'completed',
+        }
+
+    # Add background task for processing
+    background_tasks.add_task(_process_meeting_notes, transcript['id'], chat_id)
+
+    return {
+        'success': True,
+        'message': 'Processing started. Notes will be ready shortly.',
+        'status': 'processing',
+        'has_candidate_recording': has_candidate,
+        'has_employer_recording': has_employer,
+    }
 
 
 # ============ Connection Request/Response Models ============
