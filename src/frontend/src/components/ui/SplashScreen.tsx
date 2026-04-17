@@ -4,7 +4,7 @@ export function SplashScreen({ message }: { message?: string }) {
   return (
     <CoffeeBrewLoader
       variant="fullscreen"
-      size="lg"
+      size="md"
       message={message}
       showRotatingMessages={!message}
     />

@@ -509,7 +509,7 @@ export function MatchingAgent() {
           >
             <Target className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-3xl font-serif font-normal tracking-tight mb-4" style={{ color: 'var(--color-text)' }}>
             Complete Your Assessment First
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>

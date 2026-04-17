@@ -106,8 +106,8 @@ export function StatusPage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-4"
-          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-5"
+          style={{ color: 'var(--color-text)' }}
         >
           System Status
         </h1>
@@ -223,7 +223,7 @@ export function StatusPage() {
         <div className="mb-10">
           <h2
             className="text-lg font-semibold mb-1"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            style={{ color: 'var(--color-text)' }}
           >
             Incident History
           </h2>

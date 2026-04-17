@@ -181,7 +181,7 @@ export function RolesPage() {
           <div className="min-w-0">
             <h1
               className="text-2xl font-bold tracking-tight"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              style={{ color: 'var(--color-text)' }}
             >
               Available Roles
             </h1>
@@ -378,7 +378,7 @@ export function RolesPage() {
                     )}
 
                     {/* Meta row */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs mt-3 mb-3" style={{ color: 'var(--color-textMuted)' }}>
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-wider font-medium mt-3 mb-3" style={{ color: 'var(--color-textMuted)' }}>
                       {salary !== 'Not specified' && (
                         <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--color-text)' }}>
                           <DollarSign className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
@@ -388,11 +388,11 @@ export function RolesPage() {
                       {role.location && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5" />
-                          {role.location}
+                          {role.location.toUpperCase()}
                         </span>
                       )}
                       {role.work_style && (
-                        <span>{titleCase(role.work_style)}</span>
+                        <span>{role.work_style.toUpperCase()}</span>
                       )}
                     </div>
 
@@ -451,11 +451,11 @@ export function RolesPage() {
                       </div>
 
                       {/* Details grid */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs mb-4">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[11px] uppercase tracking-wider font-medium mb-4">
                         {role.location && (
                           <div className="flex items-center gap-1.5" style={{ color: 'var(--color-textMuted)' }}>
                             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate" style={{ color: 'var(--color-text)' }}>{role.location}</span>
+                            <span className="truncate" style={{ color: 'var(--color-text)' }}>{role.location.toUpperCase()}</span>
                           </div>
                         )}
                         {salary !== 'Not specified' && (

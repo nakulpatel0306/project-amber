@@ -11,8 +11,8 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', hover = false, ...props }, ref) => {
     const variants = {
       default: 'bg-[var(--color-surface)] border border-[var(--color-border)]',
-      bordered: 'bg-[var(--color-surface)] border border-[var(--color-border)]',
-      elevated: 'bg-[var(--color-surface)] border border-[var(--color-border)]',
+      bordered: 'bg-[var(--color-surface)] border-2 border-[var(--color-border)]',
+      elevated: 'bg-[var(--color-surface)] border border-[var(--color-border)] shadow-soft',
     };
 
     const paddings = {
@@ -26,10 +26,10 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-xl transition-all duration-200',
+          'rounded-xl transition-[border-color,box-shadow,transform] duration-200 ease-out-strong',
           variants[variant],
           paddings[padding],
-          hover && 'hover:border-[var(--color-borderHover)] cursor-pointer',
+          hover && 'hover:border-[var(--color-borderHover)] hover:shadow-soft cursor-pointer',
           className
         )}
         {...props}

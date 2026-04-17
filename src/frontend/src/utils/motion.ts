@@ -121,3 +121,113 @@ export const emberScale: Variants = {
     transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
   },
 };
+
+/* ── Phase 2: Visual polish variants ── */
+
+/** Full-page entrance — fade up from 30px */
+export const pageEntrance: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] },
+  },
+};
+
+/** Form field stagger container */
+export const formStagger: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
+  },
+};
+
+/** Form field stagger child */
+export const formItem: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] },
+  },
+};
+
+/** Dashboard section stagger container */
+export const dashboardStagger: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
+
+/** Dashboard section stagger child — more dramatic entrance */
+export const dashboardItem: Variants = {
+  hidden: { opacity: 0, y: 40, scale: 0.96 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] },
+  },
+};
+
+/** Assessment question slide — enter from right */
+export const questionEnter: Variants = {
+  hidden: { opacity: 0, x: 50 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.35, ease: [0.23, 1, 0.32, 1] },
+  },
+  exit: {
+    opacity: 0,
+    x: -50,
+    transition: { duration: 0.25, ease: [0.23, 1, 0.32, 1] },
+  },
+};
+
+/** Answer option stagger container */
+export const answerStagger: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.04, delayChildren: 0.15 },
+  },
+};
+
+/** Answer option stagger child */
+export const answerItem: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.23, 1, 0.32, 1] },
+  },
+};
+
+/** Celebration / milestone bounce */
+export const celebrationBounce: Variants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 300, damping: 15 },
+  },
+};
+
+/** Animated count-up helper */
+export function animateCountUp(
+  target: number,
+  duration: number,
+  onUpdate: (value: number) => void
+) {
+  const start = performance.now();
+  const step = (now: number) => {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // ease-out curve
+    const eased = 1 - Math.pow(1 - progress, 3);
+    onUpdate(Math.round(eased * target));
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}

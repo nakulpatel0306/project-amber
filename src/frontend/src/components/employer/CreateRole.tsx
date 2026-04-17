@@ -186,8 +186,8 @@ export function CreateRole() {
             style={{ color: 'var(--color-accent)' }}
           />
           <h2
-            className="text-2xl font-bold tracking-tight mb-2"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            className="text-3xl font-serif font-normal tracking-tight mb-3"
+            style={{ color: 'var(--color-text)' }}
           >
             Creating your role...
           </h2>
@@ -222,8 +222,8 @@ export function CreateRole() {
           </div>
 
           <h2
-            className="text-2xl font-bold tracking-tight mb-2"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            className="text-3xl font-serif font-normal tracking-tight mb-3"
+            style={{ color: 'var(--color-text)' }}
           >
             Role Created
           </h2>
@@ -279,8 +279,8 @@ export function CreateRole() {
             </div>
             <div className="flex-1 min-w-0">
               <h1
-                className="text-2xl font-bold tracking-tight"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                className="text-2xl sm:text-3xl font-serif font-normal tracking-tight"
+                style={{ color: 'var(--color-text)' }}
               >
                 Create A New Role
               </h1>
@@ -612,7 +612,7 @@ export function CreateRole() {
                     <div>
                       <h3
                         className="text-base font-bold tracking-tight"
-                        style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                        style={{ color: 'var(--color-text)' }}
                       >
                         Ideal Candidate Traits
                       </h3>
@@ -681,7 +681,7 @@ export function CreateRole() {
                 <div>
                   <h3
                     className="text-lg font-bold tracking-tight"
-                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                    style={{ color: 'var(--color-text)' }}
                   >
                     {formData.title}
                   </h3>

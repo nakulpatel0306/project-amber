@@ -144,8 +144,8 @@ export function PressPage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           Press & Media
         </h1>
@@ -183,7 +183,7 @@ export function PressPage() {
             </div>
             <h2
               className="text-sm font-semibold"
-              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+              style={{ color: "var(--color-text)" }}
             >
               Company Snapshot
             </h2>
@@ -248,7 +248,7 @@ export function PressPage() {
             </span>
             <h2
               className="text-2xl font-bold mt-2"
-              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+              style={{ color: "var(--color-text)" }}
             >
               What Makes Amber Different
             </h2>
@@ -278,7 +278,7 @@ export function PressPage() {
                     </div>
                     <h3
                       className="text-sm font-semibold"
-                      style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                      style={{ color: "var(--color-text)" }}
                     >
                       {fact.title}
                     </h3>
@@ -313,7 +313,7 @@ export function PressPage() {
           </span>
           <h2
             className="text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             The Hiring Problem in Numbers
           </h2>
@@ -369,7 +369,7 @@ export function PressPage() {
           </span>
           <h2
             className="text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Story Angles & Talking Points
           </h2>
@@ -399,7 +399,7 @@ export function PressPage() {
                 <div>
                   <h3
                     className="text-base font-semibold mb-1"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {point.title}
                   </h3>
@@ -439,7 +439,7 @@ export function PressPage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Media Inquiries
           </h3>

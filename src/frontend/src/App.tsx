@@ -37,6 +37,7 @@ import {
 import { AppLayout } from './components/layout/AppLayout';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
+import { RouteTitleSync } from './components/layout/RouteTitleSync';
 
 // Pages
 import { WelcomeScreen } from './components/landing';
@@ -61,6 +62,7 @@ function App() {
         <ThemeProvider>
           <ToastProvider>
             <BrowserRouter>
+              <RouteTitleSync />
               <ConnectionsProvider>
               <MessagingProvider>
               <Routes>

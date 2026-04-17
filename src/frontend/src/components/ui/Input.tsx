@@ -12,6 +12,9 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, hint, leftIcon, rightIcon, id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const errorId = error ? `${inputId}-error` : undefined;
+    const hintId = hint && !error ? `${inputId}-hint` : undefined;
+    const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
 
     return (
       <div className="w-full">
@@ -36,8 +39,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={cn(
-              'w-full rounded-xl border text-sm transition-all duration-150',
+              'w-full rounded-xl border text-sm',
+              'transition-[border-color,box-shadow] duration-150 ease-out-strong',
               'focus:outline-none',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'placeholder:text-[var(--color-textMuted)] placeholder:opacity-70',
@@ -65,12 +71,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="mt-1.5 text-xs" style={{ color: 'var(--color-error)' }}>
+          <p id={errorId} role="alert" className="mt-1.5 text-xs" style={{ color: 'var(--color-error)' }}>
             {error}
           </p>
         )}
         {hint && !error && (
-          <p className="mt-1.5 text-xs" style={{ color: 'var(--color-textMuted)' }}>
+          <p id={hintId} className="mt-1.5 text-xs" style={{ color: 'var(--color-textMuted)' }}>
             {hint}
           </p>
         )}
@@ -93,6 +99,9 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, hint, id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const errorId = error ? `${inputId}-error` : undefined;
+    const hintId = hint && !error ? `${inputId}-hint` : undefined;
+    const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
 
     return (
       <div className="w-full">
@@ -108,8 +117,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
-            'w-full rounded-xl border text-sm transition-all duration-150 resize-none',
+            'w-full rounded-xl border text-sm resize-none',
+            'transition-[border-color,box-shadow] duration-150 ease-out-strong',
             'focus:outline-none',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'placeholder:text-[var(--color-textMuted)] placeholder:opacity-70',
@@ -126,12 +138,12 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           {...props}
         />
         {error && (
-          <p className="mt-1.5 text-xs" style={{ color: 'var(--color-error)' }}>
+          <p id={errorId} role="alert" className="mt-1.5 text-xs" style={{ color: 'var(--color-error)' }}>
             {error}
           </p>
         )}
         {hint && !error && (
-          <p className="mt-1.5 text-xs" style={{ color: 'var(--color-textMuted)' }}>
+          <p id={hintId} className="mt-1.5 text-xs" style={{ color: 'var(--color-textMuted)' }}>
             {hint}
           </p>
         )}

@@ -67,11 +67,43 @@ export function Modal({
     };
   }, [isOpen]);
 
-  // Focus trap (basic)
+  // Focus trap — cycle Tab/Shift+Tab within modal, restore focus on close
   useEffect(() => {
-    if (isOpen && contentRef.current) {
-      contentRef.current.focus();
-    }
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const content = contentRef.current;
+    if (content) content.focus();
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !content) return;
+
+      const focusable = content.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first || document.activeElement === content) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => {
+      document.removeEventListener('keydown', handleTab);
+      previouslyFocused?.focus();
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;

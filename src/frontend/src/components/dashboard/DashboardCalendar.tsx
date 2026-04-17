@@ -92,10 +92,10 @@ function getDisplayStatusLabel(ds: DisplayStatus): string {
 
 // Dot colors — unified with Coffee Chats calendar
 const DOT_COLORS = {
-  pending: '#9CA3AF',     // grey
-  upcoming: '#3B82F6',    // blue
-  completed: '#22C55E',   // green
-  cancelled: '#EF4444',   // red
+  pending: 'var(--color-textMuted)',
+  upcoming: 'var(--color-info)',
+  completed: 'var(--color-success)',
+  cancelled: 'var(--color-error)',
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

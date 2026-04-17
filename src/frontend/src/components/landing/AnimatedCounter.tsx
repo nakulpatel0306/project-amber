@@ -46,7 +46,7 @@ export function AnimatedCounter({
   return (
     <div ref={ref} className="text-center">
       <div
-        className="text-4xl sm:text-5xl font-bold mb-2"
+        className="text-5xl sm:text-6xl font-serif font-normal tracking-tight mb-2"
         style={{ color: 'var(--color-accent)' }}
       >
         {count.toLocaleString()}{suffix}

@@ -288,8 +288,8 @@ export function CultureAssessment() {
             <Building2 className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
           </div>
           <h1
-            className="text-2xl font-bold mb-3"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            className="text-3xl font-serif font-normal tracking-tight mb-4"
+            style={{ color: 'var(--color-text)' }}
           >
             Set Up Your Company First
           </h1>
@@ -345,8 +345,8 @@ export function CultureAssessment() {
             <Clock className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
           </div>
           <h1
-            className="text-2xl font-bold mb-3"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            className="text-3xl font-serif font-normal tracking-tight mb-4"
+            style={{ color: 'var(--color-text)' }}
           >
             Assessment Cooldown
           </h1>
@@ -479,8 +479,8 @@ export function CultureAssessment() {
         {/* Question */}
         <div className="mb-8">
           <h1
-            className="text-2xl md:text-3xl font-bold mb-4"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            className="text-3xl md:text-4xl font-serif font-normal tracking-tight mb-4"
+            style={{ color: 'var(--color-text)' }}
           >
             {currentQuestion.question}
           </h1>

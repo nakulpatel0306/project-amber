@@ -77,7 +77,6 @@ function OverviewCarousel({ stats }: { stats: { totalMatches: number; strongMatc
             style={{
               fontSize: '4.5rem',
               color: 'var(--color-accent)',
-              fontFamily: 'var(--font-display)',
             }}
           >
             {slide.value}
@@ -371,7 +370,7 @@ export function EmberAgent() {
     return (
       <div className="ember-page min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
-          <h2 className="font-bold text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-2xl font-serif font-normal tracking-tight mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             Something went wrong
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -388,7 +387,7 @@ export function EmberAgent() {
     return (
       <div className="ember-page min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
-          <h2 className="font-bold text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
+          <h2 className="text-2xl font-serif font-normal tracking-tight mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             Complete Your Assessment First
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -427,8 +426,8 @@ export function EmberAgent() {
                 </div>
                 <div className="min-w-0">
                   <h1
-                    className="text-3xl font-bold tracking-tight"
-                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                    className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
+                    style={{ color: 'var(--color-text)' }}
                   >
                     Ember
                   </h1>
@@ -443,8 +442,8 @@ export function EmberAgent() {
                     <div className="flex flex-wrap items-center gap-2.5 mt-3">
                       {([
                         { label: 'Matches', value: dashboardStats.totalMatches, color: '#f59e0b', Icon: Users },
-                        { label: 'Strong (80+)', value: dashboardStats.strongMatches, color: '#8B5CF6', Icon: Zap },
-                        { label: 'Avg Score', value: `${dashboardStats.avgScore}%`, color: '#10B981', Icon: TrendingUp },
+                        { label: 'Strong (80+)', value: dashboardStats.strongMatches, color: 'var(--color-trait-openness)', Icon: Zap },
+                        { label: 'Avg Score', value: `${dashboardStats.avgScore}%`, color: 'var(--color-trait-conscientiousness)', Icon: TrendingUp },
                       ] as const).map(stat => (
                         <span
                           key={stat.label}

@@ -212,7 +212,7 @@ export function StreakTracker() {
 
             <motion.p
               className="text-base font-bold tracking-tight"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              style={{ color: 'var(--color-text)' }}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -335,7 +335,7 @@ export function StreakTracker() {
       {/* Streak count */}
       <p
         className="text-2xl font-bold leading-none mt-3"
-        style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+        style={{ color: 'var(--color-text)' }}
       >
         {streak} Day{streak !== 1 ? 's' : ''}
       </p>

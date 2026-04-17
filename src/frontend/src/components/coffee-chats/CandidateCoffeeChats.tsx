@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useMessaging } from '../../contexts/MessagingContext';
@@ -12,6 +13,7 @@ import { PageBanner } from '../ui/PageBanner';
 import { InboxPanel } from '../connections/InboxPanel';
 import { Coffee, UserPlus } from 'lucide-react';
 import { useConnections } from '../../contexts/ConnectionsContext';
+import { pageEntrance } from '../../utils/motion';
 
 const API_BASE = 'http://127.0.0.1:8000';
 
@@ -162,7 +164,12 @@ export function CandidateCoffeeChats() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-4">
+    <motion.div
+      className="max-w-7xl mx-auto px-6 py-4"
+      variants={pageEntrance}
+      initial="hidden"
+      animate="show"
+    >
       <PageBanner
         title="Coffee Chats"
         subtitle="Connect with teams over casual conversations"
@@ -219,6 +226,6 @@ export function CandidateCoffeeChats() {
       )}
 
       <InboxPanel isOpen={inboxOpen} onClose={() => setInboxOpen(false)} />
-    </div>
+    </motion.div>
   );
 }

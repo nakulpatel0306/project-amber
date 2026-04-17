@@ -171,8 +171,8 @@ export function TermsOfServicePage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           Terms of Service
         </h1>
@@ -223,7 +223,7 @@ export function TermsOfServicePage() {
                   </div>
                   <h2
                     className="text-base font-semibold"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {section.title}
                   </h2>
@@ -292,7 +292,7 @@ export function TermsOfServicePage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Questions About These Terms?
           </h3>

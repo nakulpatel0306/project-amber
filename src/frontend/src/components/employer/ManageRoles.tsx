@@ -214,7 +214,7 @@ export function ManageRoles() {
               <div className="min-w-0">
                 <h1
                   className="text-2xl font-bold tracking-tight"
-                  style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                  style={{ color: 'var(--color-text)' }}
                 >
                   Manage Roles
                 </h1>
@@ -317,7 +317,7 @@ export function ManageRoles() {
               />
               <p
                 className="text-base font-bold tracking-tight mb-1"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                style={{ color: 'var(--color-text)' }}
               >
                 {searchQuery || statusFilter !== 'all'
                   ? 'No Roles Match Your Filters'
@@ -350,7 +350,7 @@ export function ManageRoles() {
                       <div className="flex items-center gap-3 mb-1.5">
                         <h3
                           className="text-base font-bold tracking-tight"
-                          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                          style={{ color: 'var(--color-text)' }}
                         >
                           {role.title}
                         </h3>

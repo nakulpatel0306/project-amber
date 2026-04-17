@@ -39,10 +39,10 @@ export function DashboardHeader({ greeting, firstName }: DashboardHeaderProps) {
           </div>
           <div className="min-w-0">
             <h1
-              className="text-3xl font-bold tracking-tight"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
+              style={{ color: 'var(--color-text)' }}
             >
-              {greeting}, {firstName}
+              {greeting}, <span className="italic" style={{ color: 'var(--color-accent)' }}>{firstName}</span>
             </h1>
             <p
               className="text-sm mt-1"

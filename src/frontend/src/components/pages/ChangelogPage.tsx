@@ -220,8 +220,8 @@ export function ChangelogPage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           Changelog
         </h1>
@@ -323,7 +323,7 @@ export function ChangelogPage() {
 
                       <h3
                         className="text-base font-semibold mb-3"
-                        style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                        style={{ color: "var(--color-text)" }}
                       >
                         {entry.title}
                       </h3>

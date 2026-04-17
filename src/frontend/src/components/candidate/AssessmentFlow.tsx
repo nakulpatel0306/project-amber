@@ -134,7 +134,7 @@ export function AssessmentFlow() {
               </div>
             </div>
             <h1
-              className="text-2xl font-semibold mb-2 tracking-tight"
+              className="text-3xl sm:text-4xl font-serif font-normal mb-3 tracking-tight"
               style={{ color: 'var(--color-text)' }}
             >
               culture fit assessment
@@ -357,7 +357,7 @@ export function AssessmentFlow() {
             </p>
 
             <div
-              className="text-5xl font-bold mb-2"
+              className="text-6xl font-serif font-normal mb-2"
               style={{ color: 'var(--color-accent)' }}
             >
               {results.culture_fit_score}

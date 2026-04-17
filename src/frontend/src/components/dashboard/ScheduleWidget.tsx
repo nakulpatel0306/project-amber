@@ -33,10 +33,10 @@ import type { UpcomingChat } from './DashboardCalendar';
 
 // Unified dot colors — matching Coffee Chats calendar
 const DOT_COLORS = {
-  pending: '#9CA3AF',
-  upcoming: '#3B82F6',
-  completed: '#22C55E',
-  cancelled: '#EF4444',
+  pending: 'var(--color-textMuted)',
+  upcoming: 'var(--color-info)',
+  completed: 'var(--color-success)',
+  cancelled: 'var(--color-error)',
 };
 
 interface ScheduleWidgetProps {

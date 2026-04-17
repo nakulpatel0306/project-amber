@@ -23,7 +23,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        'animate-pulse',
+        'animate-shimmer',
         variants[variant],
         className
       )}

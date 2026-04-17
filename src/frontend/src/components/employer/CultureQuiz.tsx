@@ -165,7 +165,7 @@ export function CultureQuiz() {
 
           <h1
             className="text-2xl font-semibold mb-3"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            style={{ color: 'var(--color-text)' }}
           >
             Define Your Company Culture
           </h1>
@@ -232,7 +232,7 @@ export function CultureQuiz() {
           />
           <h2
             className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            style={{ color: 'var(--color-text)' }}
           >
             Saving Your Culture Profile...
           </h2>
@@ -263,7 +263,7 @@ export function CultureQuiz() {
 
           <h2
             className="text-xl font-semibold mb-2"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            style={{ color: 'var(--color-text)' }}
           >
             Culture Profile Complete!
           </h2>
@@ -381,7 +381,7 @@ export function CultureQuiz() {
         <div className="w-full max-w-lg">
           <h2
             className="text-xl font-medium mb-8 text-center"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+            style={{ color: 'var(--color-text)' }}
           >
             {currentQuestion.question}
           </h2>

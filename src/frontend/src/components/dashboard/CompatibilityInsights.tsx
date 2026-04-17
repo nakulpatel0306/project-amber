@@ -257,7 +257,6 @@ export function CompatibilityInsights({ viewerRole = 'candidate' }: Compatibilit
             style={{
               color: 'var(--color-text)',
               opacity: isTransitioning ? 0 : 1,
-              fontFamily: 'var(--font-display)',
             }}
           >
             {current.short}
@@ -362,7 +361,6 @@ export function CompatibilityInsights({ viewerRole = 'candidate' }: Compatibilit
                 className="text-2xl font-bold mb-3 leading-tight transition-opacity duration-400"
                 style={{
                   color: 'var(--color-text)',
-                  fontFamily: 'var(--font-display)',
                   opacity: isTransitioning ? 0 : 1,
                 }}
               >

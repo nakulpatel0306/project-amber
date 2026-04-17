@@ -308,7 +308,7 @@ export function BrowseCandidates() {
     return (
       <div className="max-w-7xl mx-auto px-6 py-8 text-center">
         <Users className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-textMuted)' }} />
-        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
           Complete Your Profile
         </h2>
         <p style={{ color: 'var(--color-textMuted)' }}>
@@ -323,8 +323,8 @@ export function BrowseCandidates() {
       {/* Header */}
       <div className="mb-8">
         <h1
-          className="text-2xl font-bold mb-2"
-          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+          className="text-3xl font-serif font-normal tracking-tight mb-3"
+          style={{ color: 'var(--color-text)' }}
         >
           Browse Candidates
         </h1>
@@ -595,7 +595,7 @@ export function BrowseCandidates() {
                     {/* Match Score */}
                     <div className="text-right flex-shrink-0">
                       <div
-                        className="text-2xl font-bold mb-1"
+                        className="text-3xl font-serif font-normal tracking-tight mb-2"
                         style={{ color: getMatchScoreColor(match.overallMatchScore) }}
                       >
                         {match.overallMatchScore}%
