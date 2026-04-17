@@ -57,24 +57,27 @@ export function PageBanner({ title, subtitle, icon: Icon, iconNode, rightContent
           ) : Icon ? (
             <motion.div
               variants={childVariants}
-              className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center flex-shrink-0"
-              style={{ color: 'var(--color-accent)' }}
+              className="hidden sm:flex w-12 h-12 rounded-xl items-center justify-center flex-shrink-0"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 60%, black))',
+              }}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-6 h-6 text-white" />
             </motion.div>
           ) : null}
           <div className="min-w-0">
             <motion.h1
               variants={childVariants}
-              className="text-3xl font-bold tracking-tight"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              className="text-3xl sm:text-4xl font-serif font-normal tracking-tight leading-none"
+              style={{ color: 'var(--color-text)' }}
             >
               {title}
             </motion.h1>
             {subtitle && (
               <motion.p
                 variants={childVariants}
-                className="font-mono text-[10px] uppercase tracking-[0.25em] mt-1"
+                className="font-mono text-[10px] uppercase tracking-[0.25em] mt-2"
                 style={{ color: 'var(--color-textMuted)' }}
               >
                 {subtitle}

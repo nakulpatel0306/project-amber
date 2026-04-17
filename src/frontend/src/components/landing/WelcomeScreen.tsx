@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  Award,
   Brain,
   Briefcase,
   ChevronLeft,
@@ -15,7 +14,7 @@ import {
   Users,
   Zap
 } from 'lucide-react';
-import { motion, Variants } from 'framer-motion';
+import { motion, Variants, useScroll, useTransform } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -28,6 +27,9 @@ import {
   TiltCard,
   TypewriterText,
 } from '.';
+import { ProductShowcase } from './ProductShowcase';
+import { LiveStatsSection } from './LiveStatsSection';
+import { FeatureBento } from './FeatureBento';
 import { EmberFirefly } from '../ember/EmberFirefly';
 import { LandingFooter } from './LandingFooter';
 import { LandingNav } from './LandingNav';
@@ -39,36 +41,6 @@ const typewriterWords = [
   'Your Culture',
 ];
 
-const processSteps = [
-  {
-    number: '01',
-    title: 'Take the Assessment',
-    description: 'Our Big Five personality assessment reveals your unique work style, values, and preferences in just 15 minutes.',
-    icon: Sparkles,
-    color: '#F59E0B',
-  },
-  {
-    number: '02',
-    title: 'Get Matched by AI',
-    description: 'Our AI analyzes your profile against company cultures to find roles where you\'ll truly thrive.',
-    icon: Target,
-    color: '#10B981',
-  },
-  {
-    number: '03',
-    title: 'Connect Over Coffee',
-    description: 'Skip the formal interviews. Have genuine conversations with teams before committing.',
-    icon: Coffee,
-    color: '#8B5CF6',
-  },
-  {
-    number: '04',
-    title: 'Land Your Role',
-    description: 'Join companies that value who you are, not just what you do. Culture fit guaranteed.',
-    icon: Award,
-    color: '#EC4899',
-  },
-];
 
 const valueProps = [
   {
@@ -196,32 +168,6 @@ const forEmployers = [
   { text: 'Reduce turnover with better culture matches', icon: Shield },
 ];
 
-const faqItems = [
-  {
-    question: 'How does the culture matching actually work?',
-    answer: 'You take a 15-minute personality assessment based on the Big Five model. We measure traits like openness, conscientiousness, and how you collaborate. Then our AI compares your profile against real company culture data to find teams where your personality naturally fits. Both sides get a compatibility score with a plain-language breakdown of why it works.',
-  },
-  {
-    question: 'Is Amber free for job seekers?',
-    answer: 'Completely free. You can take the assessment, discover your archetype, browse your matches, and connect with employers without paying a thing. We never charge candidates to find where they belong. Premium features like unlimited coffee chats and Ember coaching are available for those who want them, but the core experience is free forever.',
-  },
-  {
-    question: 'What makes the Big Five assessment different from other personality tests?',
-    answer: 'The Big Five (OCEAN) model is backed by over 40 years of peer-reviewed research and is the gold standard in organizational psychology. Unlike pop-psychology quizzes, it measures stable, scientifically validated traits that actually predict workplace behavior and satisfaction. Our version is tailored specifically for career matching, not repurposed from a generic quiz.',
-  },
-  {
-    question: 'What are coffee chats and how do they work?',
-    answer: 'Think of it as meeting a future teammate over coffee, not an interview. They are casual 15-minute conversations with real team members. No trick questions, no panel of judges. Just a genuine chat to see if there is a mutual fit. Either side can initiate, and both give feedback afterward to keep the community honest and helpful.',
-  },
-  {
-    question: 'How is this different from LinkedIn or traditional job boards?',
-    answer: 'LinkedIn and job boards match on keywords, titles, and years of experience. Amber matches on who you are as a person. Your personality, your values, how you work with others. We skip the resume gatekeeping entirely. No cover letters, no keyword stuffing. Your personality speaks for itself, and companies meet the real you before anyone has decided anything.',
-  },
-  {
-    question: 'Who is Ember?',
-    answer: 'Ember is the AI at the heart of Amber. It scores compatibility from both sides, explains every match in plain language, highlights strengths and potential friction points, and even helps you prepare for coffee chats by briefing you on team culture and suggesting talking points. Think of Ember as your personal connector who makes sure every introduction feels warm and genuine.',
-  },
-];
 
 
 const seekerStories = [
@@ -656,8 +602,8 @@ function ValuePropTabs() {
           {/* Right: Text content */}
           <div className="flex-1 p-10">
             <h3
-              className="text-2xl sm:text-3xl font-bold mb-4"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              className="text-3xl sm:text-4xl font-serif font-normal tracking-tight mb-5"
+              style={{ color: 'var(--color-text)' }}
             >
               {prop.title}
             </h3>
@@ -709,10 +655,10 @@ function ScrollSection({ children, className = '', delay = 0 }: { children: Reac
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-100px' }}
-      transition={{ duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }}
+      initial={{ opacity: 0, y: 100, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.8, delay, ease: [0.23, 1, 0.32, 1] }}
     >
       {children}
     </motion.div>
@@ -721,12 +667,12 @@ function ScrollSection({ children, className = '', delay = 0 }: { children: Reac
 
 const staggerContainer: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.12 } },
+  show: { transition: { staggerChildren: 0.06 } },
 };
 
 const staggerItem: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.23, 1, 0.32, 1] } },
 };
 
 function StaggerGrid({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -786,7 +732,7 @@ function ValuesSection() {
               {/* Title */}
               <h3
                 className="flex-1 text-lg font-semibold transition-colors duration-300"
-                style={{ color: isOpen ? 'var(--color-text)' : 'var(--color-textSecondary)', fontFamily: 'var(--font-display)' }}
+                style={{ color: isOpen ? 'var(--color-text)' : 'var(--color-textSecondary)' }}
               >
                 {value.title}
               </h3>
@@ -826,89 +772,20 @@ function ValuesSection() {
   );
 }
 
-const faqAccentColors = ['#F59E0B', '#8B5CF6', '#10B981', '#EC4899', '#635BFF', '#EF4444'];
-
-function FAQCard({ item, index }: { item: { question: string; answer: string }; index: number }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const color = faqAccentColors[index % faqAccentColors.length];
-
-  return (
-    <div
-      className="rounded-2xl border transition-all duration-300 overflow-hidden group"
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        borderColor: isOpen ? `${color}40` : 'var(--color-border)',
-        boxShadow: isOpen ? `0 4px 20px ${color}08` : 'none',
-      }}
-    >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-5 flex items-center gap-4 text-left"
-      >
-        {/* Number indicator */}
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all duration-300"
-          style={{
-            backgroundColor: isOpen ? `${color}15` : 'var(--color-background)',
-            color: isOpen ? color : 'var(--color-textMuted)',
-          }}
-        >
-          {String(index + 1).padStart(2, '0')}
-        </div>
-
-        {/* Question */}
-        <span
-          className="flex-1 font-medium text-base transition-colors duration-300"
-          style={{ color: isOpen ? 'var(--color-text)' : 'var(--color-textSecondary)' }}
-        >
-          {item.question}
-        </span>
-
-        {/* Toggle icon */}
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
-          style={{
-            backgroundColor: isOpen ? `${color}15` : 'var(--color-background)',
-            color: isOpen ? color : 'var(--color-textMuted)',
-            transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
-          }}
-        >
-          <span className="text-lg leading-none">+</span>
-        </div>
-      </button>
-
-      {/* Answer */}
-      <div
-        className="overflow-hidden transition-all duration-400"
-        style={{
-          maxHeight: isOpen ? '400px' : '0px',
-          opacity: isOpen ? 1 : 0,
-        }}
-      >
-        <div className="px-6 pb-6 flex gap-4">
-          {/* Accent line */}
-          <div className="w-8 flex-shrink-0 flex justify-center">
-            <div
-              className="w-0.5 h-full rounded-full"
-              style={{ backgroundColor: `${color}30` }}
-            />
-          </div>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-textSecondary)' }}
-          >
-            {item.answer}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function WelcomeScreen() {
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const heroY = useTransform(heroProgress, [0, 1], [0, 150]);
+  const heroOpacity = useTransform(heroProgress, [0, 0.8], [1, 0]);
+  const heroScale = useTransform(heroProgress, [0, 1], [1, 0.95]);
+
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen relative [overflow-x:clip]"
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       {/* Background Effects */}
@@ -920,38 +797,41 @@ export function WelcomeScreen() {
       <LandingNav />
 
       {/* Hero Section */}
-      <section className="relative px-4 sm:px-6 lg:px-8 h-screen flex flex-col justify-center">
-        <div className="max-w-5xl mx-auto text-center">
+      <section ref={heroRef} className="relative px-4 sm:px-6 lg:px-8 pt-32 pb-24 lg:pt-40 lg:pb-32">
+        <motion.div
+          className="max-w-5xl mx-auto text-center"
+          style={{ y: heroY, opacity: heroOpacity, scale: heroScale }}
+        >
           {/* Interactive Greeting */}
           <div className="mb-8">
             <InteractiveGreeting />
           </div>
 
-          {/* Main Heading */}
+          {/* Main Heading — Serif editorial style */}
           <motion.h1
-            className="text-6xl sm:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
-            style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
-            initial={{ opacity: 0, y: 20 }}
+            className="text-7xl sm:text-8xl lg:text-9xl font-normal mb-8 tracking-tighter leading-[0.9] font-serif"
+            style={{ color: 'var(--color-text)' }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
           >
             Find Jobs That Fit{' '}
             <span className="block mt-2">
               <TypewriterText
                 words={typewriterWords}
-                className="animate-gradient-text"
+                className="animate-gradient-text italic"
               />
             </span>
           </motion.h1>
 
           <motion.p
-            className="text-lg sm:text-xl max-w-2xl mx-auto mb-10"
+            className="text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
             style={{ color: 'var(--color-textSecondary)' }}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
           >
-            The Job Search Is Broken. We Match You Where You'll Actually Belong, Based On Who You Are, Not What's On Your Resume.
+            The job search is broken. We match you where you'll actually belong — based on who you are, not what's on your resume.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -989,17 +869,21 @@ export function WelcomeScreen() {
               </MagneticButton>
             </Link>
           </motion.div>
-        </div>
+
+        </motion.div>
       </section>
+
+      {/* Feature Bento Grid — "What's Inside" + 4-step journey */}
+      <FeatureBento />
 
       {/* Why Amber - Value Props */}
       <ScrollSection>
-        <section className="py-24 px-4 sm:px-6 lg:px-8">
+        <section className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-5"
+                style={{ color: 'var(--color-text)' }}
               >
                 Why Amber Is Different
               </h2>
@@ -1016,16 +900,25 @@ export function WelcomeScreen() {
         </section>
       </ScrollSection>
 
+      {/* Product Showcase — Ember chat + Match visualization (interactive) */}
+      <ProductShowcase />
+
+      {/* Live Stats — editorial number grid */}
+      <LiveStatsSection />
+
       {/* Companies Section */}
       <ScrollSection>
-        <section className="py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <section className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-10">
               <h2
-                className="text-2xl sm:text-3xl font-bold mb-3"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                className="text-3xl sm:text-4xl font-serif font-normal tracking-tight mb-4"
+                style={{ color: 'var(--color-text)' }}
               >
-                Land Coffee Chats With Recruiters From Top Companies
+                Land coffee chats with recruiters from{' '}
+                <span className="italic" style={{ color: 'var(--color-accent)' }}>
+                  top companies.
+                </span>
               </h2>
               <p
                 className="text-base sm:text-lg max-w-2xl mx-auto"
@@ -1068,86 +961,15 @@ export function WelcomeScreen() {
         </section>
       </ScrollSection>
 
-      {/* Spacer between Companies and How It Works */}
-      <div className="h-24" />
-
-      {/* How It Works - Process Steps */}
-      <ScrollSection>
-        <section
-          className="py-24 px-4 sm:px-6 lg:px-8"
-          style={{ backgroundColor: 'var(--color-backgroundSecondary)' }}
-        >
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
-              >
-                From Assessment to Offer in 4 Steps
-              </h2>
-              <p
-                className="text-lg max-w-2xl mx-auto"
-                style={{ color: 'var(--color-textSecondary)' }}
-              >
-                Our process is designed to be fast, insightful, and actually enjoyable.
-              </p>
-            </div>
-
-            <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {processSteps.map((step) => (
-                <motion.div key={step.number} variants={staggerItem}>
-                  <TiltCard
-                    className="p-8 rounded-3xl border cursor-default"
-                    style={{
-                      backgroundColor: 'var(--color-surface)',
-                      borderColor: 'var(--color-border)',
-                    }}
-                    tiltAmount={5}
-                  >
-                    <div className="flex items-start gap-5">
-                      <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `${step.color}15` }}
-                      >
-                        <step.icon className="w-7 h-7" style={{ color: step.color }} />
-                      </div>
-                      <div>
-                        <div
-                          className="text-xs font-mono font-bold mb-2"
-                          style={{ color: step.color }}
-                        >
-                          {step.number}
-                        </div>
-                        <h3
-                          className="text-xl font-semibold mb-2"
-                          style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
-                        >
-                          {step.title}
-                        </h3>
-                        <p
-                          className="text-sm leading-relaxed"
-                          style={{ color: 'var(--color-textSecondary)' }}
-                        >
-                          {step.description}
-                        </p>
-                      </div>
-                    </div>
-                  </TiltCard>
-                </motion.div>
-              ))}
-            </StaggerGrid>
-          </div>
-        </section>
-      </ScrollSection>
 
       {/* Success Stories */}
       <ScrollSection>
-        <section className="py-24 px-4 sm:px-6 lg:px-8">
+        <section className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-5"
+                style={{ color: 'var(--color-text)' }}
               >
                 Real People. Real Matches. Real Stories.
               </h2>
@@ -1167,14 +989,14 @@ export function WelcomeScreen() {
       {/* Two-Sided Value Props */}
       <ScrollSection>
         <section
-          className="py-24 px-4 sm:px-6 lg:px-8"
+          className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8"
           style={{ backgroundColor: 'var(--color-backgroundSecondary)' }}
         >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-5"
+                style={{ color: 'var(--color-text)' }}
               >
                 Built For Both Sides
               </h2>
@@ -1206,7 +1028,7 @@ export function WelcomeScreen() {
                   </div>
                   <h3
                     className="text-xl font-bold mb-5"
-                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                    style={{ color: 'var(--color-text)' }}
                   >
                     For Job Seekers
                   </h3>
@@ -1260,7 +1082,7 @@ export function WelcomeScreen() {
                   </div>
                   <h3
                     className="text-xl font-bold mb-5"
-                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                    style={{ color: 'var(--color-text)' }}
                   >
                     For Employers
                   </h3>
@@ -1302,7 +1124,7 @@ export function WelcomeScreen() {
 
       {/* Meet Ember - The AI at the Heart of Amber */}
       <ScrollSection>
-        <section className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <section className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
           {/* Ambient glow */}
           <div
             className="absolute top-1/2 left-1/2 w-[500px] h-[500px] rounded-full pointer-events-none ambient-drift"
@@ -1338,8 +1160,8 @@ export function WelcomeScreen() {
                 </div>
 
                 <h2
-                  className="text-4xl sm:text-5xl font-bold tracking-tight mb-4"
-                  style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                  className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-5"
+                  style={{ color: 'var(--color-text)' }}
                 >
                   Meet{' '}
                   <span className="animate-gradient-text">Ember</span>
@@ -1369,7 +1191,7 @@ export function WelcomeScreen() {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
                         <Brain className="w-5 h-5" style={{ color: '#8B5CF6' }} />
                       </div>
-                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Personality Matching</h3>
+                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Personality Matching</h3>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>Maps your Big Five traits to a unique archetype and scores compatibility from both sides.</p>
                     </div>
                   </div>
@@ -1379,7 +1201,7 @@ export function WelcomeScreen() {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
                         <Target className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                       </div>
-                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Transparent Insights</h3>
+                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Transparent Insights</h3>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>No black box. Explains why you matched, highlights strengths and friction points in plain language.</p>
                     </div>
                   </div>
@@ -1389,7 +1211,7 @@ export function WelcomeScreen() {
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
                         <Coffee className="w-5 h-5" style={{ color: '#10B981' }} />
                       </div>
-                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Coffee Chat Prep</h3>
+                      <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-text)' }}>Coffee Chat Prep</h3>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>Briefs you on team culture, suggests talking points, and helps you show up authentically.</p>
                     </div>
                   </div>
@@ -1420,14 +1242,14 @@ export function WelcomeScreen() {
       {/* Our Values */}
       <ScrollSection>
         <section
-          className="py-24 px-4 sm:px-6 lg:px-8"
+          className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8"
           style={{ backgroundColor: 'var(--color-backgroundSecondary)' }}
         >
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-5"
+                style={{ color: 'var(--color-text)' }}
               >
                 What We Believe
               </h2>
@@ -1440,86 +1262,6 @@ export function WelcomeScreen() {
             </div>
 
             <ValuesSection />
-          </div>
-        </section>
-      </ScrollSection>
-
-      {/* FAQ Section */}
-      <ScrollSection>
-        <section className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-          {/* Subtle ambient accent */}
-          <div
-            className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(245, 158, 11, 0.04) 0%, transparent 70%)', filter: 'blur(80px)' }}
-          />
-          <div
-            className="absolute bottom-0 left-0 w-[300px] h-[300px] rounded-full pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.04) 0%, transparent 70%)', filter: 'blur(80px)' }}
-          />
-
-          <div className="max-w-3xl mx-auto relative">
-            <div className="text-center mb-14">
-              <div
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-5"
-                style={{
-                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                  color: 'var(--color-accent)',
-                  border: '1px solid rgba(245, 158, 11, 0.2)',
-                }}
-              >
-                Common Questions
-              </div>
-              <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
-              >
-                Everything You Need To Know
-              </h2>
-              <p
-                className="text-lg max-w-xl mx-auto"
-                style={{ color: 'var(--color-textSecondary)' }}
-              >
-                Still Curious? Here Are The Questions We Hear Most.
-              </p>
-            </div>
-
-            {/* FAQ items as individual cards */}
-            <StaggerGrid className="space-y-3">
-              {faqItems.map((item, index) => (
-                <motion.div key={index} variants={staggerItem}>
-                  <FAQCard item={item} index={index} />
-                </motion.div>
-              ))}
-            </StaggerGrid>
-
-            {/* Bottom CTA */}
-            <div
-              className="mt-10 text-center p-6 rounded-2xl border"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-              }}
-            >
-              <p
-                className="text-sm mb-1 font-medium"
-                style={{ color: 'var(--color-text)' }}
-              >
-                Still Have Questions?
-              </p>
-              <p
-                className="text-sm"
-                style={{ color: 'var(--color-textSecondary)' }}
-              >
-                Reach out to us at{' '}
-                <a
-                  href="mailto:amberfounders@gmail.com"
-                  className="font-medium underline underline-offset-2 transition-colors hover:opacity-80"
-                  style={{ color: 'var(--color-accent)' }}
-                >
-                  amberfounders@gmail.com
-                </a>
-              </p>
-            </div>
           </div>
         </section>
       </ScrollSection>
@@ -1574,8 +1316,8 @@ export function WelcomeScreen() {
             </motion.div>
 
             <h2
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-5"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight mb-6"
+              style={{ color: 'var(--color-text)' }}
             >
               Your Personality Is Your{' '}
               <span className="animate-gradient-text">Superpower</span>

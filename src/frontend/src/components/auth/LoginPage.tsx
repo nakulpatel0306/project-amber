@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Chrome, Github, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { AmberLogo } from '../ui/AmberLogo';
 import { APP_NAME } from '../../utils/constants';
+import { pageEntrance, formStagger, formItem } from '../../utils/motion';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -110,14 +112,24 @@ export function LoginPage() {
 
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-sm">
+        <motion.div
+          className="w-full max-w-sm"
+          variants={pageEntrance}
+          initial="hidden"
+          animate="show"
+        >
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
+            <motion.div
+              className="flex justify-center mb-4"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+            >
               <AmberLogo size="md" />
-            </div>
+            </motion.div>
             <h1
-              className="text-2xl font-semibold"
+              className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
               style={{ color: 'var(--color-text)' }}
             >
               Welcome Back
@@ -131,26 +143,37 @@ export function LoginPage() {
           </div>
 
           {/* OAuth buttons */}
-          <div className="space-y-3 mb-6">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => handleOAuthSignIn('google')}
-              leftIcon={<Chrome className="w-4 h-4" />}
-              disabled={isLoading}
-            >
-              Continue with Google
-            </Button>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => handleOAuthSignIn('github')}
-              leftIcon={<Github className="w-4 h-4" />}
-              disabled={isLoading}
-            >
-              Continue with GitHub
-            </Button>
-          </div>
+          <motion.div
+            className="space-y-3 mb-6"
+            variants={formStagger}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.div variants={formItem}>
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => handleOAuthSignIn('google')}
+                leftIcon={<Chrome className="w-4 h-4" />}
+                disabled={isLoading}
+                className="hover:!border-blue-400 hover:!bg-blue-50 dark:hover:!bg-blue-950/20"
+              >
+                Continue with Google
+              </Button>
+            </motion.div>
+            <motion.div variants={formItem}>
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => handleOAuthSignIn('github')}
+                leftIcon={<Github className="w-4 h-4" />}
+                disabled={isLoading}
+                className="hover:!border-gray-500 hover:!bg-gray-50 dark:hover:!bg-gray-900/20"
+              >
+                Continue with GitHub
+              </Button>
+            </motion.div>
+          </motion.div>
 
           {/* Divider */}
           <div className="relative my-6">
@@ -158,38 +181,52 @@ export function LoginPage() {
               className="absolute inset-0 flex items-center"
               aria-hidden="true"
             >
-              <div
+              <motion.div
                 className="w-full border-t"
                 style={{ borderColor: 'var(--color-border)' }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.6, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
               />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span
+              <motion.span
                 className="px-2"
                 style={{
                   backgroundColor: 'var(--color-background)',
                   color: 'var(--color-textMuted)',
                 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
               >
                 or continue with Email
-              </span>
+              </motion.span>
             </div>
           </div>
 
           {/* Email form */}
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              leftIcon={<Mail className="w-4 h-4" />}
-              error={errors.email}
-              disabled={isLoading}
-            />
+          <motion.form
+            onSubmit={handleEmailSignIn}
+            className="space-y-4"
+            variants={formStagger}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.div variants={formItem}>
+              <Input
+                label="Email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                leftIcon={<Mail className="w-4 h-4" />}
+                error={errors.email}
+                disabled={isLoading}
+              />
+            </motion.div>
 
-            <div>
+            <motion.div variants={formItem}>
               <Input
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
@@ -222,17 +259,22 @@ export function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
-            <Button type="submit" fullWidth isLoading={isLoading || isCheckingEmail}>
-              Sign In
-            </Button>
-          </form>
+            <motion.div variants={formItem}>
+              <Button type="submit" fullWidth isLoading={isLoading || isCheckingEmail}>
+                Sign In
+              </Button>
+            </motion.div>
+          </motion.form>
 
           {/* Sign up link */}
-          <p
+          <motion.p
             className="text-center text-sm mt-6"
             style={{ color: 'var(--color-textMuted)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
           >
             Don't have an account?{' '}
             <Link
@@ -242,8 +284,8 @@ export function LoginPage() {
             >
               Sign up
             </Link>
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
       </main>
     </div>
   );

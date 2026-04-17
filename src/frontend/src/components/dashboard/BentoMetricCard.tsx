@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { animateCountUp } from '../../utils/motion';
 
 interface Tag {
   label: string;
@@ -31,6 +33,27 @@ export function BentoMetricCard({
   accentBorder = false,
   loading = false,
 }: BentoMetricCardProps) {
+  // Animated count-up for numeric values
+  const [displayValue, setDisplayValue] = useState(value);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (loading || hasAnimated.current) {
+      setDisplayValue(value);
+      return;
+    }
+    // Parse numeric part (e.g., "68%" → 68, "12" → 12)
+    const match = value.match(/^(\d+)/);
+    if (match) {
+      const target = parseInt(match[1], 10);
+      const suffix = value.slice(match[1].length);
+      hasAnimated.current = true;
+      animateCountUp(target, 800, (v) => setDisplayValue(`${v}${suffix}`));
+    } else {
+      setDisplayValue(value);
+    }
+  }, [value, loading]);
+
   return (
     <div
       onClick={onClick}
@@ -68,7 +91,7 @@ export function BentoMetricCard({
             className="text-4xl font-extrabold tracking-tight leading-none mb-1"
             style={{ color: 'var(--color-text)' }}
           >
-            {value}
+            {displayValue}
           </p>
           <p
             className="text-xs mb-3"

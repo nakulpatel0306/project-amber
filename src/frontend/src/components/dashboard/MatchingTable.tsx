@@ -55,10 +55,10 @@ function formatCompany(name: string): string {
 
 
 function getScoreColor(score: number): string {
-  if (score >= 85) return '#22C55E';
-  if (score >= 70) return 'var(--color-accent)';
-  if (score >= 55) return '#3B82F6';
-  return 'var(--color-textMuted)';
+  if (score >= 85) return 'var(--color-score-excellent)';
+  if (score >= 70) return 'var(--color-score-good)';
+  if (score >= 55) return 'var(--color-score-fair)';
+  return 'var(--color-score-low)';
 }
 
 interface StatusConfig {
@@ -71,15 +71,15 @@ interface StatusConfig {
 function getStatusConfig(status: MatchRow['chatStatus']): StatusConfig {
   switch (status) {
     case 'connected':
-      return { label: 'Connected', icon: UserCheck, color: '#22C55E', bg: 'rgba(34, 197, 94, 0.12)' };
+      return { label: 'Connected', icon: UserCheck, color: 'var(--color-success)', bg: 'color-mix(in srgb, var(--color-success) 12%, transparent)' };
     case 'completed':
-      return { label: 'Chat Done', icon: CheckCircle2, color: '#22C55E', bg: 'rgba(34, 197, 94, 0.12)' };
+      return { label: 'Chat Done', icon: CheckCircle2, color: 'var(--color-success)', bg: 'color-mix(in srgb, var(--color-success) 12%, transparent)' };
     case 'scheduled':
-      return { label: 'Coffee Chat', icon: Coffee, color: 'var(--color-accent)', bg: 'rgba(240, 144, 48, 0.12)' };
+      return { label: 'Coffee Chat', icon: Coffee, color: 'var(--color-accent)', bg: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' };
     case 'accepted':
-      return { label: 'Accepted', icon: CalendarCheck, color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' };
+      return { label: 'Accepted', icon: CalendarCheck, color: 'var(--color-info)', bg: 'color-mix(in srgb, var(--color-info) 12%, transparent)' };
     case 'pending':
-      return { label: 'Invite Sent', icon: Send, color: '#A855F7', bg: 'rgba(168, 85, 247, 0.12)' };
+      return { label: 'Invite Sent', icon: Send, color: 'var(--color-trait-openness)', bg: 'color-mix(in srgb, var(--color-trait-openness) 12%, transparent)' };
     default:
       return { label: 'New Match', icon: Sparkles, color: 'var(--color-textMuted)', bg: 'rgba(120, 113, 108, 0.1)' };
   }

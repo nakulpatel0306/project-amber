@@ -144,8 +144,8 @@ export function CareersPage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           Careers At The Amber Project
         </h1>
@@ -176,7 +176,7 @@ export function CareersPage() {
           </span>
           <h2
             className="text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             What It Is Like Here
           </h2>
@@ -206,7 +206,7 @@ export function CareersPage() {
                   </div>
                   <h3
                     className="text-sm font-semibold"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {perk.title}
                   </h3>
@@ -240,7 +240,7 @@ export function CareersPage() {
           </span>
           <h2
             className="text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Find Your Role
           </h2>
@@ -273,7 +273,7 @@ export function CareersPage() {
                     <div>
                       <h3
                         className="text-base font-semibold"
-                        style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                        style={{ color: "var(--color-text)" }}
                       >
                         {role.title}
                       </h3>
@@ -373,7 +373,7 @@ export function CareersPage() {
         >
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Do Not See The Right Role?
           </h3>

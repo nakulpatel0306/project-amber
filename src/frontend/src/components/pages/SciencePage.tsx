@@ -128,8 +128,8 @@ export function SciencePage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           The Science Behind Amber
         </h1>
@@ -166,7 +166,7 @@ export function SciencePage() {
               }}
             >
               <p
-                className="text-2xl sm:text-3xl font-bold mb-1"
+                className="text-3xl sm:text-4xl font-serif font-normal tracking-tight mb-1"
                 style={{ color: stat.color }}
               >
                 {stat.value}
@@ -198,8 +198,8 @@ export function SciencePage() {
             <Brain className="w-4.5 h-4.5" style={{ color: "#8B5CF6" }} />
           </div>
           <h2
-            className="text-xl sm:text-2xl font-bold"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            className="text-2xl sm:text-3xl font-serif font-normal tracking-tight"
+            style={{ color: "var(--color-text)" }}
           >
             The Big Five (OCEAN) Model
           </h2>
@@ -273,8 +273,8 @@ export function SciencePage() {
             The Process
           </span>
           <h2
-            className="text-xl sm:text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            className="text-2xl font-serif font-normal tracking-tight mt-2"
+            style={{ color: "var(--color-text)" }}
           >
             From Questions To Compatibility
           </h2>
@@ -306,7 +306,7 @@ export function SciencePage() {
               <div>
                 <h3
                   className="text-sm font-semibold mb-1"
-                  style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                  style={{ color: "var(--color-text)" }}
                 >
                   {item.title}
                 </h3>
@@ -347,8 +347,8 @@ export function SciencePage() {
             The Ember Engine
           </span>
           <h2
-            className="text-xl sm:text-2xl font-bold mt-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            className="text-2xl font-serif font-normal tracking-tight mt-2"
+            style={{ color: "var(--color-text)" }}
           >
             Three Scores, One Clear Picture
           </h2>
@@ -388,7 +388,7 @@ export function SciencePage() {
               </div>
               <h3
                 className="text-sm font-semibold mb-1.5"
-                style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                style={{ color: "var(--color-text)" }}
               >
                 {score.label}
               </h3>
@@ -421,7 +421,7 @@ export function SciencePage() {
           <div>
             <h3
               className="text-sm font-semibold mb-1"
-              style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+              style={{ color: "var(--color-text)" }}
             >
               Ember AI Insights
             </h3>
@@ -453,8 +453,8 @@ export function SciencePage() {
             <BookOpen className="w-4.5 h-4.5" style={{ color: "#EC4899" }} />
           </div>
           <h2
-            className="text-xl sm:text-2xl font-bold"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            className="text-2xl sm:text-3xl font-serif font-normal tracking-tight"
+            style={{ color: "var(--color-text)" }}
           >
             Research And Validation
           </h2>
@@ -513,7 +513,7 @@ export function SciencePage() {
                   />
                   <h3
                     className="text-sm font-semibold"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {item.title}
                   </h3>
@@ -553,7 +553,7 @@ export function SciencePage() {
           </div>
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Your Data, Your Control
           </h3>

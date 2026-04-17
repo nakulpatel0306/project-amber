@@ -43,8 +43,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
-        display: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
+        sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
+        serif: ['Instrument Serif', 'Georgia', 'Times New Roman', 'serif'],
+        display: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', 'monospace'],
       },
       fontSize: {
@@ -53,19 +54,25 @@ export default {
       borderRadius: {
         '4xl': '2rem',
       },
+      transitionTimingFunction: {
+        'ease-out-strong': 'cubic-bezier(0.23, 1, 0.32, 1)',
+        'ease-in-out-strong': 'cubic-bezier(0.77, 0, 0.175, 1)',
+        'ease-drawer': 'cubic-bezier(0.32, 0.72, 0, 1)',
+        'ease-bounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
-        'fade-out': 'fadeOut 0.2s ease-out',
-        'slide-up': 'slideUp 0.2s ease-out',
-        'slide-down': 'slideDown 0.2s ease-out',
-        'slide-right': 'slideRight 0.25s ease-out',
-        'slide-left': 'slideLeft 0.25s ease-out',
-        'scale-in': 'scaleIn 0.2s ease-out',
-        'scale-out': 'scaleOut 0.15s ease-out',
+        'fade-in': 'fadeIn 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+        'fade-out': 'fadeOut 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+        'slide-up': 'slideUp 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+        'slide-down': 'slideDown 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+        'slide-right': 'slideRight 0.25s cubic-bezier(0.23, 1, 0.32, 1)',
+        'slide-left': 'slideLeft 0.25s cubic-bezier(0.23, 1, 0.32, 1)',
+        'scale-in': 'scaleIn 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+        'scale-out': 'scaleOut 0.15s cubic-bezier(0.23, 1, 0.32, 1)',
         'spin-slow': 'spin 2s linear infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'bounce-subtle': 'bounceSubtle 0.5s ease-out',
-        'shake': 'shake 0.5s ease-in-out',
+        'bounce-subtle': 'bounceSubtle 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
+        'shake': 'shake 0.5s cubic-bezier(0.77, 0, 0.175, 1)',
       },
       keyframes: {
         fadeIn: {

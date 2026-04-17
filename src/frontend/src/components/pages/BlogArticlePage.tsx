@@ -61,8 +61,8 @@ export function BlogArticlePage() {
 
         {/* Title */}
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 leading-tight"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight tracking-tight mb-4 leading-tight"
+          style={{ color: "var(--color-text)" }}
         >
           {post.title}
         </h1>

@@ -1,36 +1,105 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS custom properties for theming - defaults to Amber Light theme */
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — Three-Layer Architecture
+   Primitive → Semantic → Component
+   ═══════════════════════════════════════════════ */
+
+/* === LAYER 1: PRIMITIVES (raw values) === */
 :root {
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  /* Easing — Emil Kowalski's custom curves */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* Fonts — Cluely-inspired: Geist + Instrument Serif */
+  --font-display: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+/* === LAYER 2: SEMANTIC (purpose-based) === */
+:root {
+  /* Surface & layout */
   --color-background: #FAFAFA;
   --color-backgroundSecondary: #FFFFFF;
   --color-surface: #FFFFFF;
   --color-surfaceHover: #F5F5F5;
   --color-border: #E5E5E5;
   --color-borderHover: #CCCCCC;
+
+  /* Text */
   --color-text: #0A0A0A;
   --color-textSecondary: #666666;
   --color-textMuted: #999999;
+
+  /* Brand */
   --color-accent: #D97706;
   --color-accentHover: #B45309;
   --color-accentText: #FFFFFF;
+
+  /* Status */
   --color-success: #16A34A;
   --color-error: #DC2626;
   --color-warning: #F59E0B;
+  --color-info: #3B82F6;
 
-  --font-display: 'DM Sans', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  /* Score tiers (match quality) */
+  --color-score-excellent: #16A34A;
+  --color-score-good: #D97706;
+  --color-score-fair: #3B82F6;
+  --color-score-low: #999999;
+
+  /* OCEAN personality trait colors */
+  --color-trait-openness: #A855F7;
+  --color-trait-conscientiousness: #10B981;
+  --color-trait-extraversion: #F59E0B;
+  --color-trait-agreeableness: #EC4899;
+  --color-trait-stability: #06B6D4;
+
+  /* Logo icon box (light-mode default — warm cream, slightly darker than header) */
+  --color-logoBox: #EAE6DE;
+  --color-logoBoxBorder: rgba(0, 0, 0, 0.06);
+
+  /* Shadows */
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: none;
   --shadow-glow: none;
   --glow-accent: none;
   --glow-accent-strong: none;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer base {
@@ -49,15 +118,22 @@
   body {
     background-color: var(--color-background);
     color: var(--color-text);
-    font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'ss01' 1, 'cv11' 1;
     transition: background-color 0.3s ease, color 0.3s ease;
-    font-size: 14px;
-    line-height: 1.5;
-    letter-spacing: -0.01em;
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.015em;
     background-color: var(--color-background);
     min-height: 100vh;
+  }
+
+  /* Serif display utility — for hero headings + editorial accents */
+  .font-serif, [class*="font-serif"] {
+    font-family: var(--font-serif);
+    letter-spacing: -0.02em;
   }
 
   /* Subtle grain overlay */
@@ -205,12 +281,32 @@
     border: 1px solid var(--color-border);
     border-radius: 16px;
     padding: 1.25rem;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) var(--ease-out),
+                transform var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out);
     box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.04);
   }
 
   .bento-card:hover {
     border-color: var(--color-borderHover);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.04),
+                0 2px 8px -2px rgba(0, 0, 0, 0.08),
+                0 4px 16px -4px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Interactive card — hover lift + border glow + shadow */
+  .card-interactive {
+    transition: transform var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out),
+                border-color var(--duration-normal) var(--ease-out);
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-borderHover);
+    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.1),
+                0 8px 32px -8px rgba(0, 0, 0, 0.08);
   }
 
   .bento-card-accent {
@@ -219,7 +315,9 @@
 
   /* card hover effect */
   .card-hover {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out),
+                border-color var(--duration-normal) var(--ease-out);
   }
 
   .card-hover:hover {
@@ -228,9 +326,10 @@
     border-color: var(--color-borderHover);
   }
 
-  /* smooth button */
+  /* smooth button — Emil: scale on :active, not translateY */
   .btn-smooth {
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
   }
 
   .btn-smooth:hover {
@@ -238,7 +337,7 @@
   }
 
   .btn-smooth:active {
-    transform: translateY(0);
+    transform: scale(0.97);
   }
 
   /* status dot animation */
@@ -700,7 +799,7 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 .scroll-animate {
   opacity: 0;
   transform: translateY(20px);
-  transition: all 0.6s ease-out;
+  transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
 }
 
 .scroll-animate.visible {
@@ -708,13 +807,13 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
   transform: translateY(0);
 }
 
-/* Stagger children animations */
+/* Stagger children animations — Emil: 30-80ms between items */
 .stagger-children > *:nth-child(1) { transition-delay: 0ms; }
-.stagger-children > *:nth-child(2) { transition-delay: 100ms; }
-.stagger-children > *:nth-child(3) { transition-delay: 200ms; }
-.stagger-children > *:nth-child(4) { transition-delay: 300ms; }
-.stagger-children > *:nth-child(5) { transition-delay: 400ms; }
-.stagger-children > *:nth-child(6) { transition-delay: 500ms; }
+.stagger-children > *:nth-child(2) { transition-delay: 50ms; }
+.stagger-children > *:nth-child(3) { transition-delay: 100ms; }
+.stagger-children > *:nth-child(4) { transition-delay: 150ms; }
+.stagger-children > *:nth-child(5) { transition-delay: 200ms; }
+.stagger-children > *:nth-child(6) { transition-delay: 250ms; }
 
 /* Hero entrance animations */
 @keyframes slideUp {
@@ -989,7 +1088,14 @@ input[type="range"].slider-thumb::-moz-range-thumb:active {
 }
 
 .animate-shimmer {
-  background: var(--color-surface);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surfaceHover) 50%,
+    var(--color-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
 /* Bounce subtle */

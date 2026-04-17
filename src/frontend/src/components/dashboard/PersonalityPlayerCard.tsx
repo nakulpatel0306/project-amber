@@ -39,11 +39,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
 };
 
 const OCEAN_COLORS = {
-  openness: '#8B5CF6',
-  conscientiousness: '#10B981',
-  extraversion: '#F59E0B',
-  agreeableness: '#EC4899',
-  stability: '#06B6D4',
+  openness: 'var(--color-trait-openness)',
+  conscientiousness: 'var(--color-trait-conscientiousness)',
+  extraversion: 'var(--color-trait-extraversion)',
+  agreeableness: 'var(--color-trait-agreeableness)',
+  stability: 'var(--color-trait-stability)',
 };
 
 export function PersonalityPlayerCard({ personalityScores, topTraits }: PersonalityPlayerCardProps) {
@@ -71,9 +71,9 @@ export function PersonalityPlayerCard({ personalityScores, topTraits }: Personal
     : (scores.conscientiousness > 60 ? 'Structured Problem-Solver' : 'Practical Troubleshooter');
 
   const operatingStyles = [
-    { icon: Brain, label: 'Decision', value: decisionStyle, color: '#8B5CF6' },
-    { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: '#10B981' },
-    { icon: Lightbulb, label: 'Problem-Solving', value: problemSolvingStyle, color: '#F59E0B' },
+    { icon: Brain, label: 'Decision', value: decisionStyle, color: 'var(--color-trait-openness)' },
+    { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: 'var(--color-trait-conscientiousness)' },
+    { icon: Lightbulb, label: 'Problem-Solving', value: problemSolvingStyle, color: 'var(--color-trait-extraversion)' },
   ];
 
   const oceanBars = [
@@ -182,7 +182,7 @@ export function PersonalityPlayerCard({ personalityScores, topTraits }: Personal
                   <span
                     key={s}
                     className="px-2.5 py-0.5 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}
+                    style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-trait-conscientiousness)' }}
                   >
                     {s}
                   </span>

@@ -68,7 +68,7 @@ export function Onboarding() {
             <AmberLogo size="lg" />
           </div>
           <h1
-            className="text-2xl font-semibold mb-2"
+            className="text-3xl sm:text-4xl font-serif font-normal tracking-tight mb-3"
             style={{ color: 'var(--color-text)' }}
           >
             Welcome to Amber

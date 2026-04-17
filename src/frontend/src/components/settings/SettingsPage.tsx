@@ -130,8 +130,8 @@ export function SettingsPage() {
           </div>
           <div className="flex-1">
             <h1
-              className="text-3xl font-bold tracking-tight"
-              style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+              className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
+              style={{ color: 'var(--color-text)' }}
             >
               Settings
             </h1>

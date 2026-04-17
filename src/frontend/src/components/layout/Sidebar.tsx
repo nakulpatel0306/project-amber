@@ -116,7 +116,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+      <nav aria-label="Main navigation" className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
         {navItems.map(item => {
           const isActive = location.pathname === item.path;
           return (
@@ -125,8 +125,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               to={item.path}
               onClick={onMobileClose}
               title={collapsed ? item.label : undefined}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 whitespace-nowrap overflow-hidden',
+                'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-[background-color,color] duration-150 ease-out-strong whitespace-nowrap overflow-hidden',
                 collapsed && 'justify-center px-0',
                 isActive
                   ? 'bg-[var(--color-accent)]'
@@ -153,7 +154,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           onClick={onMobileClose}
           title={collapsed ? 'Settings' : undefined}
           className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 whitespace-nowrap overflow-hidden',
+            'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-[background-color,color] duration-150 ease-out-strong whitespace-nowrap overflow-hidden',
             collapsed && 'justify-center px-0',
             location.pathname.startsWith('/app/settings')
               ? 'bg-[var(--color-accent)]'

@@ -414,7 +414,7 @@ export function Assessment() {
             <User className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
           </div>
           <h1
-            className="text-2xl font-bold mb-3"
+            className="text-3xl font-serif font-normal tracking-tight mb-4"
             style={{ color: 'var(--color-text)' }}
           >
             Complete Your Profile First
@@ -528,7 +528,7 @@ export function Assessment() {
           >
             <div className="mb-8">
               <h1
-                className="text-2xl md:text-3xl font-bold mb-4"
+                className="text-3xl md:text-4xl font-serif font-normal tracking-tight mb-4"
                 style={{ color: 'var(--color-text)' }}
               >
                 {currentQuestion.question}

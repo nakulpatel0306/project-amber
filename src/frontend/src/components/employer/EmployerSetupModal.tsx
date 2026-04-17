@@ -66,7 +66,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [, setValidationErrors] = useState<string[]>([]);
   const [data, setData] = useState<EmployerData>({
     company_name: '',
     description: '',
@@ -320,7 +320,7 @@ export function EmployerSetupModal({ isOpen, onClose, onComplete }: EmployerSetu
                   <Building2 className="w-10 h-10 text-white" />
                 </div>
                 <h2
-                  className="text-2xl font-bold mb-3"
+                  className="text-3xl font-serif font-normal tracking-tight mb-4"
                   style={{ color: 'var(--color-text)' }}
                 >
                   Welcome, {firstName}!

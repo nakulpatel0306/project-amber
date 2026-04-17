@@ -363,7 +363,7 @@ export function CandidateSetupModal({ isOpen, onClose, onComplete, redirectToAss
                   <Sparkles className="w-10 h-10 text-white" />
                 </div>
                 <h2
-                  className="text-2xl font-bold mb-3"
+                  className="text-3xl font-serif font-normal tracking-tight mb-4"
                   style={{ color: 'var(--color-text)' }}
                 >
                   Welcome, {firstName}!

@@ -201,8 +201,8 @@ export function TopMatches() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-            <Trophy className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
+          <h1 className="text-3xl sm:text-4xl font-serif font-normal tracking-tight flex items-center gap-3" style={{ color: 'var(--color-text)' }}>
+            <Trophy className="w-7 h-7" style={{ color: 'var(--color-accent)' }} />
             Your Top Matches
           </h1>
           <div className="flex items-center gap-3 mt-1">
@@ -293,7 +293,7 @@ export function TopMatches() {
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: getMatchColor(match.overallScore) }}>
+                      <div className="text-xl font-bold" style={{ color: getMatchColor(match.overallScore) }}>
                         {match.overallScore}%
                       </div>
                       {/* Mini metric bars */}
@@ -331,7 +331,7 @@ export function TopMatches() {
                   <ScoreRing score={selectedMatch.traitScore} size={50} strokeWidth={3} label="Traits" />
                   <ScoreRing score={selectedMatch.cultureScore} size={50} strokeWidth={3} label="Culture" />
                 </div>
-                <h3 className="font-semibold text-lg mt-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>{selectedMatch.roleTitle}</h3>
+                <h3 className="font-semibold text-lg mt-3" style={{ color: 'var(--color-text)' }}>{selectedMatch.roleTitle}</h3>
                 <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{selectedMatch.companyName}</p>
                 {selectedMatch.rank <= 3 && (
                   <span className={getRankMedalClass(selectedMatch.rank) || ''} style={{ marginTop: 4, display: 'inline-flex' }}>

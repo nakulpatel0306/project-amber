@@ -144,8 +144,8 @@ export function HelpCenterPage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           Help Center
         </h1>
@@ -224,7 +224,7 @@ export function HelpCenterPage() {
                   </div>
                   <h2
                     className="text-sm font-semibold"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {category.title}
                   </h2>
@@ -294,7 +294,7 @@ export function HelpCenterPage() {
           </div>
           <h3
             className="text-lg font-semibold mb-1"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Still Need Help?
           </h3>

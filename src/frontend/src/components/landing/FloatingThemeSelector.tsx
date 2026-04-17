@@ -113,6 +113,18 @@ export function FloatingThemeSelector() {
     success: baseColors.success,
     error: baseColors.error,
     warning: '#F59E0B',
+    info: '#3B82F6',
+    'score-excellent': baseColors.success,
+    'score-good': baseColors.accent,
+    'score-fair': '#3B82F6',
+    'score-low': adjustColor(baseColors.text, isLight(baseColors.text) ? 50 : -50),
+    'trait-openness': '#A855F7',
+    'trait-conscientiousness': '#10B981',
+    'trait-extraversion': '#F59E0B',
+    'trait-agreeableness': '#EC4899',
+    'trait-stability': '#06B6D4',
+    logoBox: isLight(baseColors.background) ? '#EAE6DE' : '#2A2522',
+    logoBoxBorder: isLight(baseColors.background) ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)',
   };
 
   // Close on escape

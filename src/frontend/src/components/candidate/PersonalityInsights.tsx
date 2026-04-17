@@ -77,7 +77,7 @@ const OCEAN_INFO = {
     idealRoles: ['Product Design', 'R&D', 'Marketing', 'Strategy', 'Content Creation'],
     cultureMatch: ['Innovative Startups', 'Creative Agencies', 'Research Institutions'],
     icon: Lightbulb,
-    color: '#8B5CF6',
+    color: 'var(--color-trait-openness)',
     progressColor: 'purple',
   },
   conscientiousness: {
@@ -91,7 +91,7 @@ const OCEAN_INFO = {
     idealRoles: ['Project Management', 'Operations', 'Finance', 'QA', 'Data Analysis'],
     cultureMatch: ['Structured Enterprises', 'Regulated Industries', 'Process-Driven Orgs'],
     icon: Target,
-    color: '#10B981',
+    color: 'var(--color-trait-conscientiousness)',
     progressColor: 'green',
   },
   extraversion: {
@@ -105,7 +105,7 @@ const OCEAN_INFO = {
     idealRoles: ['Sales', 'Leadership', 'Public Relations', 'Client Success', 'Team Management'],
     cultureMatch: ['Collaborative Teams', 'Client-Facing Roles', 'High-Energy Environments'],
     icon: Zap,
-    color: '#F59E0B',
+    color: 'var(--color-trait-extraversion)',
     progressColor: 'amber',
   },
   agreeableness: {
@@ -119,7 +119,7 @@ const OCEAN_INFO = {
     idealRoles: ['Human Resources', 'Customer Service', 'Healthcare', 'Teaching', 'Counseling'],
     cultureMatch: ['People-First Cultures', 'Service Industries', 'Mission-Driven Orgs'],
     icon: Heart,
-    color: '#EC4899',
+    color: 'var(--color-trait-agreeableness)',
     progressColor: 'pink',
   },
   neuroticism: {
@@ -133,7 +133,7 @@ const OCEAN_INFO = {
     idealRoles: ['Crisis Management', 'Executive Leadership', 'High-Stakes Negotiations'],
     cultureMatch: ['Fast-Paced Startups', 'High-Pressure Industries'],
     icon: Anchor,
-    color: '#06B6D4',
+    color: 'var(--color-trait-stability)',
     progressColor: 'cyan',
   },
 };
@@ -144,7 +144,7 @@ const ADDITIONAL_ASSESSMENTS = [
     name: 'Visual Perception Test',
     description: 'Discover your perceptual style through visual challenges.',
     icon: Eye,
-    color: '#8B5CF6',
+    color: 'var(--color-trait-openness)',
     duration: '~5 min',
     status: 'available' as const,
     dataField: 'visual_perception_data',
@@ -156,7 +156,7 @@ const ADDITIONAL_ASSESSMENTS = [
     name: 'Drive & Motivation',
     description: 'Explore what drives you at work — purpose, growth, recognition, and more.',
     icon: Scale,
-    color: '#10B981',
+    color: 'var(--color-trait-conscientiousness)',
     duration: '~5 min',
     status: 'available' as const,
     dataField: 'work_values_data',
@@ -168,7 +168,7 @@ const ADDITIONAL_ASSESSMENTS = [
     name: 'Social Energy',
     description: 'How do you handle real workplace scenarios? Conflicts, pressure, and feedback.',
     icon: Shield,
-    color: '#F59E0B',
+    color: 'var(--color-trait-extraversion)',
     duration: '~5 min',
     status: 'available' as const,
     dataField: 'situational_judgment_data',
@@ -180,7 +180,7 @@ const ADDITIONAL_ASSESSMENTS = [
     name: 'Cognitive Style',
     description: 'Explore your problem-solving approach, decision-making, and learning preferences.',
     icon: GraduationCap,
-    color: '#EC4899',
+    color: 'var(--color-trait-agreeableness)',
     duration: '~5 min',
     status: 'available' as const,
     dataField: 'cognitive_patterns_data',
@@ -305,9 +305,9 @@ export function PersonalityInsights() {
       <div className="flex-1 flex items-center justify-center px-4 py-12" style={{ backgroundColor: 'var(--color-background)', minHeight: 'calc(100vh - 80px)' }}>
         <div className="text-center">
           <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
-            <Brain className="w-10 h-10" style={{ color: '#8B5CF6' }} />
+            <Brain className="w-10 h-10" style={{ color: 'var(--color-trait-openness)' }} />
           </div>
-          <h1 className="text-2xl font-bold mb-3" style={{ color: 'var(--color-text)' }}>Discover Your Personality</h1>
+          <h1 className="text-3xl font-serif font-normal tracking-tight mb-4" style={{ color: 'var(--color-text)' }}>Discover Your Personality</h1>
           <p className="mb-6 max-w-sm mx-auto" style={{ color: 'var(--color-textSecondary)' }}>
             Take the personality assessment to unlock your insights and find jobs that truly fit your style.
           </p>
@@ -450,8 +450,8 @@ export function PersonalityInsights() {
           belowSubtitle={
             <div className="flex flex-wrap items-center gap-2.5 mt-3">
               {([
-                { label: 'Strongest', value: OCEAN_INFO[dominantDimension]?.label || 'Openness', color: '#8B5CF6', Icon: Brain },
-                { label: 'Style', value: decisionStyle, color: '#10B981', Icon: Compass },
+                { label: 'Strongest', value: OCEAN_INFO[dominantDimension]?.label || 'Openness', color: 'var(--color-trait-openness)', Icon: Brain },
+                { label: 'Style', value: decisionStyle, color: 'var(--color-trait-conscientiousness)', Icon: Compass },
                 { label: 'Top Score', value: `${sortedScores[0]?.[1] || 0}%`, color: '#f59e0b', Icon: TrendingUp },
               ] as const).map(stat => (
                 <span
@@ -522,7 +522,7 @@ export function PersonalityInsights() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
               <Brain className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               OCEAN Profile
             </h2>
@@ -561,7 +561,7 @@ export function PersonalityInsights() {
               />
             ) : (
               <div>
-                <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+                <h2 className="text-base font-bold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
                   <Layers className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                   Dimension Breakdown
                 </h2>
@@ -630,7 +630,7 @@ export function PersonalityInsights() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+            <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
               <Sparkles className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               Your Personality Archetypes
             </h2>
@@ -664,15 +664,15 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <Puzzle className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Thinking & Operating Style
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { icon: Brain, label: 'Decision-Making', value: decisionStyle, color: '#8B5CF6' },
-              { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: '#10B981' },
-              { icon: Lightbulb, label: 'Problem-Solving', value: problemSolvingStyle, color: '#F59E0B' },
+              { icon: Brain, label: 'Decision-Making', value: decisionStyle, color: 'var(--color-trait-openness)' },
+              { icon: MessageCircle, label: 'Communication', value: communicationStyle, color: 'var(--color-trait-conscientiousness)' },
+              { icon: Lightbulb, label: 'Problem-Solving', value: problemSolvingStyle, color: 'var(--color-trait-extraversion)' },
             ].map((item) => (
               <div key={item.label} className="p-4 rounded-xl" style={{ backgroundColor: 'var(--color-background)' }}>
                 <div className="flex items-center gap-2 mb-2">
@@ -692,19 +692,19 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <Battery className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Your Energy Map
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: '#10B981' }}>
+              <p className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: 'var(--color-trait-conscientiousness)' }}>
                 <Zap className="w-4 h-4" /> What Energizes You
               </p>
               <div className="space-y-2">
                 {energizers.map((item, i) => (
                   <div key={i} className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.06)' }}>
-                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: '#10B981' }} />
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-trait-conscientiousness)' }} />
                     <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{item}</span>
                   </div>
                 ))}
@@ -733,7 +733,7 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <Building2 className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Environments You Thrive In
           </h2>
@@ -746,25 +746,25 @@ export function PersonalityInsights() {
                 icon: scores.openness > 60 ? Palette : Shield,
                 label: scores.openness > 60 ? 'Innovation-Driven' : 'Proven Methods',
                 desc: scores.openness > 60 ? 'Values creativity' : 'Values stability',
-                color: '#8B5CF6',
+                color: 'var(--color-trait-openness)',
               },
               {
                 icon: scores.conscientiousness > 60 ? Target : Compass,
                 label: scores.conscientiousness > 60 ? 'Goal-Oriented' : 'Flexible Goals',
                 desc: scores.conscientiousness > 60 ? 'Clear metrics' : 'Adaptive objectives',
-                color: '#10B981',
+                color: 'var(--color-trait-conscientiousness)',
               },
               {
                 icon: scores.extraversion > 60 ? Users : Focus,
                 label: scores.extraversion > 60 ? 'Collaborative' : 'Focused Work',
                 desc: scores.extraversion > 60 ? 'Team-based' : 'Independent',
-                color: '#F59E0B',
+                color: 'var(--color-trait-extraversion)',
               },
               {
                 icon: scores.agreeableness > 60 ? Heart : Award,
                 label: scores.agreeableness > 60 ? 'People-First' : 'Results-First',
                 desc: scores.agreeableness > 60 ? 'Relationships' : 'Outcomes',
-                color: '#EC4899',
+                color: 'var(--color-trait-agreeableness)',
               },
             ].map((item, i) => (
               <div key={i} className="p-4 rounded-xl text-center" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -785,8 +785,8 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
-            <Leaf className="w-5 h-5" style={{ color: '#10B981' }} />
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+            <Leaf className="w-5 h-5" style={{ color: 'var(--color-trait-conscientiousness)' }} />
             Growth Edges
           </h2>
           <p className="font-mono text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: 'var(--color-textMuted)' }}>
@@ -826,7 +826,7 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Compatibility Signals
           </h2>
@@ -867,7 +867,7 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-base font-bold tracking-tight flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
             <Rocket className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
             Enhance Your Profile
           </h2>
@@ -901,7 +901,7 @@ export function PersonalityInsights() {
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 relative" style={{ backgroundColor: `${assessment.color}15` }}>
                     <AssessmentIcon className="w-6 h-6" style={{ color: assessment.color }} />
                     {isCompleted && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10B981' }}>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--color-trait-conscientiousness)' }}>
                         <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     )}
@@ -909,7 +909,7 @@ export function PersonalityInsights() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>{assessment.name}</h3>
-                      {isCompleted && <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981' }}>Done</span>}
+                      {isCompleted && <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-trait-conscientiousness)' }}>Done</span>}
                       {isOnCooldown && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1" style={{ backgroundColor: `${assessment.color}10`, color: assessment.color }}>
                           <Clock className="w-3 h-3" />{formatCooldown(cooldown!)}
@@ -966,7 +966,7 @@ export function PersonalityInsights() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h3 className="text-base font-bold tracking-tight mb-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>Ready to Find Your Match?</h3>
+          <h3 className="text-base font-bold tracking-tight mb-2" style={{ color: 'var(--color-text)' }}>Ready to Find Your Match?</h3>
           <p className="text-sm mb-4" style={{ color: 'var(--color-textSecondary)' }}>
             Discover companies whose culture aligns with your personality profile
           </p>
@@ -998,7 +998,7 @@ function DimensionDetail({
             <info.icon className="w-6 h-6" style={{ color: info.color }} />
           </div>
           <div>
-            <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{info.fullLabel}</h2>
+            <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>{info.fullLabel}</h2>
             <p className="text-sm" style={{ color: info.color }}>Score: {score}/100</p>
           </div>
         </div>

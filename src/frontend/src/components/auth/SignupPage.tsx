@@ -12,6 +12,7 @@ import {
   Building2,
   Check,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -19,6 +20,7 @@ import { Input } from '../ui/Input';
 import { AmberLogo } from '../ui/AmberLogo';
 import type { UserRole } from '../../types/auth.types';
 import { cn } from '../../utils/cn';
+import { pageEntrance } from '../../utils/motion';
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -145,14 +147,24 @@ export function SignupPage() {
 
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-sm">
+        <motion.div
+          className="w-full max-w-sm"
+          variants={pageEntrance}
+          initial="hidden"
+          animate="show"
+        >
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
+            <motion.div
+              className="flex justify-center mb-4"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+            >
               <AmberLogo size="md" />
-            </div>
+            </motion.div>
             <h1
-              className="text-2xl font-semibold"
+              className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
               style={{ color: 'var(--color-text)' }}
             >
               {step === 'role' ? 'Join Amber' : 'Create Your Account'}
@@ -370,7 +382,7 @@ export function SignupPage() {
               Sign in
             </Link>
           </p>
-        </div>
+        </motion.div>
       </main>
     </div>
   );

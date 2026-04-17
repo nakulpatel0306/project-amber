@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
   CheckCircle2,
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { dashboardStagger, dashboardItem } from '../../utils/motion';
 import { Button } from '../ui/Button';
 import { CoffeeBrewLoader, useMinLoader } from '../ui/CoffeeBrewLoader';
 import { CandidateSetupModal } from '../candidate/CandidateSetupModal';
@@ -456,9 +458,16 @@ export function JobSeekerDashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6 space-y-5">
+    <motion.div
+      className="max-w-7xl mx-auto px-6 py-6 space-y-5"
+      variants={dashboardStagger}
+      initial="hidden"
+      animate="show"
+    >
       {/* Dashboard Header — search + date + notifications */}
-      <DashboardHeader greeting={greeting} firstName={firstName} />
+      <motion.div variants={dashboardItem}>
+        <DashboardHeader greeting={greeting} firstName={firstName} />
+      </motion.div>
 
       {/* Archetype Strip — editorial personality display */}
       {hasCompletedAssessment === true && personalityScores && topTraits.length > 0 && (
@@ -466,7 +475,7 @@ export function JobSeekerDashboard() {
       )}
 
       {/* Key Metrics Row — 3 bento cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <motion.div variants={dashboardItem} className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <BentoMetricCard
           title="Match Index Score"
           loading={!matchesLoaded}
@@ -527,13 +536,15 @@ export function JobSeekerDashboard() {
           ]}
           onClick={() => navigate('/app/chats')}
         />
-      </div>
+      </motion.div>
 
       {/* Quick Actions */}
-      <QuickActions hasCompletedAssessment={hasCompletedAssessment === true} />
+      <motion.div variants={dashboardItem}>
+        <QuickActions hasCompletedAssessment={hasCompletedAssessment === true} />
+      </motion.div>
 
       {/* Widgets row: Streak + Insights + Schedule (2-col) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={dashboardItem} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StreakTracker />
         <CompatibilityInsights />
         <div className="md:col-span-2">
@@ -544,7 +555,7 @@ export function JobSeekerDashboard() {
             allAcceptedChats={upcomingChats.filter(c => c.status === 'accepted' && !c.scheduledAt)}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Setup Banner (if not complete) */}
       {(!hasCompletedProfile || hasCompletedAssessment === false) && (
@@ -612,12 +623,14 @@ export function JobSeekerDashboard() {
       )}
 
       {/* Top Personality Matches — clean status table, no card wrapper */}
-      <MatchingTable
-        matches={topMatches}
-        hasCompletedAssessment={hasCompletedAssessment === true}
-        onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
-        onRefresh={handleRefreshMatches}
-      />
+      <motion.div variants={dashboardItem}>
+        <MatchingTable
+          matches={topMatches}
+          hasCompletedAssessment={hasCompletedAssessment === true}
+          onRowClick={(match) => navigate(`/app/ember?deepdive=${match.employerId}`)}
+          onRefresh={handleRefreshMatches}
+        />
+      </motion.div>
 
       {/* Candidate Setup Modal */}
       <CandidateSetupModal
@@ -625,6 +638,6 @@ export function JobSeekerDashboard() {
         onClose={handleSetupSkip}
         onComplete={handleSetupComplete}
       />
-    </div>
+    </motion.div>
   );
 }

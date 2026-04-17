@@ -113,8 +113,8 @@ export function AboutPage() {
         </div>
 
         <h1
-          className="text-3xl sm:text-4xl font-bold tracking-tight mb-3"
-          style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+          className="text-4xl sm:text-5xl font-serif font-normal tracking-tight mb-4"
+          style={{ color: "var(--color-text)" }}
         >
           About The Amber Project
         </h1>
@@ -175,7 +175,7 @@ export function AboutPage() {
 
                   <h3
                     className="text-lg font-semibold mb-2"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {step.title}
                   </h3>
@@ -213,7 +213,7 @@ export function AboutPage() {
           </div>
           <h2
             className="text-2xl font-bold mb-4"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Our Vision
           </h2>
@@ -259,7 +259,7 @@ export function AboutPage() {
           </div>
           <h2
             className="text-2xl font-bold"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Our Values
           </h2>
@@ -289,7 +289,7 @@ export function AboutPage() {
                   </div>
                   <h3
                     className="text-sm font-semibold"
-                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                    style={{ color: "var(--color-text)" }}
                   >
                     {value.title}
                   </h3>
@@ -326,7 +326,7 @@ export function AboutPage() {
           </div>
           <h2
             className="text-2xl font-bold mb-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Meet The Founders
           </h2>
@@ -369,7 +369,7 @@ export function AboutPage() {
               </div>
               <h3
                 className="text-sm font-semibold"
-                style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                style={{ color: "var(--color-text)" }}
               >
                 {founder.name}
               </h3>
@@ -432,7 +432,7 @@ export function AboutPage() {
         >
           <h3
             className="text-lg font-semibold mb-2"
-            style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+            style={{ color: "var(--color-text)" }}
           >
             Ready To Find Where You Belong?
           </h3>

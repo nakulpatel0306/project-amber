@@ -19,6 +19,18 @@ export interface Theme {
     success: string;
     error: string;
     warning: string;
+    info: string;
+    'score-excellent': string;
+    'score-good': string;
+    'score-fair': string;
+    'score-low': string;
+    'trait-openness': string;
+    'trait-conscientiousness': string;
+    'trait-extraversion': string;
+    'trait-agreeableness': string;
+    'trait-stability': string;
+    'logoBox': string;
+    'logoBoxBorder': string;
   };
 }
 
@@ -42,6 +54,19 @@ export const themes: Theme[] = [
       success: '#16A34A',
       error: '#DC2626',
       warning: '#F59E0B',
+      info: '#3B82F6',
+      'score-excellent': '#16A34A',
+      'score-good': '#D97706',
+      'score-fair': '#3B82F6',
+      'score-low': '#999999',
+      'trait-openness': '#A855F7',
+      'trait-conscientiousness': '#10B981',
+      'trait-extraversion': '#F59E0B',
+      'trait-agreeableness': '#EC4899',
+      'trait-stability': '#06B6D4',
+      // Logo box: light mode — warm cream, slightly darker than header
+      'logoBox': '#EAE6DE',
+      'logoBoxBorder': 'rgba(0, 0, 0, 0.06)',
     },
   },
   {
@@ -63,6 +88,19 @@ export const themes: Theme[] = [
       success: '#22C55E',
       error: '#EF4444',
       warning: '#FBBF24',
+      info: '#60A5FA',
+      'score-excellent': '#22C55E',
+      'score-good': '#F09030',
+      'score-fair': '#60A5FA',
+      'score-low': '#555555',
+      'trait-openness': '#C084FC',
+      'trait-conscientiousness': '#34D399',
+      'trait-extraversion': '#FBBF24',
+      'trait-agreeableness': '#F472B6',
+      'trait-stability': '#22D3EE',
+      // Logo box: dark mode — warm dark, lighter than surface/header so icon stands out
+      'logoBox': '#2A2522',
+      'logoBoxBorder': 'rgba(255, 255, 255, 0.06)',
     },
   },
 ];

@@ -3,10 +3,10 @@
 /* ------------------------------------------------------------------ */
 
 export function getMatchColor(score: number): string {
-  if (score >= 85) return 'var(--color-success)';
-  if (score >= 70) return 'var(--color-accent)';
-  if (score >= 55) return 'var(--color-warning)';
-  return 'var(--color-textMuted)';
+  if (score >= 85) return 'var(--color-score-excellent)';
+  if (score >= 70) return 'var(--color-score-good)';
+  if (score >= 55) return 'var(--color-score-fair)';
+  return 'var(--color-score-low)';
 }
 
 export function generateHighlightPills(match: {
@@ -38,15 +38,15 @@ export function avatarGradient(name: string): string {
 }
 
 export function getBonusColor(bonus: number): string {
-  if (bonus >= 5) return '#10b981';
-  if (bonus >= 0) return '#f59e0b';
-  return '#ef4444';
+  if (bonus >= 5) return 'var(--color-success)';
+  if (bonus >= 0) return 'var(--color-warning)';
+  return 'var(--color-error)';
 }
 
 export function getBonusBg(bonus: number): string {
-  if (bonus >= 5) return 'rgba(16, 185, 129, 0.1)';
-  if (bonus >= 0) return 'rgba(245, 158, 11, 0.1)';
-  return 'rgba(239, 68, 68, 0.1)';
+  if (bonus >= 5) return 'color-mix(in srgb, var(--color-success) 10%, transparent)';
+  if (bonus >= 0) return 'color-mix(in srgb, var(--color-warning) 10%, transparent)';
+  return 'color-mix(in srgb, var(--color-error) 10%, transparent)';
 }
 
 export function getScoreLabel(score: number): string {

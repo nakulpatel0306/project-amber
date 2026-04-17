@@ -81,7 +81,6 @@ function OverviewCarousel({ stats }: { stats: { totalCandidates: number; strongC
             style={{
               fontSize: '4.5rem',
               color: 'var(--color-accent)',
-              fontFamily: 'var(--font-display)',
             }}
           >
             {slide.value}
@@ -382,7 +381,7 @@ export function EmberEmployerPage() {
       <div className="ember-page min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background)' }}>
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-2xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             Complete Your Setup
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -421,8 +420,8 @@ export function EmberEmployerPage() {
                 </div>
                 <div className="min-w-0">
                   <h1
-                    className="text-3xl font-bold tracking-tight"
-                    style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
+                    className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
+                    style={{ color: 'var(--color-text)' }}
                   >
                     Ember
                   </h1>
@@ -437,8 +436,8 @@ export function EmberEmployerPage() {
                     <div className="flex flex-wrap items-center gap-2.5 mt-3">
                       {([
                         { label: 'Candidates', value: dashboardStats.totalCandidates, color: '#f59e0b', Icon: Users },
-                        { label: 'Strong (80+)', value: dashboardStats.strongCandidates, color: '#8B5CF6', Icon: Zap },
-                        { label: 'Avg Score', value: `${dashboardStats.avgScore}%`, color: '#10B981', Icon: TrendingUp },
+                        { label: 'Strong (80+)', value: dashboardStats.strongCandidates, color: 'var(--color-trait-openness)', Icon: Zap },
+                        { label: 'Avg Score', value: `${dashboardStats.avgScore}%`, color: 'var(--color-trait-conscientiousness)', Icon: TrendingUp },
                       ] as const).map(stat => (
                         <span
                           key={stat.label}

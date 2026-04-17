@@ -527,7 +527,7 @@ export function TopCandidates() {
       <div className="min-h-[60vh] flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             Complete Your Setup
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -543,7 +543,7 @@ export function TopCandidates() {
       <div className="min-h-[60vh] flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <EmberFirefly size="xl" mood="neutral" />
-          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--color-text)' }}>
             No Candidates Yet
           </h2>
           <p className="mb-6" style={{ color: 'var(--color-textMuted)' }}>
@@ -592,7 +592,7 @@ export function TopCandidates() {
 
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+              <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
                 <Trophy className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
                 {activeView === 'browse' ? 'Top Candidates' : 'Your Pipeline'}
               </h1>

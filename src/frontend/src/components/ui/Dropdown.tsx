@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { ChevronDown, Check } from 'lucide-react';
 
@@ -17,6 +17,7 @@ export function Dropdown({
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -29,11 +30,55 @@ export function Dropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!isOpen || !menuRef.current) return;
+
+    const items = menuRef.current.querySelectorAll<HTMLButtonElement>(
+      'button:not([disabled])'
+    );
+    const currentIndex = Array.from(items).indexOf(
+      document.activeElement as HTMLButtonElement
+    );
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        items[currentIndex < items.length - 1 ? currentIndex + 1 : 0]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        items[currentIndex > 0 ? currentIndex - 1 : items.length - 1]?.focus();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        break;
+      case 'Home':
+        e.preventDefault();
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+        break;
+    }
+  }, [isOpen]);
+
+  // Focus first item when opened
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      const first = menuRef.current.querySelector<HTMLButtonElement>('button:not([disabled])');
+      first?.focus();
+    }
+  }, [isOpen]);
+
   return (
-    <div ref={dropdownRef} className={cn('relative inline-block', className)}>
+    <div ref={dropdownRef} className={cn('relative inline-block', className)} onKeyDown={handleKeyDown}>
       <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
       {isOpen && (
         <div
+          ref={menuRef}
+          role="listbox"
           className={cn(
             'absolute z-50 mt-2 min-w-[180px] rounded-xl border py-1.5 shadow-soft-lg',
             'animate-scale-in origin-top',
@@ -71,11 +116,13 @@ export function DropdownItem({
 }: DropdownItemProps) {
   return (
     <button
+      role="option"
+      aria-selected={selected}
       onClick={onClick}
       disabled={disabled}
       className={cn(
         'w-full flex items-center gap-2 px-3 py-2 text-sm text-left',
-        'transition-colors',
+        'transition-colors focus:outline-none focus:bg-[var(--color-surface)]',
         disabled && 'opacity-50 cursor-not-allowed',
         !disabled && 'hover:bg-[var(--color-surface)]',
         danger && !disabled && 'text-[var(--color-error)] hover:bg-red-50 dark:hover:bg-red-900/20'

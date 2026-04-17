@@ -60,9 +60,11 @@ export function Toast({
 
   return (
     <div
+      role="alert"
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
       className={cn(
         'flex items-start gap-3 p-4 rounded-xl shadow-soft-lg border max-w-sm w-full',
-        'transition-all duration-200',
+        'transition-[transform,opacity] duration-200 ease-out-strong',
         isVisible && !isLeaving ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
       )}
       style={{
