@@ -30,6 +30,9 @@ target/
 src/frontend/dist/
 *.bundle.js
 
+# Claude Code
+.claude/
+
 # IDE/Editor
 .idea/
 *.swp
