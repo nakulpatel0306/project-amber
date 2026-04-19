@@ -414,7 +414,7 @@ export function WaitlistModal({
                         className="font-semibold tabular-nums"
                         style={{ color: 'var(--color-text)' }}
                       >
-                        {Math.max(total, 0) + 1}
+                        {Math.max(total, 1)}
                       </span>
                       <span> People Now Waiting</span>
                     </span>

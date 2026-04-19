@@ -393,6 +393,9 @@ function TestimonialCarousel() {
                     borderColor: 'var(--color-border)',
                   }}
                 >
+                  {/* Blur overlay — no real users yet */}
+                  <div className="absolute inset-0 z-10" style={{ backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' }} />
+
                   {/* Subtle top glow */}
                   <div
                     className="absolute top-0 left-0 right-0 h-1 opacity-40"
