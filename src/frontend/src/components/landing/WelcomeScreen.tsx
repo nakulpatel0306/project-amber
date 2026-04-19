@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { motion, Variants, useScroll, useTransform } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ComingSoonModal } from './ComingSoonModal';
+import { WaitlistModal } from './WaitlistModal';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
   AnimatedBlobs,
   CursorSpotlight,
@@ -258,12 +259,33 @@ function TestimonialCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isTabSwitching, setIsTabSwitching] = useState(false);
+  const [cardsPerView, setCardsPerView] = useState(3);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stories = tab === 'seekers' ? seekerStories : employerStories;
 
-  // With 5 stories and 3 visible, we have pages 0, 1, 2 (last page shows cards 2,3,4)
-  const maxPage = Math.max(0, stories.length - 3);
+  // Responsive cards-per-view: 1 on phones, 2 on tablets, 3 on desktop
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setCardsPerView(w < 640 ? 1 : w < 1024 ? 2 : 3);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const GAP = 20; // matches gap-5 between cards
+  const maxPage = Math.max(0, stories.length - cardsPerView);
+  const cardWidthPercent = 100 / cardsPerView;
+  // Compensate for gaps so cards+gaps fit exactly in the container
+  const cardGapOffset = ((cardsPerView - 1) * GAP) / cardsPerView;
+  const translateGapStep = GAP / cardsPerView;
+
+  // Reset/clamp page when breakpoint changes
+  useEffect(() => {
+    if (activeIndex > maxPage) setActiveIndex(maxPage);
+  }, [maxPage, activeIndex]);
 
   const goNext = useCallback(() => setActiveIndex(prev => prev >= maxPage ? 0 : prev + 1), [maxPage]);
   const goPrev = useCallback(() => setActiveIndex(prev => prev <= 0 ? maxPage : prev - 1), [maxPage]);
@@ -353,7 +375,7 @@ function TestimonialCarousel() {
           <div
             className="flex gap-5 transition-transform duration-500 ease-in-out"
             style={{
-              transform: `translateX(calc(-${activeIndex} * (33.333% + 6.67px)))`,
+              transform: `translateX(calc(${-activeIndex * cardWidthPercent}% - ${activeIndex * translateGapStep}px))`,
               opacity: isTabSwitching ? 0 : 1,
               transition: isTabSwitching ? 'opacity 0.2s ease' : 'transform 0.5s ease, opacity 0.2s ease',
             }}
@@ -362,7 +384,7 @@ function TestimonialCarousel() {
               <div
                 key={`${tab}-${i}`}
                 className="flex-shrink-0"
-                style={{ width: 'calc(33.333% - 13.33px)' }}
+                style={{ width: `calc(${cardWidthPercent}% - ${cardGapOffset}px)` }}
               >
                 <div
                   className="rounded-2xl border p-6 h-full flex flex-col relative overflow-hidden"
@@ -771,7 +793,39 @@ function ValuesSection() {
 
 export function WelcomeScreen() {
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+  const [waitlistCounts, setWaitlistCounts] = useState({
+    total: 0,
+    candidates: 0,
+    employers: 0,
+  });
   const heroRef = useRef<HTMLElement>(null);
+
+  const fetchWaitlistCounts = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    try {
+      const { data, error } = await supabase.rpc('get_waitlist_count');
+      if (error) return;
+      if (data && Array.isArray(data) && data[0]) {
+        const row = data[0] as {
+          total: number | string;
+          candidates: number | string;
+          employers: number | string;
+        };
+        setWaitlistCounts({
+          total: Number(row.total) || 0,
+          candidates: Number(row.candidates) || 0,
+          employers: Number(row.employers) || 0,
+        });
+      }
+    } catch {
+      /* noop — counter stays at 0 */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWaitlistCounts();
+  }, [fetchWaitlistCounts]);
+
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start'],
@@ -1407,10 +1461,14 @@ export function WelcomeScreen() {
       {/* Footer */}
       <LandingFooter />
 
-      {/* Coming Soon Modal */}
-      <ComingSoonModal
+      {/* Coming Soon + Waitlist signup */}
+      <WaitlistModal
         isOpen={isComingSoonOpen}
         onClose={() => setIsComingSoonOpen(false)}
+        onSuccess={fetchWaitlistCounts}
+        total={waitlistCounts.total}
+        candidates={waitlistCounts.candidates}
+        employers={waitlistCounts.employers}
       />
     </div>
   );

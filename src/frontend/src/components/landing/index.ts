@@ -1,7 +1,7 @@
 export { WelcomeScreen } from './WelcomeScreen';
 export { LandingNav } from './LandingNav';
 export { LandingFooter } from './LandingFooter';
-export { ComingSoonModal } from './ComingSoonModal';
+export { WaitlistModal } from './WaitlistModal';
 export { AnimatedCounter } from './AnimatedCounter';
 export { FAQAccordion } from './FAQAccordion';
 export { CursorSpotlight } from './CursorSpotlight';

@@ -173,7 +173,7 @@ export function LandingFooter() {
                   style={{ color: 'var(--color-textSecondary)' }}
                 >
                   <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                  SEND US AN EMAIL!!
+                  SEND US AN EMAIL
                 </a>
               </li>
             </ul>
