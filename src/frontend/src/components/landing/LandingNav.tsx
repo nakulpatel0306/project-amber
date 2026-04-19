@@ -1,13 +1,8 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/Button';
 import { AmberLogo } from '../ui/AmberLogo';
 import { MagneticButton } from './MagneticButton';
 
 export function LandingNav() {
-  const { isAuthenticated } = useAuth();
-
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-6 pb-6 pointer-events-none"
@@ -36,41 +31,18 @@ export function LandingNav() {
             </span>
           </Link>
 
-          {/* Auth buttons */}
+          {/* Coming Soon badge */}
           <div className="flex items-center gap-3">
-            {isAuthenticated ? (
-              <Link to="/app">
-                <MagneticButton
-                  className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
-                  style={{
-                    backgroundColor: 'var(--color-accent)',
-                    color: 'var(--color-accentText)',
-                  }}
-                  strength={0.08}
-                >
-                  Dashboard
-                  <ArrowRight className="w-4 h-4" />
-                </MagneticButton>
-              </Link>
-            ) : (
-              <>
-                <Link to="/auth/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
-                </Link>
-                <Link to="/auth/signup">
-                  <MagneticButton
-                    className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                    style={{
-                      backgroundColor: 'var(--color-accent)',
-                      color: 'var(--color-accentText)',
-                    }}
-                    strength={0.08}
-                  >
-                    Get Started
-                  </MagneticButton>
-                </Link>
-              </>
-            )}
+            <MagneticButton
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              style={{
+                backgroundColor: 'var(--color-accent)',
+                color: 'var(--color-accentText)',
+              }}
+              strength={0.08}
+            >
+              Coming Soon
+            </MagneticButton>
           </div>
         </div>
       </div>

@@ -75,7 +75,8 @@ function AnimatedScoreNumber({ value, suffix = '', delay = 0 }: { value: number;
 
 function CompanyLogoTile({ domain, fallback, size = 20 }: { domain: string; fallback: string; size?: number }) {
   const [err, setErr] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  // Extract company name from domain (e.g., "figma.com" -> "figma")
+  const logoName = domain.split('.')[0];
   return (
     <div
       className="rounded flex items-center justify-center flex-shrink-0 overflow-hidden"
@@ -92,7 +93,7 @@ function CompanyLogoTile({ domain, fallback, size = 20 }: { domain: string; fall
         </span>
       ) : (
         <img
-          src={`${API_BASE}/api/logo?domain=${domain}`}
+          src={`/logos/${logoName}.png`}
           alt={fallback}
           className="w-full h-full object-contain p-0.5"
           onError={() => setErr(true)}
@@ -1253,7 +1254,7 @@ function SceneConnect({ stage }: { stage: number }) {
 
 function ProcessCard() {
   const [active, setActive] = useState(0);
-  const [clicked, setClicked] = useState(false);
+  const [_clicked, setClicked] = useState(false);
   const [pickedIndex, setPickedIndex] = useState(-1);
   const [hoverIndex, setHoverIndex] = useState(-1); // Scene 2: hover drift
   const [connectStage, setConnectStage] = useState(0); // Scene 4: 0=idle, 1=duration picked, 2=time picked, 3=sent

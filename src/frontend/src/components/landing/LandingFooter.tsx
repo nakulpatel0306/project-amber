@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom';
 import {
   Mail,
   MapPin,
-  Linkedin,
-  Instagram,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -50,26 +48,6 @@ export function LandingFooter() {
               Where personality meets opportunity. We use the science of who you
               are to connect you with companies where you will genuinely thrive.
             </p>
-            {/* Social links */}
-            <div className="flex items-center gap-2">
-              {[
-                { icon: Instagram, label: 'Instagram' },
-                { icon: Linkedin, label: 'LinkedIn' },
-                { icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>, label: 'X' },
-              ].map(social => (
-                <button
-                  key={social.label}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                  style={{
-                    backgroundColor: 'var(--color-background)',
-                    color: 'var(--color-textMuted)',
-                  }}
-                  title={social.label}
-                >
-                  <social.icon className="w-3.5 h-3.5" />
-                </button>
-              ))}
-            </div>
           </div>
           {/* Product */}
           <div>
@@ -81,19 +59,28 @@ export function LandingFooter() {
             </h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'Personality Assessment', href: '/science' },
-                { label: 'Culture Matching', href: '/science' },
-                { label: 'Coffee Chats', href: '/auth/signup' },
-                { label: 'Pricing', href: '/pricing' },
+                { label: 'Personality Assessment', href: '/science', enabled: true },
+                { label: 'Culture Matching', href: '/science', enabled: false },
+                { label: 'Coffee Chats', href: '/auth/signup', enabled: false },
+                { label: 'Pricing', href: '/pricing', enabled: true },
               ].map(item => (
                 <li key={item.label}>
-                  <Link
-                    to={item.href}
-                    className="text-sm transition-colors hover:underline"
-                    style={{ color: 'var(--color-textSecondary)' }}
-                  >
-                    {item.label}
-                  </Link>
+                  {item.enabled ? (
+                    <Link
+                      to={item.href}
+                      className="text-sm transition-colors hover:underline"
+                      style={{ color: 'var(--color-textSecondary)' }}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span
+                      className="text-sm cursor-default"
+                      style={{ color: 'var(--color-textMuted)' }}
+                    >
+                      {item.label}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -109,19 +96,18 @@ export function LandingFooter() {
             </h4>
             <ul className="space-y-2.5">
               {[
-                { label: 'Post a Role', href: '/auth/signup?role=employer' },
-                { label: 'Browse Candidates', href: '/auth/signup?role=employer' },
-                { label: 'Culture Matching', href: '/auth/signup?role=employer' },
-                { label: 'Culture Assessment', href: '/auth/signup?role=employer' },
+                { label: 'Post a Role' },
+                { label: 'Browse Candidates' },
+                { label: 'Culture Matching' },
+                { label: 'Culture Assessment' },
               ].map(item => (
                 <li key={item.label}>
-                  <Link
-                    to={item.href}
-                    className="text-sm transition-colors hover:underline"
-                    style={{ color: 'var(--color-textSecondary)' }}
+                  <span
+                    className="text-sm cursor-default"
+                    style={{ color: 'var(--color-textMuted)' }}
                   >
                     {item.label}
-                  </Link>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -187,52 +173,10 @@ export function LandingFooter() {
                   style={{ color: 'var(--color-textSecondary)' }}
                 >
                   <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                  amberfounders@gmail.com
+                  SEND US AN EMAIL!!
                 </a>
               </li>
             </ul>
-          </div>
-        </div>
-
-        {/* Newsletter - compact row */}
-        <div
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-5 rounded-xl"
-          style={{ backgroundColor: 'var(--color-background)' }}
-        >
-          <div>
-            <h4
-              className="text-sm font-semibold"
-              style={{ color: 'var(--color-text)' }}
-            >
-              Stay In The Loop
-            </h4>
-            <p
-              className="text-xs mt-0.5"
-              style={{ color: 'var(--color-textMuted)' }}
-            >
-              Personality Science, Hiring Trends, And Product Updates.
-            </p>
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <input
-              type="email"
-              placeholder="your@email.com"
-              className="flex-1 sm:w-56 px-4 py-2 rounded-lg text-sm border outline-none transition-colors"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text)',
-              }}
-            />
-            <button
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: 'var(--color-accentText)',
-              }}
-            >
-              Subscribe
-            </button>
           </div>
         </div>
 
