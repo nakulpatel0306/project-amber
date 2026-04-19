@@ -607,7 +607,7 @@ export function ProductJourney() {
       className="relative"
       style={{ height: '800vh' }}
     >
-      {/* Sticky playhead — pins to viewport as user scrolls */}
+      {/* Sticky playhead: pins to viewport as user scrolls */}
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         {/* Ambient radial glow */}
         <div
@@ -620,7 +620,7 @@ export function ProductJourney() {
 
         <div className="w-full px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-4xl mx-auto flex flex-col items-center">
-            {/* Narrative — swaps with each step */}
+            {/* Narrative: swaps with each step */}
             <div className="text-center mb-8 h-[180px] lg:h-[200px] flex flex-col items-center justify-end">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -715,7 +715,7 @@ export function ProductJourney() {
                   <div style={{ width: 46 }} />
                 </div>
 
-                {/* Frames — zoom-in crossfade */}
+                {/* Frames: zoom-in crossfade */}
                 <div className="relative h-[calc(100%-40px)]">
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -730,7 +730,7 @@ export function ProductJourney() {
                     </motion.div>
                   </AnimatePresence>
 
-                  {/* Phantom cursor — clicks before transition */}
+                  {/* Phantom cursor: clicks before transition */}
                   <PhantomCursor show={showClick} pos={currentStep.clickPos} />
                 </div>
               </motion.div>

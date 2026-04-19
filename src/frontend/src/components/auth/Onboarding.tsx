@@ -10,14 +10,14 @@ import type { UserRole } from '../../types/auth.types';
 const roleOptions = [
   {
     id: 'candidate' as const,
-    label: "I'm Looking for Jobs",
-    description: 'Find roles that match your personality and values',
+    label: "I'm Looking For Jobs",
+    description: 'Find Roles That Match Your Personality And Values',
     icon: User,
   },
   {
     id: 'employer' as const,
     label: "I'm Hiring",
-    description: 'Find candidates who fit your company culture',
+    description: 'Find Candidates Who Fit Your Company Culture',
     icon: Building2,
   },
 ];
@@ -71,13 +71,13 @@ export function Onboarding() {
             className="text-3xl sm:text-4xl font-serif font-normal tracking-tight mb-3"
             style={{ color: 'var(--color-text)' }}
           >
-            Welcome to Amber
+            Welcome To Amber
           </h1>
           <p
             className="text-sm"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            Let's get you set up. What brings you here?
+            Let's Get You Set Up. What Brings You Here?
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export function Onboarding() {
           className="text-xs text-center mt-4"
           style={{ color: 'var(--color-textMuted)' }}
         >
-          You can change this later in settings
+          You Can Change This Later In Settings
         </p>
       </div>
     </div>

@@ -5,26 +5,26 @@ const STATS = [
   {
     value: 73,
     suffix: '%',
-    label: 'Of employees quit due to culture mismatch',
+    label: 'Of Employees Quit Due To Culture Mismatch',
     sublabel: 'Gallup, 2024',
   },
   {
     value: 40,
     suffix: '+',
-    label: 'Companies hiring through Amber',
-    sublabel: 'And growing weekly',
+    label: 'Companies Hiring Through Amber',
+    sublabel: 'And Growing Weekly',
   },
   {
     value: 15,
     suffix: ' min',
-    label: 'From assessment to matched',
-    sublabel: 'No resume. No cover letter.',
+    label: 'From Assessment To Matched',
+    sublabel: 'No Resume. No Cover Letter.',
   },
   {
     value: 87,
     suffix: '%',
-    label: 'Average culture-fit for placed candidates',
-    sublabel: 'Measured 6 months post-hire',
+    label: 'Average Culture-Fit For Placed Candidates',
+    sublabel: 'Measured 6 Months Post-Hire',
   },
 ];
 
@@ -58,7 +58,7 @@ function AnimatedNumber({ value, suffix, trigger }: { value: number; suffix: str
 
 export function LiveStatsSection() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-100px' });
+  const inView = useInView(ref, { once: false, margin: '-100px' });
 
   return (
     <section className="py-28 lg:py-36 px-4 sm:px-6 lg:px-8 relative">
@@ -73,18 +73,18 @@ export function LiveStatsSection() {
             className="text-xs font-semibold uppercase tracking-[0.25em]"
             style={{ color: 'var(--color-accent)' }}
           >
-            By the numbers
+            By The Numbers
           </span>
           <h2
             className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight mt-4"
             style={{ color: 'var(--color-text)' }}
           >
-            The job market{' '}
+            The Job Market{' '}
             <span className="italic" style={{ color: 'var(--color-accent)' }}>
-              is broken.
+              Is Broken.
             </span>
             <br />
-            We have the data.
+            We Have The Data.
           </h2>
         </motion.div>
 

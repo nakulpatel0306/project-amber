@@ -41,7 +41,6 @@ const typewriterWords = [
   'Your Culture',
 ];
 
-
 const valueProps = [
   {
     icon: Brain,
@@ -167,8 +166,6 @@ const forEmployers = [
   { text: 'AI-ranked candidates by personality fit', icon: TrendingUp },
   { text: 'Reduce turnover with better culture matches', icon: Shield },
 ];
-
-
 
 const seekerStories = [
   {
@@ -657,7 +654,7 @@ function ScrollSection({ children, className = '', delay = 0 }: { children: Reac
       className={className}
       initial={{ opacity: 0, y: 100, scale: 0.97 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: '-60px' }}
+      viewport={{ once: false, margin: '-60px' }}
       transition={{ duration: 0.8, delay, ease: [0.23, 1, 0.32, 1] }}
     >
       {children}
@@ -681,7 +678,7 @@ function StaggerGrid({ children, className = '' }: { children: React.ReactNode; 
       className={className}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: '-80px' }}
+      viewport={{ once: false, margin: '-80px' }}
       variants={staggerContainer}
     >
       {children}
@@ -772,7 +769,6 @@ function ValuesSection() {
   );
 }
 
-
 export function WelcomeScreen() {
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress: heroProgress } = useScroll({
@@ -807,7 +803,7 @@ export function WelcomeScreen() {
             <InteractiveGreeting />
           </div>
 
-          {/* Main Heading — Serif editorial style */}
+          {/* Main Heading: Serif editorial style */}
           <motion.h1
             className="text-7xl sm:text-8xl lg:text-9xl font-normal mb-8 tracking-tighter leading-[0.9] font-serif"
             style={{ color: 'var(--color-text)' }}
@@ -831,7 +827,7 @@ export function WelcomeScreen() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
           >
-            The job search is broken. We match you where you'll actually belong — based on who you are, not what's on your resume.
+            The job search is broken. We match you where you'll actually belong, based on who you are and how you work, not what's on your resume.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -873,7 +869,7 @@ export function WelcomeScreen() {
         </motion.div>
       </section>
 
-      {/* Feature Bento Grid — "What's Inside" + 4-step journey */}
+      {/* Feature Bento Grid: "What's Inside" + 4-step journey */}
       <FeatureBento />
 
       {/* Why Amber - Value Props */}
@@ -900,10 +896,10 @@ export function WelcomeScreen() {
         </section>
       </ScrollSection>
 
-      {/* Product Showcase — Ember chat + Match visualization (interactive) */}
+      {/* Product Showcase: Ember chat + Match visualization (interactive) */}
       <ProductShowcase />
 
-      {/* Live Stats — editorial number grid */}
+      {/* Live Stats: editorial number grid */}
       <LiveStatsSection />
 
       {/* Companies Section */}
@@ -915,9 +911,9 @@ export function WelcomeScreen() {
                 className="text-3xl sm:text-4xl font-serif font-normal tracking-tight mb-4"
                 style={{ color: 'var(--color-text)' }}
               >
-                Land coffee chats with recruiters from{' '}
+                Land Coffee Chats With Recruiters From{' '}
                 <span className="italic" style={{ color: 'var(--color-accent)' }}>
-                  top companies.
+                  Top Companies.
                 </span>
               </h2>
               <p
@@ -960,7 +956,6 @@ export function WelcomeScreen() {
           </div>
         </section>
       </ScrollSection>
-
 
       {/* Success Stories */}
       <ScrollSection>
@@ -1333,7 +1328,7 @@ export function WelcomeScreen() {
               className="text-sm mb-10"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              Try it free. No resume required.
+              Try It Free. No Resume Required.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

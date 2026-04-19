@@ -58,7 +58,7 @@ export function InteractiveGreeting() {
     >
       <span className="text-lg">{greetingData.emoji}</span>
       <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-        {greetingData.greeting} — {greetingData.subtext}
+        {greetingData.greeting}, {greetingData.subtext}
       </span>
     </div>
   );

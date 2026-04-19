@@ -28,13 +28,13 @@ export function LoginPage() {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email Is Required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Please Enter A Valid Email';
     }
 
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Password Is Required';
     }
 
     setErrors(newErrors);
@@ -138,7 +138,7 @@ export function LoginPage() {
               className="text-sm mt-2"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              Sign in to your {APP_NAME} account
+              Sign In To Your {APP_NAME} Account
             </p>
           </div>
 
@@ -158,7 +158,7 @@ export function LoginPage() {
                 disabled={isLoading}
                 className="hover:!border-blue-400 hover:!bg-blue-50 dark:hover:!bg-blue-950/20"
               >
-                Continue with Google
+                Continue With Google
               </Button>
             </motion.div>
             <motion.div variants={formItem}>
@@ -170,7 +170,7 @@ export function LoginPage() {
                 disabled={isLoading}
                 className="hover:!border-gray-500 hover:!bg-gray-50 dark:hover:!bg-gray-900/20"
               >
-                Continue with GitHub
+                Continue With GitHub
               </Button>
             </motion.div>
           </motion.div>
@@ -200,7 +200,7 @@ export function LoginPage() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
               >
-                or continue with Email
+                Or Continue With Email
               </motion.span>
             </div>
           </div>
@@ -232,7 +232,7 @@ export function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Enter Your Password"
                 leftIcon={<Lock className="w-4 h-4" />}
                 rightIcon={
                   <button
@@ -256,7 +256,7 @@ export function LoginPage() {
                   className="text-xs transition-colors"
                   style={{ color: 'var(--color-accent)' }}
                 >
-                  Forgot password?
+                  Forgot Password?
                 </Link>
               </div>
             </motion.div>
@@ -276,13 +276,13 @@ export function LoginPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            Don't have an account?{' '}
+            Don't Have An Account?{' '}
             <Link
               to="/auth/signup"
               className="font-medium transition-colors"
               style={{ color: 'var(--color-accent)' }}
             >
-              Sign up
+              Sign Up
             </Link>
           </motion.p>
         </motion.div>
