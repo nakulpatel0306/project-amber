@@ -204,13 +204,13 @@ export function LandingFooter() {
               className="text-sm font-semibold"
               style={{ color: 'var(--color-text)' }}
             >
-              Stay in the Loop
+              Stay In The Loop
             </h4>
             <p
               className="text-xs mt-0.5"
               style={{ color: 'var(--color-textMuted)' }}
             >
-              Personality science, hiring trends, and product updates.
+              Personality Science, Hiring Trends, And Product Updates.
             </p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">

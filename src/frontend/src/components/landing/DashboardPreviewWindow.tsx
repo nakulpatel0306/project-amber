@@ -34,7 +34,7 @@ export function DashboardPreviewWindow() {
           className="text-center mb-16"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: false, margin: '-80px' }}
           transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
         >
           <motion.div
@@ -64,7 +64,7 @@ export function DashboardPreviewWindow() {
             className="text-lg max-w-2xl mx-auto leading-relaxed"
             style={{ color: 'var(--color-textSecondary)' }}
           >
-            Your matches, coffee chats, and personality insights — always current, always actionable.
+            Your matches, coffee chats, and personality insights, always current and always actionable.
           </p>
         </motion.div>
 
@@ -142,7 +142,7 @@ export function DashboardPreviewWindow() {
                     style={m.accent ? { borderTopColor: 'var(--color-accent)', borderTopWidth: 2 } : undefined}
                     initial={{ opacity: 0, y: 12 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false }}
                     transition={{ duration: 0.4, delay: 0.1 + i * 0.08 }}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -192,7 +192,7 @@ export function DashboardPreviewWindow() {
                       }}
                       initial={{ opacity: 0, x: -10 }}
                       whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
+                      viewport={{ once: false }}
                       transition={{ duration: 0.4, delay: 0.3 + i * 0.06 }}
                     >
                       <div className="flex items-center gap-3 min-w-0">

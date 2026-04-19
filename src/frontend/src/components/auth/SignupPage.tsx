@@ -41,23 +41,23 @@ export function SignupPage() {
     const newErrors: Record<string, string> = {};
 
     if (!fullName.trim()) {
-      newErrors.fullName = 'Name is required';
+      newErrors.fullName = 'Name Is Required';
     }
 
     if (!email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email Is Required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Please Enter A Valid Email';
     }
 
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Password Is Required';
     } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'Password Must Be At Least 8 Characters';
     }
 
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Passwords Do Not Match';
     }
 
     setErrors(newErrors);
@@ -116,14 +116,14 @@ export function SignupPage() {
   const roleOptions = [
     {
       id: 'candidate' as const,
-      label: 'I\'m looking for jobs',
-      description: 'Find roles that match your personality and values',
+      label: 'I\'m Looking For Jobs',
+      description: 'Find Roles That Match Your Personality And Values',
       icon: User,
     },
     {
       id: 'employer' as const,
-      label: 'I\'m hiring',
-      description: 'Find candidates who fit your company culture',
+      label: 'I\'m Hiring',
+      description: 'Find Candidates Who Fit Your Company Culture',
       icon: Building2,
     },
   ];
@@ -174,8 +174,8 @@ export function SignupPage() {
               style={{ color: 'var(--color-textMuted)' }}
             >
               {step === 'role'
-                ? 'How will you be using Amber?'
-                : `Signing up as ${role === 'candidate' ? 'a job seeker' : 'an employer'}`}
+                ? 'How Will You Be Using Amber?'
+                : `Signing Up As ${role === 'candidate' ? 'A Job Seeker' : 'An Employer'}`}
             </p>
           </div>
 
@@ -255,7 +255,7 @@ export function SignupPage() {
                   leftIcon={<Chrome className="w-4 h-4" />}
                   disabled={isLoading}
                 >
-                  Continue with Google
+                  Continue With Google
                 </Button>
                 <Button
                   variant="secondary"
@@ -264,7 +264,7 @@ export function SignupPage() {
                   leftIcon={<Github className="w-4 h-4" />}
                   disabled={isLoading}
                 >
-                  Continue with GitHub
+                  Continue With GitHub
                 </Button>
               </div>
 
@@ -287,7 +287,7 @@ export function SignupPage() {
                       color: 'var(--color-textMuted)',
                     }}
                   >
-                    or continue with Email
+                    Or Continue With Email
                   </span>
                 </div>
               </div>
@@ -321,7 +321,7 @@ export function SignupPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder="At Least 8 Characters"
                   leftIcon={<Lock className="w-4 h-4" />}
                   rightIcon={
                     <button
@@ -345,7 +345,7 @@ export function SignupPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
+                  placeholder="Confirm Your Password"
                   leftIcon={<Lock className="w-4 h-4" />}
                   error={errors.confirmPassword}
                   disabled={isLoading}
@@ -373,13 +373,13 @@ export function SignupPage() {
             className="text-center text-sm mt-6"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            Already have an account?{' '}
+            Already Have An Account?{' '}
             <Link
               to="/auth/login"
               className="font-medium transition-colors"
               style={{ color: 'var(--color-accent)' }}
             >
-              Sign in
+              Sign In
             </Link>
           </p>
         </motion.div>

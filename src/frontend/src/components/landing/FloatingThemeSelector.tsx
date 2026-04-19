@@ -81,7 +81,7 @@ export function FloatingThemeSelector() {
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>(getCustomThemes);
   const { currentTheme, setTheme, themes } = useTheme();
 
-  // Simplified custom theme form — 6 key colors, rest auto-derived
+  // Simplified custom theme form: 6 key colors, rest auto-derived
   const [customName, setCustomName] = useState('');
   const [baseColors, setBaseColors] = useState({
     background: '#1a1a2e',

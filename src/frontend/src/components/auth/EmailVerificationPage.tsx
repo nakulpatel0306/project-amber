@@ -48,7 +48,7 @@ export function EmailVerificationPage() {
           style={{ color: 'var(--color-textSecondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to sign in
+          Back To Sign In
         </Link>
       </header>
 
@@ -76,9 +76,9 @@ export function EmailVerificationPage() {
               style={{ color: 'var(--color-textMuted)' }}
             >
               {email ? (
-                <>We've sent a verification link to <strong style={{ color: 'var(--color-text)' }}>{email}</strong></>
+                <>We've Sent A Verification Link To <strong style={{ color: 'var(--color-text)' }}>{email}</strong></>
               ) : (
-                "We've sent a verification link to your email"
+                "We've Sent A Verification Link To Your Email"
               )}
             </p>
           </div>
@@ -98,13 +98,13 @@ export function EmailVerificationPage() {
                   className="text-sm font-medium"
                   style={{ color: 'var(--color-text)' }}
                 >
-                  Click the link in your email to verify your account
+                  Click The Link In Your Email To Verify Your Account
                 </p>
                 <p
                   className="text-xs mt-1"
                   style={{ color: 'var(--color-textMuted)' }}
                 >
-                  The link will expire in 24 hours
+                  The Link Will Expire In 24 Hours
                 </p>
               </div>
             </div>
@@ -136,13 +136,13 @@ export function EmailVerificationPage() {
             className="text-center text-xs mt-6"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            Didn't receive the email? Check your spam folder or{' '}
+            Didn't Receive The Email? Check Your Spam Folder Or{' '}
             <Link
               to="/auth/signup"
               className="font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
-              try a different email
+              Try A Different Email
             </Link>
           </p>
         </div>

@@ -38,12 +38,12 @@ export function PasswordResetPage() {
     e.preventDefault();
 
     if (!email) {
-      setErrors({ email: 'Email is required' });
+      setErrors({ email: 'Email Is Required' });
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrors({ email: 'Please enter a valid email' });
+      setErrors({ email: 'Please Enter A Valid Email' });
       return;
     }
 
@@ -62,13 +62,13 @@ export function PasswordResetPage() {
     const newErrors: Record<string, string> = {};
 
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Password Is Required';
     } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'Password Must Be At Least 8 Characters';
     }
 
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Passwords Do Not Match';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -99,7 +99,7 @@ export function PasswordResetPage() {
           style={{ color: 'var(--color-textSecondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to sign in
+          Back To Sign In
         </Link>
       </header>
 
@@ -135,10 +135,10 @@ export function PasswordResetPage() {
               style={{ color: 'var(--color-textMuted)' }}
             >
               {step === 'request' &&
-                "No worries, we'll send you reset instructions"}
-              {step === 'reset' && 'Enter your new password below'}
+                "No Worries, We'll Send You Reset Instructions"}
+              {step === 'reset' && 'Enter Your New Password Below'}
               {step === 'success' &&
-                `We've sent a password reset link to ${email}`}
+                `We've Sent A Password Reset Link To ${email}`}
             </p>
           </div>
 
@@ -170,7 +170,7 @@ export function PasswordResetPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder="At Least 8 Characters"
                 leftIcon={<Lock className="w-4 h-4" />}
                 rightIcon={
                   <button
@@ -194,7 +194,7 @@ export function PasswordResetPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
+                placeholder="Confirm Your Password"
                 leftIcon={<Lock className="w-4 h-4" />}
                 error={errors.confirmPassword}
                 disabled={isLoading}
@@ -213,13 +213,13 @@ export function PasswordResetPage() {
                 className="text-sm text-center"
                 style={{ color: 'var(--color-textSecondary)' }}
               >
-                Didn't receive the email? Check your spam folder or{' '}
+                Didn't Receive The Email? Check Your Spam Folder Or{' '}
                 <button
                   onClick={() => setStep('request')}
                   className="font-medium"
                   style={{ color: 'var(--color-accent)' }}
                 >
-                  try another email address
+                  Try Another Email Address
                 </button>
               </p>
 
