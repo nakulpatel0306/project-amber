@@ -9,6 +9,7 @@ import { EmberFirefly } from '../ember/EmberFirefly';
 import { CoffeeChatCard, CoffeeChatData, ChatStatus } from './CoffeeChatCard';
 import { CoffeeChatPrep } from './CoffeeChatPrep';
 import { CoffeeChatFollowUp } from './CoffeeChatFollowUp';
+import { CoffeeChatsCalendar } from './CoffeeChatsCalendar';
 import { ScheduleModal } from './ScheduleModal';
 import { FeedbackModal } from './FeedbackModal';
 import { CoffeeChatDetailModal } from './CoffeeChatDetailModal';
@@ -16,7 +17,6 @@ import { AcceptWithDateModal } from './AcceptWithDateModal';
 import { PageBanner } from '../ui/PageBanner';
 import { Button } from '../ui/Button';
 import { InboxPanel } from '../connections/InboxPanel';
-import { DashboardCalendar, type UpcomingChat } from '../dashboard/DashboardCalendar';
 import { Coffee, UserPlus, Clock, CheckCircle2, CalendarDays } from 'lucide-react';
 import { useConnections } from '../../contexts/ConnectionsContext';
 import { deriveDisplayStatus, type DisplayStatus } from '../../utils/coffeeChatStatus';
@@ -72,6 +72,7 @@ export function EmployerCoffeeChats() {
   const [activeChatPartner, setActiveChatPartner] = useState('');
   const [activeChat, setActiveChat] = useState<CoffeeChatData | null>(null);
   const [chatToAccept, setChatToAccept] = useState<CoffeeChatData | null>(null);
+  const [customDatesByChat, setCustomDatesByChat] = useState<Record<string, string[]>>({});
 
   const showLoader = useMinLoader(isLoading);
 
@@ -156,6 +157,7 @@ export function EmployerCoffeeChats() {
           match_score: c.match_score,
           role_title: c.role_title,
           preferred_dates: c.preferred_dates,
+          duration_minutes: c.duration_minutes,
         }));
         setChats(mapped);
       }
@@ -276,48 +278,6 @@ export function EmployerCoffeeChats() {
     }
   };
 
-  // Prefilled date for ScheduleModal (set from DayDetailPopup)
-  const [prefilledDate, setPrefilledDate] = useState<string | undefined>(undefined);
-
-  // Calendar chats — all non-cancelled chats with dates or preferred dates
-  const calendarChats = useMemo<UpcomingChat[]>(() => {
-    return chats
-      .filter(c => c.status !== 'cancelled')
-      .map(c => ({
-        id: c.id,
-        company: c.partner_name,
-        person: c.partner_name,
-        role: c.role_title || 'Coffee Chat',
-        time: c.scheduled_at || '',
-        scheduledAt: c.scheduled_at || null,
-        meetingLink: c.meeting_link || null,
-        status: c.status,
-        preferredDates: c.preferred_dates,
-      }));
-  }, [chats]);
-
-  // Unscheduled accepted chats (for DayDetailPopup)
-  const unscheduledAccepted = useMemo<UpcomingChat[]>(() => {
-    return chats
-      .filter(c => c.status === 'accepted' && !c.scheduled_at)
-      .map(c => ({
-        id: c.id,
-        company: c.partner_name,
-        person: c.partner_name,
-        role: c.role_title || 'Coffee Chat',
-        time: '',
-        scheduledAt: null,
-        meetingLink: c.meeting_link || null,
-        status: c.status,
-      }));
-  }, [chats]);
-
-  const handleCalendarSchedule = (chatId: string, date: string) => {
-    setActiveChatId(chatId);
-    setPrefilledDate(date);
-    setScheduleModalOpen(true);
-  };
-
   // Stat pill counts for PageBanner
   const statCounts = useMemo(() => ({
     pending: chats.filter(c => c.status === 'pending').length,
@@ -351,7 +311,7 @@ export function EmployerCoffeeChats() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-6 py-8">
       <PageBanner
         title="Coffee Chats"
         subtitle="Manage Conversations With Potential Hires"
@@ -439,14 +399,10 @@ export function EmployerCoffeeChats() {
 
       {/* Calendar view */}
       {activeTab === 'calendar' ? (
-        <DashboardCalendar
-          upcomingChats={calendarChats}
-          pendingChats={tabCounts.pending}
-          showViewAll={false}
-          allAcceptedChats={unscheduledAccepted}
-          mode="schedule"
-          onScheduleChat={handleCalendarSchedule}
-          viewerRole="employer"
+        <CoffeeChatsCalendar
+          chats={chats}
+          onMessage={handleMessage}
+          onViewDetails={handleViewDetails}
         />
       ) : filteredChats.length === 0 ? (
         <div className="bento-card text-center py-16">
@@ -506,12 +462,8 @@ export function EmployerCoffeeChats() {
 
       <ScheduleModal
         isOpen={scheduleModalOpen}
-        onClose={() => {
-          setScheduleModalOpen(false);
-          setPrefilledDate(undefined);
-        }}
+        onClose={() => setScheduleModalOpen(false)}
         onSchedule={handleSchedule}
-        initialDate={prefilledDate}
       />
 
       <FeedbackModal
@@ -552,6 +504,15 @@ export function EmployerCoffeeChats() {
           onAccept={handleAcceptWithDate}
           partnerName={chatToAccept.partner_name}
           preferredDates={chatToAccept.preferred_dates || []}
+          customDates={customDatesByChat[chatToAccept.id] || []}
+          onAddCustomDate={(scheduledAt) => {
+            const chatId = chatToAccept.id;
+            setCustomDatesByChat(prev => {
+              const existing = prev[chatId] || [];
+              if (existing.includes(scheduledAt)) return prev;
+              return { ...prev, [chatId]: [...existing, scheduledAt] };
+            });
+          }}
         />
       )}
     </div>
