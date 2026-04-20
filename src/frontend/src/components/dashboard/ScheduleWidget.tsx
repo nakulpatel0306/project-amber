@@ -54,6 +54,7 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [dayPopupDate, setDayPopupDate] = useState<Date | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const chatsPath = viewerRole === 'employer' ? '/app/employer/chats' : '/app/chats';
 
   // Reuse same dot logic from DashboardCalendar
   const chatDateInfo = useMemo(() => {
@@ -130,7 +131,7 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
           <Coffee className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
           Meeting Calendar
         </h2>
-        <Link to="/app/chats">
+        <Link to={chatsPath}>
           <span className="text-xs font-medium flex items-center gap-1" style={{ color: 'var(--color-accent)' }}>
             View All <ArrowRight className="w-3 h-3" />
           </span>
@@ -221,7 +222,7 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
                   const today = isToday(day);
                   const isPastDate = isPast(startOfDay(day)) && !today;
 
-                  const showPendingDot = dateInfo?.hasPending && viewerRole === 'candidate';
+                  const showPendingDot = dateInfo?.hasPending;
                   const showUpcomingDot = dateInfo?.hasUpcoming;
                   const showCompletedDot = dateInfo?.hasCompleted;
                   const hasDots = showPendingDot || showUpcomingDot || showCompletedDot;
@@ -328,7 +329,7 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
           {/* View all link at bottom */}
           <div className="mt-auto pt-3">
             <Link
-              to="/app/chats"
+              to={chatsPath}
               className="text-[10px] font-medium"
               style={{ color: 'var(--color-accent)' }}
             >
@@ -347,7 +348,7 @@ export function ScheduleWidget({ upcomingChats, pendingChats: _pendingChats, acc
           allChats={upcomingChats}
           unscheduledChats={(allAcceptedChats || []).filter(c => !c.scheduledAt)}
           mode="navigate"
-          chatsPath="/app/chats"
+          chatsPath={chatsPath}
           viewerRole={viewerRole}
         />
       )}

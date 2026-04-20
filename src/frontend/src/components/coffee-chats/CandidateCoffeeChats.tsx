@@ -117,6 +117,7 @@ export function CandidateCoffeeChats() {
           match_score: c.match_score,
           role_title: c.role_title,
           preferred_dates: c.preferred_dates,
+          duration_minutes: c.duration_minutes,
         }));
         setChats(mapped);
       }

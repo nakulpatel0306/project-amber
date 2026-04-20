@@ -37,6 +37,7 @@ export interface CoffeeChatData {
   role_title?: string;
   // Preferred dates for scheduling
   preferred_dates?: string[] | null;
+  duration_minutes?: number | null;
 }
 
 interface CoffeeChatCardProps {
@@ -175,19 +176,24 @@ export function CoffeeChatCard({
               <div className="flex items-center gap-1.5 mb-2">
                 <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
                 <span className="text-xs font-medium" style={{ color: 'var(--color-textSecondary)' }}>
-                  Preferred Dates
+                  {userRole === 'employer' ? 'Requested Coffee Chat' : 'Preferred Dates'}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {chat.preferred_dates.map((dateStr, idx) => {
-                  const date = new Date(dateStr);
+                  const start = new Date(dateStr);
+                  const durationMin = chat.duration_minutes ?? 30;
+                  const end = new Date(start.getTime() + durationMin * 60_000);
+                  const dateLabel = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                  const timeOpts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+                  const timeLabel = `${start.toLocaleTimeString(undefined, timeOpts)} – ${end.toLocaleTimeString(undefined, timeOpts)}`;
                   return (
                     <span
                       key={idx}
                       className="px-2 py-1 rounded-lg text-xs font-medium"
                       style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
                     >
-                      {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {dateLabel} · {timeLabel}
                     </span>
                   );
                 })}

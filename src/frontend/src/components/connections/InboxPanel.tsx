@@ -218,7 +218,12 @@ export function InboxPanel({ isOpen, onClose }: InboxPanelProps) {
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {conn.meet_invite!.proposed_times.map((timeStr, idx) => {
-                            const date = new Date(timeStr);
+                            const start = new Date(timeStr);
+                            const durationMin = conn.meet_invite!.duration_minutes || 30;
+                            const end = new Date(start.getTime() + durationMin * 60_000);
+                            const dateLabel = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                            const timeOpts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+                            const timeLabel = `${start.toLocaleTimeString(undefined, timeOpts)} – ${end.toLocaleTimeString(undefined, timeOpts)}`;
                             const isSelected = selectedTimeIdx[conn.id] === idx;
                             return (
                               <button
@@ -231,7 +236,7 @@ export function InboxPanel({ isOpen, onClose }: InboxPanelProps) {
                                   border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
                                 }}
                               >
-                                {date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                {dateLabel} · {timeLabel}
                               </button>
                             );
                           })}
