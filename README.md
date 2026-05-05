@@ -419,9 +419,17 @@ From the project root:
 | `npm run format` | Format both frontend and backend |
 | `npm run test` | Run all tests |
 
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the branch, commit, style, testing, and pull request guidelines. Use the [PR template](./.github/PULL_REQUEST_TEMPLATE.md) when opening a pull request.
+
+## Changelog
+
+Release notes and version history are tracked in [CHANGELOG.md](./CHANGELOG.md).
+
 ## License
 
-MIT
+Released under the [MIT License](./LICENSE).
 
 ## Authors
 
