@@ -30,6 +30,9 @@ target/
 src/frontend/dist/
 *.bundle.js
 
+# Firebase Hosting deploy cache
+.firebase/
+
 # Claude Code
 .claude/
 
