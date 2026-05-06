@@ -187,52 +187,10 @@ export function LandingFooter() {
                   style={{ color: 'var(--color-textSecondary)' }}
                 >
                   <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                  amberfounders@gmail.com
+                  SEND US AN EMAIL
                 </a>
               </li>
             </ul>
-          </div>
-        </div>
-
-        {/* Newsletter - compact row */}
-        <div
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-5 rounded-xl"
-          style={{ backgroundColor: 'var(--color-background)' }}
-        >
-          <div>
-            <h4
-              className="text-sm font-semibold"
-              style={{ color: 'var(--color-text)' }}
-            >
-              Stay In The Loop
-            </h4>
-            <p
-              className="text-xs mt-0.5"
-              style={{ color: 'var(--color-textMuted)' }}
-            >
-              Personality Science, Hiring Trends, And Product Updates.
-            </p>
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <input
-              type="email"
-              placeholder="your@email.com"
-              className="flex-1 sm:w-56 px-4 py-2 rounded-lg text-sm border outline-none transition-colors"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text)',
-              }}
-            />
-            <button
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: 'var(--color-accentText)',
-              }}
-            >
-              Subscribe
-            </button>
           </div>
         </div>
 
