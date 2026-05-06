@@ -258,12 +258,33 @@ function TestimonialCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isTabSwitching, setIsTabSwitching] = useState(false);
+  const [cardsPerView, setCardsPerView] = useState(3);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stories = tab === 'seekers' ? seekerStories : employerStories;
 
-  // With 5 stories and 3 visible, we have pages 0, 1, 2 (last page shows cards 2,3,4)
-  const maxPage = Math.max(0, stories.length - 3);
+  // Responsive cards-per-view: 1 on phones, 2 on tablets, 3 on desktop
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setCardsPerView(w < 640 ? 1 : w < 1024 ? 2 : 3);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const GAP = 20; // matches gap-5 between cards
+  const maxPage = Math.max(0, stories.length - cardsPerView);
+  const cardWidthPercent = 100 / cardsPerView;
+  // Compensate for gaps so cards+gaps fit exactly in the container
+  const cardGapOffset = ((cardsPerView - 1) * GAP) / cardsPerView;
+  const translateGapStep = GAP / cardsPerView;
+
+  // Reset/clamp page when breakpoint changes
+  useEffect(() => {
+    if (activeIndex > maxPage) setActiveIndex(maxPage);
+  }, [maxPage, activeIndex]);
 
   const goNext = useCallback(() => setActiveIndex(prev => prev >= maxPage ? 0 : prev + 1), [maxPage]);
   const goPrev = useCallback(() => setActiveIndex(prev => prev <= 0 ? maxPage : prev - 1), [maxPage]);
@@ -353,7 +374,7 @@ function TestimonialCarousel() {
           <div
             className="flex gap-5 transition-transform duration-500 ease-in-out"
             style={{
-              transform: `translateX(calc(-${activeIndex} * (33.333% + 6.67px)))`,
+              transform: `translateX(calc(${-activeIndex * cardWidthPercent}% - ${activeIndex * translateGapStep}px))`,
               opacity: isTabSwitching ? 0 : 1,
               transition: isTabSwitching ? 'opacity 0.2s ease' : 'transform 0.5s ease, opacity 0.2s ease',
             }}
@@ -362,7 +383,7 @@ function TestimonialCarousel() {
               <div
                 key={`${tab}-${i}`}
                 className="flex-shrink-0"
-                style={{ width: 'calc(33.333% - 13.33px)' }}
+                style={{ width: `calc(${cardWidthPercent}% - ${cardGapOffset}px)` }}
               >
                 <div
                   className="rounded-2xl border p-6 h-full flex flex-col relative overflow-hidden"
@@ -371,6 +392,9 @@ function TestimonialCarousel() {
                     borderColor: 'var(--color-border)',
                   }}
                 >
+                  {/* Blur overlay — no real users yet */}
+                  <div className="absolute inset-0 z-10" style={{ backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' }} />
+
                   {/* Subtle top glow */}
                   <div
                     className="absolute top-0 left-0 right-0 h-1 opacity-40"

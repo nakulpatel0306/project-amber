@@ -417,7 +417,7 @@ function SceneAssessmentScene({ pickedIndex, hoverIndex }: { pickedIndex: number
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* Auto-save indicator — live pulse */}
+          {/* Auto-save indicator — live pulse (label hidden on narrow widths) */}
           <motion.div
             className="flex items-center gap-1 text-[8px] font-mono"
             style={{ color: 'var(--color-success)' }}
@@ -431,7 +431,7 @@ function SceneAssessmentScene({ pickedIndex, hoverIndex }: { pickedIndex: number
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.8, repeat: Infinity }}
             />
-            Auto-Saved
+            <span className="hidden sm:inline">Auto-Saved</span>
           </motion.div>
           <span
             className="text-[9px] font-semibold px-2 py-0.5 rounded"
@@ -1153,7 +1153,7 @@ function SceneConnect({ stage }: { stage: number }) {
           <Calendar className="w-2.5 h-2.5" />
           Preferred Time · Thu Apr 23
         </div>
-        <div className="grid grid-cols-6 gap-1">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
           {times.map((t, i) => {
             const isPicked = timePicked && i === pickedTime;
             return (
@@ -1253,7 +1253,7 @@ function SceneConnect({ stage }: { stage: number }) {
 
 function ProcessCard() {
   const [active, setActive] = useState(0);
-  const [clicked, setClicked] = useState(false);
+  const [_clicked, setClicked] = useState(false);
   const [pickedIndex, setPickedIndex] = useState(-1);
   const [hoverIndex, setHoverIndex] = useState(-1); // Scene 2: hover drift
   const [connectStage, setConnectStage] = useState(0); // Scene 4: 0=idle, 1=duration picked, 2=time picked, 3=sent
@@ -1434,7 +1434,7 @@ function ProcessCard() {
                   {isDone ? <Check className="w-2.5 h-2.5" /> : s.number}
                 </div>
                 <span
-                  className="text-[10px] font-semibold uppercase tracking-[0.15em] truncate"
+                  className="text-[10px] font-semibold uppercase tracking-[0.15em] truncate hidden sm:inline"
                   style={{
                     color: isActive ? 'var(--color-text)' : 'var(--color-textMuted)',
                     opacity: isActive ? 1 : 0.5,
@@ -1931,7 +1931,7 @@ export function FeatureBento() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 auto-rows-[minmax(280px,auto)]">
           {/* Big process card: 2 cols, 2 rows */}
           <motion.div
-            className="lg:col-span-2 lg:row-span-2 min-h-[540px]"
+            className="lg:col-span-2 lg:row-span-2 min-h-[620px] sm:min-h-[580px] lg:min-h-[540px]"
             initial={{ opacity: 0, scale: 0.82, filter: 'blur(12px)' }}
             whileInView={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
             whileHover={{ scale: 1.01 }}
