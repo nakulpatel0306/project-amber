@@ -6,6 +6,11 @@ import { AmberLogo } from '../ui/AmberLogo';
 import { MagneticButton } from './MagneticButton';
 import { WaitlistModal } from './WaitlistModal';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import {
+  WAITLIST_BASELINE_CANDIDATES,
+  WAITLIST_BASELINE_EMPLOYERS,
+  WAITLIST_BASELINE_TOTAL,
+} from '../../utils/constants';
 
 interface WaitlistCounts {
   total: number;
@@ -16,9 +21,9 @@ interface WaitlistCounts {
 export function LandingNav() {
   const [modalOpen, setModalOpen] = useState(false);
   const [counts, setCounts] = useState<WaitlistCounts>({
-    total: 0,
-    candidates: 0,
-    employers: 0,
+    total: WAITLIST_BASELINE_TOTAL,
+    candidates: WAITLIST_BASELINE_CANDIDATES,
+    employers: WAITLIST_BASELINE_EMPLOYERS,
   });
 
   const fetchCounts = useCallback(async () => {
@@ -36,9 +41,9 @@ export function LandingNav() {
           employers: number | string;
         };
         setCounts({
-          total: Number(row.total) || 0,
-          candidates: Number(row.candidates) || 0,
-          employers: Number(row.employers) || 0,
+          total: (Number(row.total) || 0) + WAITLIST_BASELINE_TOTAL,
+          candidates: (Number(row.candidates) || 0) + WAITLIST_BASELINE_CANDIDATES,
+          employers: (Number(row.employers) || 0) + WAITLIST_BASELINE_EMPLOYERS,
         });
       }
     } catch (err) {

@@ -19,6 +19,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { WaitlistModal } from './WaitlistModal';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
+  WAITLIST_BASELINE_CANDIDATES,
+  WAITLIST_BASELINE_EMPLOYERS,
+  WAITLIST_BASELINE_TOTAL,
+} from '../../utils/constants';
+import {
   AnimatedBlobs,
   CursorSpotlight,
   FloatingCoffeeBeans,
@@ -797,9 +802,9 @@ function ValuesSection() {
 export function WelcomeScreen() {
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
   const [waitlistCounts, setWaitlistCounts] = useState({
-    total: 0,
-    candidates: 0,
-    employers: 0,
+    total: WAITLIST_BASELINE_TOTAL,
+    candidates: WAITLIST_BASELINE_CANDIDATES,
+    employers: WAITLIST_BASELINE_EMPLOYERS,
   });
   const heroRef = useRef<HTMLElement>(null);
 
@@ -815,9 +820,9 @@ export function WelcomeScreen() {
           employers: number | string;
         };
         setWaitlistCounts({
-          total: Number(row.total) || 0,
-          candidates: Number(row.candidates) || 0,
-          employers: Number(row.employers) || 0,
+          total: (Number(row.total) || 0) + WAITLIST_BASELINE_TOTAL,
+          candidates: (Number(row.candidates) || 0) + WAITLIST_BASELINE_CANDIDATES,
+          employers: (Number(row.employers) || 0) + WAITLIST_BASELINE_EMPLOYERS,
         });
       }
     } catch {

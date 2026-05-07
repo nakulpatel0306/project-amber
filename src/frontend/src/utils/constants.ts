@@ -10,6 +10,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:80
 export const AUTH_STORAGE_KEY = 'amber-auth';
 export const THEME_STORAGE_KEY = 'amber-theme';
 
+// Waitlist display baselines — added to the live DB count to seed the visible counter
+export const WAITLIST_BASELINE_CANDIDATES = 75;
+export const WAITLIST_BASELINE_EMPLOYERS = 25;
+export const WAITLIST_BASELINE_TOTAL =
+  WAITLIST_BASELINE_CANDIDATES + WAITLIST_BASELINE_EMPLOYERS;
+
 // Culture values options for employers
 export const CULTURE_VALUES = [
   { id: 'innovation', label: 'Innovation', description: 'We push boundaries and embrace new ideas' },
