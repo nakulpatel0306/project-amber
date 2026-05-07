@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Check,
@@ -16,6 +16,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { CANDIDATE_PLANS, EMPLOYER_PLANS, PricingPlan } from '../../lib/stripe/plans';
 import { redirectToCheckout } from '../../lib/stripe/stripe';
+import { WaitlistModal } from '../landing/WaitlistModal';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 const tierIcons: Record<string, React.ElementType> = {
   free: Sparkles,
@@ -40,6 +42,38 @@ export function PricingPage() {
     user ? (isEmployer ? 'employer' : 'candidate') : 'candidate'
   );
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [waitlistCounts, setWaitlistCounts] = useState({
+    total: 0,
+    candidates: 0,
+    employers: 0,
+  });
+
+  const fetchWaitlistCounts = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    try {
+      const { data, error } = await supabase.rpc('get_waitlist_count');
+      if (error) return;
+      if (data && Array.isArray(data) && data[0]) {
+        const row = data[0] as {
+          total: number | string;
+          candidates: number | string;
+          employers: number | string;
+        };
+        setWaitlistCounts({
+          total: Number(row.total) || 0,
+          candidates: Number(row.candidates) || 0,
+          employers: Number(row.employers) || 0,
+        });
+      }
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWaitlistCounts();
+  }, [fetchWaitlistCounts]);
 
   const isPublic = !user;
   const plans = activeTab === 'employer' ? EMPLOYER_PLANS : CANDIDATE_PLANS;
@@ -47,7 +81,7 @@ export function PricingPage() {
 
   const handleSubscribe = async (plan: PricingPlan) => {
     if (!user) {
-      navigate('/auth/signup');
+      setIsWaitlistOpen(true);
       return;
     }
 
@@ -361,6 +395,16 @@ export function PricingPage() {
           )}
         </div>
       </div>
+
+      {/* Waitlist Modal */}
+      <WaitlistModal
+        isOpen={isWaitlistOpen}
+        onClose={() => setIsWaitlistOpen(false)}
+        onSuccess={fetchWaitlistCounts}
+        total={waitlistCounts.total}
+        candidates={waitlistCounts.candidates}
+        employers={waitlistCounts.employers}
+      />
     </div>
   );
 }
