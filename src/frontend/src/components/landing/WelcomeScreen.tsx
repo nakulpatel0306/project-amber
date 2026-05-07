@@ -801,18 +801,30 @@ function ValuesSection() {
 
 export function WelcomeScreen() {
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
-  const [waitlistCounts, setWaitlistCounts] = useState({
-    total: WAITLIST_BASELINE_TOTAL,
-    candidates: WAITLIST_BASELINE_CANDIDATES,
-    employers: WAITLIST_BASELINE_EMPLOYERS,
-  });
+  // null = not yet loaded — modal falls back to 0 (which it gracefully hides)
+  const [waitlistCounts, setWaitlistCounts] = useState<{
+    total: number;
+    candidates: number;
+    employers: number;
+  } | null>(null);
   const heroRef = useRef<HTMLElement>(null);
 
   const fetchWaitlistCounts = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
+    const baseline = {
+      total: WAITLIST_BASELINE_TOTAL,
+      candidates: WAITLIST_BASELINE_CANDIDATES,
+      employers: WAITLIST_BASELINE_EMPLOYERS,
+    };
+    if (!isSupabaseConfigured) {
+      setWaitlistCounts(baseline);
+      return;
+    }
     try {
       const { data, error } = await supabase.rpc('get_waitlist_count');
-      if (error) return;
+      if (error) {
+        setWaitlistCounts(baseline);
+        return;
+      }
       if (data && Array.isArray(data) && data[0]) {
         const row = data[0] as {
           total: number | string;
@@ -824,9 +836,11 @@ export function WelcomeScreen() {
           candidates: (Number(row.candidates) || 0) + WAITLIST_BASELINE_CANDIDATES,
           employers: (Number(row.employers) || 0) + WAITLIST_BASELINE_EMPLOYERS,
         });
+      } else {
+        setWaitlistCounts(baseline);
       }
     } catch {
-      /* noop — counter stays at 0 */
+      setWaitlistCounts(baseline);
     }
   }, []);
 
@@ -1474,9 +1488,9 @@ export function WelcomeScreen() {
         isOpen={isComingSoonOpen}
         onClose={() => setIsComingSoonOpen(false)}
         onSuccess={fetchWaitlistCounts}
-        total={waitlistCounts.total}
-        candidates={waitlistCounts.candidates}
-        employers={waitlistCounts.employers}
+        total={waitlistCounts?.total ?? 0}
+        candidates={waitlistCounts?.candidates ?? 0}
+        employers={waitlistCounts?.employers ?? 0}
       />
     </div>
   );

@@ -18,20 +18,28 @@ interface WaitlistCounts {
   employers: number;
 }
 
+const BASELINE_COUNTS: WaitlistCounts = {
+  total: WAITLIST_BASELINE_TOTAL,
+  candidates: WAITLIST_BASELINE_CANDIDATES,
+  employers: WAITLIST_BASELINE_EMPLOYERS,
+};
+
 export function LandingNav() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [counts, setCounts] = useState<WaitlistCounts>({
-    total: WAITLIST_BASELINE_TOTAL,
-    candidates: WAITLIST_BASELINE_CANDIDATES,
-    employers: WAITLIST_BASELINE_EMPLOYERS,
-  });
+  // null = not yet loaded — render without a number until the first fetch resolves
+  // so users never see the seed jump to the real value
+  const [counts, setCounts] = useState<WaitlistCounts | null>(null);
 
   const fetchCounts = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setCounts(BASELINE_COUNTS);
+      return;
+    }
     try {
       const { data, error } = await supabase.rpc('get_waitlist_count');
       if (error) {
         console.warn('Waitlist count unavailable:', error.message);
+        setCounts(BASELINE_COUNTS);
         return;
       }
       if (data && Array.isArray(data) && data[0]) {
@@ -45,9 +53,12 @@ export function LandingNav() {
           candidates: (Number(row.candidates) || 0) + WAITLIST_BASELINE_CANDIDATES,
           employers: (Number(row.employers) || 0) + WAITLIST_BASELINE_EMPLOYERS,
         });
+      } else {
+        setCounts(BASELINE_COUNTS);
       }
     } catch (err) {
       console.warn('Could not fetch waitlist count', err);
+      setCounts(BASELINE_COUNTS);
     }
   }, []);
 
@@ -107,7 +118,19 @@ export function LandingNav() {
                   transition={{ duration: 1.6, repeat: Infinity }}
                 />
                 <span>
-                  <span className="font-semibold tabular-nums">{counts.total}</span>
+                  {counts ? (
+                    <motion.span
+                      key="loaded"
+                      initial={{ opacity: 0, y: -2 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="font-semibold tabular-nums inline-block"
+                    >
+                      {counts.total}
+                    </motion.span>
+                  ) : (
+                    <span className="font-semibold tabular-nums opacity-50">—</span>
+                  )}
                   <span className="opacity-90"> Interested</span>
                 </span>
                 <span
@@ -138,7 +161,19 @@ export function LandingNav() {
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.6, repeat: Infinity }}
                 />
-                <span className="tabular-nums">{counts.total}</span>
+                {counts ? (
+                  <motion.span
+                    key="loaded-mobile"
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="tabular-nums inline-block"
+                  >
+                    {counts.total}
+                  </motion.span>
+                ) : (
+                  <span className="tabular-nums opacity-50">—</span>
+                )}
                 <ArrowRight className="w-3.5 h-3.5" />
               </MagneticButton>
             </div>
@@ -150,9 +185,9 @@ export function LandingNav() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSuccess={fetchCounts}
-        total={counts.total}
-        candidates={counts.candidates}
-        employers={counts.employers}
+        total={counts?.total ?? 0}
+        candidates={counts?.candidates ?? 0}
+        employers={counts?.employers ?? 0}
       />
     </>
   );
