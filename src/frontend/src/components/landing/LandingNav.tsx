@@ -27,7 +27,7 @@ export function LandingNav() {
           <Link to="/" className="flex items-center gap-1 group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div style={{ transform: 'translateY(3px)' }}>
               <div className="transition-transform group-hover:scale-110 group-hover:rotate-3">
-                <AmberLogo size="lg" />
+                <AmberLogo size="xl" />
               </div>
             </div>
             <span
