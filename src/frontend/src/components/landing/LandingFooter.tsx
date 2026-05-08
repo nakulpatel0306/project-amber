@@ -32,7 +32,7 @@ export function LandingFooter() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
           {/* Brand - spans 2 cols on lg */}
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3 -ml-1.5">
               <AmberLogo size="sm" />
               <span
                 className="text-lg font-semibold"

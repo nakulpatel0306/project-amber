@@ -161,7 +161,7 @@ export function SignupPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
             >
-              <AmberLogo size="md" />
+              <AmberLogo size="xl" />
             </motion.div>
             <h1
               className="text-3xl sm:text-4xl font-serif font-normal tracking-tight"
