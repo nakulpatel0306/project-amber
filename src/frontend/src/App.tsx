@@ -12,7 +12,11 @@
  * The provider hierarchy is: ErrorBoundary > AuthProvider > ThemeProvider > ToastProvider
  * This ensures auth state is available to theming (user theme preference) and
  * toast notifications are available to all components.
+ *
+ * Code Splitting: Route components are lazy-loaded to reduce initial bundle size.
+ * The landing page loads instantly while other routes are fetched on demand.
  */
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -20,40 +24,105 @@ import { ToastProvider } from './contexts/ToastContext';
 import { MessagingProvider } from './contexts/MessagingContext';
 import { ConnectionsProvider } from './contexts/ConnectionsContext';
 
-// Auth components
-import {
-  LoginPage,
-  SignupPage,
-  PasswordResetPage,
-  AuthCallback,
-  RoleSelectionPage,
-  ProtectedRoute,
-  GuestRoute,
-  Onboarding,
-  EmailVerificationPage,
-} from './components/auth';
-
-// Layout
+// Layout components (loaded eagerly - needed for app shell)
 import { AppLayout } from './components/layout/AppLayout';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { RouteTitleSync } from './components/layout/RouteTitleSync';
 
-// Pages
+// Landing page (loaded eagerly - critical path)
 import { WelcomeScreen } from './components/landing';
-import { BlogPage, BlogArticlePage, SciencePage, HelpCenterPage, ChangelogPage, StatusPage, AboutPage, CareersPage, PressPage, PrivacyPolicyPage, TermsOfServicePage, CookiePolicyPage, AccessibilityPage } from './components/pages';
-import { JobSeekerDashboard, EmployerDashboard } from './components/dashboard';
-import { AssessmentFlow, Assessment, AssessmentResults, PersonalityInsights } from './components/candidate';
-import { CultureQuiz, CultureAssessment, CultureInsights, EmployerAssessmentResults, CreateRole, ManageRoles, TopCandidates } from './components/employer';
-import { EmberAgent, EmberEmployerPage } from './components/ember';
-import { CandidateCoffeeChats, EmployerCoffeeChats } from './components/coffee-chats';
-import { NetworkHub, PracticeCoffeeChat } from './components/network';
-import { RolesPage } from './components/pages/RolesPage';
-import { PricingPage, BillingSuccessPage, BillingCancelPage } from './components/pricing';
-import { SettingsPage } from './components/settings/SettingsPage';
-import { VisualPerceptionAssessment, WorkValuesAssessment, SituationalJudgmentAssessment, CognitivePatternAssessment, TeamDynamicsAssessment, LeadershipStyleAssessment, GrowthPhilosophyAssessment, WorkEnvironmentAssessment } from './components/assessments';
+
+// Auth components (loaded eagerly - needed for route guards)
+import { ProtectedRoute, GuestRoute } from './components/auth';
+
+// Lazy-loaded auth pages
+const LoginPage = lazy(() => import('./components/auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('./components/auth/SignupPage').then(m => ({ default: m.SignupPage })));
+const PasswordResetPage = lazy(() => import('./components/auth/PasswordResetPage').then(m => ({ default: m.PasswordResetPage })));
+const AuthCallback = lazy(() => import('./components/auth/AuthCallback').then(m => ({ default: m.AuthCallback })));
+const RoleSelectionPage = lazy(() => import('./components/auth/RoleSelectionPage').then(m => ({ default: m.RoleSelectionPage })));
+const Onboarding = lazy(() => import('./components/auth/Onboarding').then(m => ({ default: m.Onboarding })));
+const EmailVerificationPage = lazy(() => import('./components/auth/EmailVerificationPage').then(m => ({ default: m.EmailVerificationPage })));
+
+// Lazy-loaded public pages
+const BlogPage = lazy(() => import('./components/pages/BlogPage').then(m => ({ default: m.BlogPage })));
+const BlogArticlePage = lazy(() => import('./components/pages/BlogArticlePage').then(m => ({ default: m.BlogArticlePage })));
+const SciencePage = lazy(() => import('./components/pages/SciencePage').then(m => ({ default: m.SciencePage })));
+const HelpCenterPage = lazy(() => import('./components/pages/HelpCenterPage').then(m => ({ default: m.HelpCenterPage })));
+const ChangelogPage = lazy(() => import('./components/pages/ChangelogPage').then(m => ({ default: m.ChangelogPage })));
+const StatusPage = lazy(() => import('./components/pages/StatusPage').then(m => ({ default: m.StatusPage })));
+const AboutPage = lazy(() => import('./components/pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const CareersPage = lazy(() => import('./components/pages/CareersPage').then(m => ({ default: m.CareersPage })));
+const PressPage = lazy(() => import('./components/pages/PressPage').then(m => ({ default: m.PressPage })));
+const PrivacyPolicyPage = lazy(() => import('./components/pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
+const TermsOfServicePage = lazy(() => import('./components/pages/TermsOfServicePage').then(m => ({ default: m.TermsOfServicePage })));
+const CookiePolicyPage = lazy(() => import('./components/pages/CookiePolicyPage').then(m => ({ default: m.CookiePolicyPage })));
+const AccessibilityPage = lazy(() => import('./components/pages/AccessibilityPage').then(m => ({ default: m.AccessibilityPage })));
+const RolesPage = lazy(() => import('./components/pages/RolesPage').then(m => ({ default: m.RolesPage })));
+
+// Lazy-loaded dashboard components
+const JobSeekerDashboard = lazy(() => import('./components/dashboard/JobSeekerDashboard').then(m => ({ default: m.JobSeekerDashboard })));
+const EmployerDashboard = lazy(() => import('./components/dashboard/EmployerDashboard').then(m => ({ default: m.EmployerDashboard })));
+
+// Lazy-loaded candidate components
+const AssessmentFlow = lazy(() => import('./components/candidate/AssessmentFlow').then(m => ({ default: m.AssessmentFlow })));
+const Assessment = lazy(() => import('./components/candidate/Assessment').then(m => ({ default: m.Assessment })));
+const AssessmentResults = lazy(() => import('./components/candidate/AssessmentResults').then(m => ({ default: m.AssessmentResults })));
+const PersonalityInsights = lazy(() => import('./components/candidate/PersonalityInsights').then(m => ({ default: m.PersonalityInsights })));
+
+// Lazy-loaded employer components
+const CultureQuiz = lazy(() => import('./components/employer/CultureQuiz').then(m => ({ default: m.CultureQuiz })));
+const CultureAssessment = lazy(() => import('./components/employer/CultureAssessment').then(m => ({ default: m.CultureAssessment })));
+const CultureInsights = lazy(() => import('./components/employer/CultureInsights').then(m => ({ default: m.CultureInsights })));
+const EmployerAssessmentResults = lazy(() => import('./components/employer/EmployerAssessmentResults').then(m => ({ default: m.EmployerAssessmentResults })));
+const CreateRole = lazy(() => import('./components/employer/CreateRole').then(m => ({ default: m.CreateRole })));
+const ManageRoles = lazy(() => import('./components/employer/ManageRoles').then(m => ({ default: m.ManageRoles })));
+const TopCandidates = lazy(() => import('./components/employer/TopCandidates').then(m => ({ default: m.TopCandidates })));
+
+// Lazy-loaded Ember AI components
+const EmberAgent = lazy(() => import('./components/ember/EmberAgent').then(m => ({ default: m.EmberAgent })));
+const EmberEmployerPage = lazy(() => import('./components/ember/EmberEmployerPage').then(m => ({ default: m.EmberEmployerPage })));
+
+// Lazy-loaded coffee chat components
+const CandidateCoffeeChats = lazy(() => import('./components/coffee-chats/CandidateCoffeeChats').then(m => ({ default: m.CandidateCoffeeChats })));
+const EmployerCoffeeChats = lazy(() => import('./components/coffee-chats/EmployerCoffeeChats').then(m => ({ default: m.EmployerCoffeeChats })));
+
+// Lazy-loaded network components
+const NetworkHub = lazy(() => import('./components/network/NetworkHub').then(m => ({ default: m.NetworkHub })));
+const PracticeCoffeeChat = lazy(() => import('./components/network/PracticeCoffeeChat').then(m => ({ default: m.PracticeCoffeeChat })));
+
+// Lazy-loaded pricing/billing components
+const PricingPage = lazy(() => import('./components/pricing/PricingPage').then(m => ({ default: m.PricingPage })));
+const BillingSuccessPage = lazy(() => import('./components/pricing/BillingSuccessPage').then(m => ({ default: m.BillingSuccessPage })));
+const BillingCancelPage = lazy(() => import('./components/pricing/BillingCancelPage').then(m => ({ default: m.BillingCancelPage })));
+
+// Lazy-loaded settings
+const SettingsPage = lazy(() => import('./components/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+
+// Lazy-loaded assessment modules (heavy components)
+const VisualPerceptionAssessment = lazy(() => import('./components/assessments/VisualPerceptionAssessment').then(m => ({ default: m.VisualPerceptionAssessment })));
+const WorkValuesAssessment = lazy(() => import('./components/assessments/WorkValuesAssessment').then(m => ({ default: m.WorkValuesAssessment })));
+const SituationalJudgmentAssessment = lazy(() => import('./components/assessments/SituationalJudgmentAssessment').then(m => ({ default: m.SituationalJudgmentAssessment })));
+const CognitivePatternAssessment = lazy(() => import('./components/assessments/CognitivePatternAssessment').then(m => ({ default: m.CognitivePatternAssessment })));
+const TeamDynamicsAssessment = lazy(() => import('./components/assessments/TeamDynamicsAssessment').then(m => ({ default: m.TeamDynamicsAssessment })));
+const LeadershipStyleAssessment = lazy(() => import('./components/assessments/LeadershipStyleAssessment').then(m => ({ default: m.LeadershipStyleAssessment })));
+const GrowthPhilosophyAssessment = lazy(() => import('./components/assessments/GrowthPhilosophyAssessment').then(m => ({ default: m.GrowthPhilosophyAssessment })));
+const WorkEnvironmentAssessment = lazy(() => import('./components/assessments/WorkEnvironmentAssessment').then(m => ({ default: m.WorkEnvironmentAssessment })));
 
 import './styles/globals.css';
+
+// Minimal loading fallback - keeps UI feeling fast
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div
+        className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
+        style={{ borderColor: 'var(--color-accent)', borderTopColor: 'transparent' }}
+      />
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -65,6 +134,7 @@ function App() {
               <RouteTitleSync />
               <ConnectionsProvider>
               <MessagingProvider>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<WelcomeScreen />} />
@@ -342,6 +412,7 @@ function App() {
                 {/* Catch all - 404 */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </Suspense>
               </MessagingProvider>
               </ConnectionsProvider>
             </BrowserRouter>
