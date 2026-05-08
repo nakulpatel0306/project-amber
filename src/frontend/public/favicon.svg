@@ -1,19 +1,27 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="64" height="64" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="a-left" x1="16" y1="8" x2="16" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFBF40" />
-      <stop offset="100%" stop-color="#E8820C" />
-    </linearGradient>
-    <linearGradient id="a-right" x1="48" y1="8" x2="48" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#F5A623" />
-      <stop offset="100%" stop-color="#D4700A" />
-    </linearGradient>
-    <linearGradient id="a-spark" x1="32" y1="24" x2="32" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFD97A" />
-      <stop offset="100%" stop-color="#F5A623" />
-    </linearGradient>
+    <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+    </filter>
   </defs>
-  <path d="M30 6 L4 58 L18 58 L26 42 L32 28 Z" fill="url(#a-left)" />
-  <path d="M34 6 L60 58 L46 58 L38 42 L32 28 Z" fill="url(#a-right)" />
-  <path d="M32 22 L27 32 L32 42 L37 32 Z" fill="url(#a-spark)" />
+
+  <!-- Bloom layer -->
+  <g filter="url(#bloom)" opacity="0.85">
+    <path d="M 100 30 L 160.62 65 L 111 80.95 Z" fill="#FCD34D" />
+    <path d="M 160.62 65 L 160.62 135 L 122 100 Z" fill="#FCD34D" />
+    <path d="M 160.62 135 L 100 170 L 111 119.05 Z" fill="#FBBF24" />
+    <path d="M 100 170 L 39.38 135 L 89 119.05 Z" fill="#F59E0B" />
+    <path d="M 39.38 135 L 39.38 65 L 78 100 Z" fill="#F59E0B" />
+    <path d="M 39.38 65 L 100 30 L 89 80.95 Z" fill="#FBBF24" />
+  </g>
+
+  <!-- Crisp layer -->
+  <g>
+    <path d="M 100 30 L 160.62 65 L 111 80.95 Z" fill="#FCD34D" />
+    <path d="M 160.62 65 L 160.62 135 L 122 100 Z" fill="#FCD34D" />
+    <path d="M 160.62 135 L 100 170 L 111 119.05 Z" fill="#FBBF24" />
+    <path d="M 100 170 L 39.38 135 L 89 119.05 Z" fill="#F59E0B" />
+    <path d="M 39.38 135 L 39.38 65 L 78 100 Z" fill="#F59E0B" />
+    <path d="M 39.38 65 L 100 30 L 89 80.95 Z" fill="#FBBF24" />
+  </g>
 </svg>
