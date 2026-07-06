@@ -148,11 +148,12 @@ components/
 ├── pricing/          # Subscription and pricing
 │                     # PricingPage (plans, Stripe checkout integration)
 │
-├── pages/            # Public informational pages (17 pages)
+├── pages/            # Content pages (14 components — 13 public + RolesPage)
 │                     # AboutPage, BlogPage, BlogArticlePage, CareersPage,
 │                     # PressPage, SciencePage, HelpCenterPage, ChangelogPage,
 │                     # StatusPage, PrivacyPolicyPage, TermsOfServicePage,
-│                     # CookiePolicyPage, AccessibilityPage
+│                     # CookiePolicyPage, AccessibilityPage,
+│                     # RolesPage (app-routed at /app/roles)
 │
 └── settings/         # User settings sections (9 components)
                       # SettingsPage, AccountSection, CandidateProfileSection,

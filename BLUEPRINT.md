@@ -63,7 +63,7 @@ Measures how closely a candidate's Big Five (OCEAN) scores align with the employ
 A composite of three sub-scores:
 
 - **Work Style Compatibility (30% of culture score)** — Compares candidate's preferred work style (remote, hybrid, onsite, flexible) against the role's work style. Exact match = 100, flexible on either side = 85, hybrid adjacent = 65, full mismatch = 40.
-- **Culture Values Alignment (50% of culture score)** — The engine maps 17 employer culture values (innovation, transparency, collaboration, autonomy, growth, impact, balance, diversity, customer focus, excellence, agility, integrity, creativity, stability, speed, quality, mission, empathy, risk, trust) to OCEAN traits via a correlation matrix (`CULTURE_OCEAN_MAP`). For each value the employer selects, the engine checks how well the candidate's OCEAN scores align with the traits that correlate to that value. Positive correlations reward higher candidate scores; negative correlations reward lower scores (e.g., low neuroticism aligns with the "balance" value).
+- **Culture Values Alignment (50% of culture score)** — The engine maps 20 employer culture values (innovation, transparency, collaboration, autonomy, growth, impact, balance, diversity, customer focus, excellence, agility, integrity, creativity, stability, speed, quality, mission, empathy, risk, trust) to OCEAN traits via a correlation matrix (`CULTURE_OCEAN_MAP`). For each value the employer selects, the engine checks how well the candidate's OCEAN scores align with the traits that correlate to that value. Positive correlations reward higher candidate scores; negative correlations reward lower scores (e.g., low neuroticism aligns with the "balance" value).
 - **Role-Specific Fit (20% of culture score)** — If the employer set min/max OCEAN ranges on the role, the engine checks whether the candidate falls within those bounds. In-range = 100, out-of-range = proportional penalty at 2 points per unit of distance from the nearest boundary.
 
 **3. Work Style Score (20% of overall)**
@@ -209,7 +209,7 @@ Employer-side:
 3. Decision-making approach (top-down vs. consensus)
 4. Growth philosophy (move fast vs. deliberate)
 5. Feedback culture (direct vs. supportive)
-6. Core values (select from 17 predefined values)
+6. Core values (select from 20 predefined values)
 7. Work-life balance expectations
 
 Results produce employer OCEAN preferences and a company archetype classification.
@@ -1025,7 +1025,7 @@ amber/
 │   │   │   │   ├── network/         # Network hub: roles, people, companies, discover tabs
 │   │   │   │   ├── messaging/       # Real-time message panel container
 │   │   │   │   ├── settings/        # 9 components: account, profile, appearance, notifications, privacy, subscription
-│   │   │   │   ├── pages/           # 17 public pages (blog, about, careers, science, legal, etc.)
+│   │   │   │   ├── pages/           # 14 content pages (blog, about, careers, science, legal, roles, etc.)
 │   │   │   │   └── pricing/         # Pricing and subscription page
 │   │   │   ├── contexts/            # 5 providers: Auth, Theme, Toast, Messaging, Connections
 │   │   │   ├── hooks/               # 8 custom hooks: auth, toast, messaging, connections, match data, localStorage, scroll, loader

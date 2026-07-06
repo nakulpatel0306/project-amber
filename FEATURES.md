@@ -90,7 +90,7 @@ A comprehensive breakdown of all existing features, planned features, and the pr
 ## Existing Features — Employer Side
 
 ### Culture Definition
-- **Culture Quiz** — A 7-question interactive quiz where employers define their company's personality preferences by setting ideal scores for each OCEAN dimension and selecting their top culture values from 17 predefined values (innovation, transparency, collaboration, autonomy, growth, impact, balance, diversity, customer focus, excellence, agility, integrity, creativity, stability, speed, quality, mission, empathy, risk, trust).
+- **Culture Quiz** — An 8-question interactive quiz where employers define their company's personality preferences by setting ideal scores for each OCEAN dimension and selecting their top culture values from 20 predefined values (innovation, transparency, collaboration, autonomy, growth, impact, balance, diversity, customer focus, excellence, agility, integrity, creativity, stability, speed, quality, mission, empathy, risk, trust).
 - **Culture Profile** — After completing the quiz, employers get a company personality profile with descriptive insights about what kind of candidates would thrive in their culture.
 
 ### Culture Insights
@@ -158,9 +158,11 @@ A comprehensive breakdown of all existing features, planned features, and the pr
 
 ### Landing Page
 - **Animated Welcome Screen** — Full landing page with hero section, animated product demo, value propositions, process steps, and call-to-action sections.
-- **Interactive Elements** — Magnetic buttons, cursor spotlight, tilt cards, floating coffee beans, typewriter text, scroll progress bar.
+- **Interactive Elements** — Magnetic buttons, cursor spotlight, tilt cards, animated blobs, coffee steam, typewriter/text-scramble headlines, animated stat counters, and a scroll progress bar.
+- **Content Sections** — Feature bento grid, live stats section, product showcase and product journey walkthroughs, interactive dashboard preview, and an FAQ accordion.
+- **Floating Theme Selector** — Switch between Amber Light and Amber Dark directly from the landing page.
 - **Public Navigation** — Landing nav with links to all public pages.
-- **Footer** — Links to company pages, legal pages, and social media.
+- **Footer** — Links to company pages, legal pages, and social media (Instagram, LinkedIn, TikTok).
 
 ### Public Pages
 - About, Blog (with article detail), Careers, Press, Science (methodology), Help Center, Changelog, Status Page, Privacy Policy, Terms of Service, Cookie Policy, and Accessibility Statement.

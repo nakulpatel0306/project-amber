@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `docs/ARCHITECTURE.md` — end-to-end architecture overview (system diagram, backend/frontend/data layers, matching engine, and cross-cutting concerns).
 - `LICENSE` (MIT) at repo root.
 - `CONTRIBUTING.md` with branch, commit, style, testing, and PR guidelines.
 - `CHANGELOG.md` to track version history.
 - `.github/PULL_REQUEST_TEMPLATE.md` to standardize pull request descriptions.
+
+### Fixed
+- Documentation accuracy pass: corrected culture-values count (17 → 20), culture-quiz question count (7 → 8), `pages/` component count (17 → 14), and the `globals.css` path in `CONTRIBUTING.md`.
 
 ## [0.1.0] — Initial Development
 

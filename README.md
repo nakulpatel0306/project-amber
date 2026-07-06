@@ -2,7 +2,7 @@
 
 A culture-first job matching platform that connects candidates with companies based on personality fit and shared values. Amber uses the Big Five (OCEAN) personality model to power its matching engine, helping both job seekers and employers find the right culture fit before the first interview.
 
-> For the full product vision, growth roadmap, and styling direction, see [BLUEPRINT.md](./BLUEPRINT.md).
+> For the full product vision, growth roadmap, and styling direction, see [BLUEPRINT.md](./BLUEPRINT.md). For a technical overview of how the codebase fits together, see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## What It Does
 
@@ -219,8 +219,12 @@ amber/
 │   ├── integration/                 # Integration tests
 │   └── e2e/                         # End-to-end tests
 │
+├── docs/
+│   └── ARCHITECTURE.md              # Technical architecture overview
 ├── BLUEPRINT.md                     # Product vision, growth roadmap, and styling direction
 ├── FEATURES.md                      # Detailed feature documentation
+├── CONTRIBUTING.md                  # Contribution workflow and guidelines
+├── CHANGELOG.md                     # Version history and release notes
 ├── package.json                     # Root workspace configuration
 └── README.md                        # This file
 ```

@@ -107,7 +107,7 @@ The scoring engine converts raw assessment responses into personality scores and
 
 - **`compatibility.py`** — The full OCEAN-based compatibility algorithm:
   - **Trait Match** (40% of overall): Weighted Euclidean distance across 5 OCEAN dimensions, normalized to 0–100
-  - **Culture Match** (30% of overall): Composite of work style compatibility (30%), culture values alignment via 17-value OCEAN correlation map (50%), and role-specific fit (20%)
+  - **Culture Match** (30% of overall): Composite of work style compatibility (30%), culture values alignment via 20-value OCEAN correlation map (50%), and role-specific fit (20%)
   - **Work Style** (20% of overall): Direct comparison of candidate/role work style preferences
   - **Communication Fit** (10% of overall): Extraversion (55%) + agreeableness (45%) alignment
   - **Bidirectional Matching**: Forward score (candidate→employer, 70% weight) + reverse score (employer→candidate, 30% weight)

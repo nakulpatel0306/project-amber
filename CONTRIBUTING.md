@@ -45,7 +45,7 @@ The project follows the conventions in [`.cursorrules`](./.cursorrules). Highlig
 - **UI copy**: lowercase text throughout (buttons, labels, headings in the app).
 - **React**: functional components, hooks over class patterns.
 - **Python**: type hints on function signatures; small, focused functions.
-- **Theming**: use the CSS variables defined in `src/frontend/src/globals.css` — do not hardcode colors.
+- **Theming**: use the CSS variables defined in `src/frontend/src/styles/globals.css` — do not hardcode colors.
 - **Components**: follow the patterns in `src/frontend/src/components/ui/` (Button, Input, Card).
 - **RBAC**: every new route or data read must respect candidate vs. employer scoping.
 
